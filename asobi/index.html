@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>かんたん ゲーム</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f6efdd">
+<meta name="description" content="もぐらたたきと しんけいすいじゃくが あそべます">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="かんたんゲーム">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+
+<style>
+  /* 古いブラウザでも崩れないように、Flexbox と CSS Grid は使わない。
+     色は CSS 変数に対応しない環境のために素の色を先に書いてから var() で上書きする。 */
+  :root {
+    --bg: #f6efdd;
+    --panel: #ffffff;
+    --text: #2f2a24;
+    --sub: #6d6355;
+    --line: #d9cdb2;
+    --accent: #e07a2f;
+    --good: #3f8f4f;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: #f6efdd;
+    background: var(--bg);
+    color: #2f2a24;
+    color: var(--text);
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    text-align: center;
+    padding: 14px 12px 40px;
+    padding-top: calc(14px + constant(safe-area-inset-top));
+    padding-top: calc(14px + env(safe-area-inset-top));
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  h1 { font-size: 24px; margin: 2px 0 14px; font-weight: 700; letter-spacing: .04em; }
+
+  /* ---- タブ ---- */
+  .tabs { margin: 0 0 18px; }
+  .tab {
+    display: inline-block;
+    font-family: inherit;
+    font-size: 21px;
+    font-weight: 700;
+    color: #6d6355;
+    color: var(--sub);
+    background: #ffffff;
+    background: var(--panel);
+    border: 3px solid #d9cdb2;
+    border: 3px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin: 0 5px 8px;
+    min-width: 190px;
+    min-height: 64px;
+    cursor: pointer;
+  }
+  .tab.active {
+    background: #e07a2f;
+    background: var(--accent);
+    border-color: #e07a2f;
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ---- 共通パーツ ---- */
+  .score {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 14px;
+  }
+  .score b { color: #e07a2f; color: var(--accent); font-size: 30px; }
+  .msg {
+    font-size: 24px;
+    font-weight: 700;
+    color: #3f8f4f;
+    color: var(--good);
+    min-height: 34px;
+    margin: 16px 0 6px;
+  }
+  .big {
+    font-family: inherit;
+    font-size: 21px;
+    font-weight: 700;
+    color: #2f2a24;
+    color: var(--text);
+    background: #ffffff;
+    background: var(--panel);
+    border: 3px solid #d9cdb2;
+    border: 3px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 28px;
+    margin: 6px 4px 0;
+    min-height: 62px;
+    cursor: pointer;
+  }
+  .big:active { background: #f0e6cd; }
+  .big.on {
+    background: #e07a2f;
+    background: var(--accent);
+    border-color: #e07a2f;
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .sizes { margin: 0 0 14px; }
+  .note { font-size: 16px; color: #6d6355; color: var(--sub); margin: 18px 0 0; line-height: 1.7; }
+
+  table.board {
+    table-layout: fixed;      /* 列幅を詰められて歪むのを防ぐ */
+    border-collapse: separate;
+    border-spacing: 10px;
+    margin: 0 auto;
+  }
+
+  /* ---- もぐらたたき ---- */
+  .hole {
+    background: #cbbb95;
+    border-radius: 50%;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    position: relative;
+    border: 5px solid #b5a279;
+  }
+  .hole .mole { visibility: hidden; }
+  .hole.up .mole { visibility: visible; }
+  .hole.up { background: #d9c8a0; }
+  .hole .pop {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4px;
+    color: #3f8f4f;
+    color: var(--good);
+    font-weight: 700;
+    visibility: hidden;
+  }
+  .hole.hit .pop { visibility: visible; }
+
+  /* ---- しんけいすいじゃく ---- */
+  .card {
+    background: #e8a05a;
+    border: 5px solid #cf8842;
+    border-radius: 14px;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+  .card .face { visibility: hidden; }
+  .card.open, .card.done {
+    background: #ffffff;
+    background: var(--panel);
+    border-color: #d9cdb2;
+    border-color: var(--line);
+  }
+  .card.open .face, .card.done .face { visibility: visible; }
+  .card.done { background: #dff0dd; border-color: #8cc094; }
+</style>
+</head>
+<body>
+
+<h1>かんたん ゲーム</h1>
+
+<div class="tabs">
+  <button type="button" class="tab active" id="tab-mogura">🐹 もぐらたたき</button>
+  <button type="button" class="tab" id="tab-memory">🎴 しんけいすいじゃく</button>
+</div>
+
+<!-- もぐらたたき -->
+<div id="game-mogura">
+  <p class="score">たたいた かず　<b id="mogura-score">0</b> / 10</p>
+  <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
+  <p class="msg" id="mogura-msg"></p>
+  <button type="button" class="big" id="mogura-reset">さいしょから</button>
+  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>いそがなくて だいじょうぶです。</p>
+</div>
+
+<!-- しんけいすいじゃく -->
+<div id="game-memory" style="display:none">
+  <p class="score">めくった かいすう　<b id="memory-score">0</b></p>
+  <div class="sizes" id="memory-sizes"></div>
+  <table class="board" id="memory-board"><tbody id="memory-body"></tbody></table>
+  <p class="msg" id="memory-msg"></p>
+  <button type="button" class="big" id="memory-reset">さいしょから</button>
+  <p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  function $(id) { return document.getElementById(id); }
+
+  // タップと同じ要領で、古い環境でも拾えるように click を使う
+  function onTap(el, fn) { el.onclick = fn; }
+
+  // 画面の幅から、マスの大きさを決める
+  function fitSize(cols, max, spacing) {
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var avail = Math.min(vw - 20, 620);
+    var s = Math.floor((avail - (cols + 1) * spacing) / cols);
+    if (s > max) s = max;
+    if (s < 54) s = 54;
+    return s;
+  }
+
+  // ============================================================
+  // もぐらたたき
+  // ============================================================
+  var MO_COLS = 3, MO_ROWS = 2, MO_GOAL = 10;
+  var MO_UP_MS = 2200;   // もぐらが出ている時間
+  var MO_GAP_MS = 700;   // つぎに出るまでの間
+
+  var moBoard = $("mogura-board"), moBody = $("mogura-body");
+  var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg");
+  var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1;
+  var moUpTimer = null, moNextTimer = null, moPopTimer = null, moRunning = false;
+
+  function moBuild() {
+    while (moBody.firstChild) moBody.removeChild(moBody.firstChild);
+    moHoles = [];
+    for (var r = 0; r < MO_ROWS; r++) {
+      var tr = document.createElement("tr");
+      for (var c = 0; c < MO_COLS; c++) {
+        var td = document.createElement("td");
+        td.className = "hole";
+        td.innerHTML = '<span class="mole">🐹</span><span class="pop">＋1</span>';
+        (function (el) { onTap(el, function () { moHit(el); }); })(td);
+        moHoles.push(td);
+        tr.appendChild(td);
+      }
+      moBody.appendChild(tr);
+    }
+    moResize();
+  }
+
+  function moResize() {
+    var s = fitSize(MO_COLS, 140, 10);
+    moBoard.style.width = (MO_COLS * s + (MO_COLS + 1) * 10) + "px";
+    for (var i = 0; i < moHoles.length; i++) {
+      moHoles[i].style.height = s + "px";
+      moHoles[i].style.fontSize = Math.round(s * 0.5) + "px";
+      var pop = moHoles[i].getElementsByTagName("span")[1];
+      pop.style.fontSize = Math.round(s * 0.22) + "px";
+    }
+  }
+
+  function moClearTimers() {
+    if (moUpTimer !== null) { clearTimeout(moUpTimer); moUpTimer = null; }
+    if (moNextTimer !== null) { clearTimeout(moNextTimer); moNextTimer = null; }
+  }
+
+  function moHideCurrent() {
+    if (moCurrent >= 0) {
+      moHoles[moCurrent].className = "hole";
+      moCurrent = -1;
+    }
+  }
+
+  function moSpawn() {
+    if (!moRunning) return;
+    var i;
+    do { i = Math.floor(Math.random() * moHoles.length); }
+    while (moHoles.length > 1 && i === moLast);
+    moLast = i;
+    moCurrent = i;
+    moHoles[i].className = "hole up";
+    // たたかなくても、しばらくすると ひっこむ (失敗にはならない)
+    moUpTimer = setTimeout(function () {
+      moHideCurrent();
+      moNextTimer = setTimeout(moSpawn, MO_GAP_MS);
+    }, MO_UP_MS);
+  }
+
+  function moHit(el) {
+    if (!moRunning) return;
+    if (moCurrent < 0 || moHoles[moCurrent] !== el) return;   // 空の穴は なにも起きない
+
+    moClearTimers();
+    moScore++;
+    moScoreEl.innerHTML = String(moScore);
+
+    el.className = "hole hit";
+    if (moPopTimer !== null) clearTimeout(moPopTimer);
+    moPopTimer = setTimeout(function () { el.className = "hole"; }, 400);
+    moCurrent = -1;
+
+    if (moScore >= MO_GOAL) {
+      moRunning = false;
+      moMsgEl.innerHTML = "おめでとう！ " + MO_GOAL + "ぴき たたけました 🎉";
+      return;
+    }
+    moNextTimer = setTimeout(moSpawn, MO_GAP_MS);
+  }
+
+  function moStart() {
+    moStop();
+    moScore = 0;
+    moLast = -1;
+    moScoreEl.innerHTML = "0";
+    moMsgEl.innerHTML = "";
+    for (var i = 0; i < moHoles.length; i++) moHoles[i].className = "hole";
+    moRunning = true;
+    moNextTimer = setTimeout(moSpawn, MO_GAP_MS);
+  }
+
+  function moStop() {
+    moRunning = false;
+    moClearTimers();
+    if (moPopTimer !== null) { clearTimeout(moPopTimer); moPopTimer = null; }
+    moHideCurrent();
+  }
+
+  onTap($("mogura-reset"), moStart);
+
+  // ============================================================
+  // しんけいすいじゃく
+  // ============================================================
+  var MEM_FACES = ["🌸", "🐱", "🍎", "🐶", "🍓", "🌻"];
+  var MEM_SIZES = [
+    { label: "4まい", cards: 4,  cols: 2 },
+    { label: "8まい", cards: 8,  cols: 4 },
+    { label: "12まい", cards: 12, cols: 4 }
+  ];
+
+  var meBoard = $("memory-board"), meBody = $("memory-body");
+  var meScoreEl = $("memory-score"), meMsgEl = $("memory-msg"), meSizesEl = $("memory-sizes");
+  var meCells = [], meFaces = [], meDone = [], meOpen = [];
+  var meFlips = 0, meBusy = false, meBackTimer = null, meSize = MEM_SIZES[1], meCols = 4;
+
+  function meBuildSizeButtons() {
+    for (var i = 0; i < MEM_SIZES.length; i++) {
+      (function (cfg) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "big" + (cfg === meSize ? " on" : "");
+        b.innerHTML = cfg.label;
+        b.setAttribute("data-cards", cfg.cards);
+        onTap(b, function () {
+          meSize = cfg;
+          var bs = meSizesEl.getElementsByTagName("button");
+          for (var k = 0; k < bs.length; k++) {
+            bs[k].className = "big" + (Number(bs[k].getAttribute("data-cards")) === cfg.cards ? " on" : "");
+          }
+          meStart();
+        });
+        meSizesEl.appendChild(b);
+      })(MEM_SIZES[i]);
+    }
+  }
+
+  function meStart() {
+    if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
+    meBusy = false;
+    meFlips = 0;
+    meOpen = [];
+    meScoreEl.innerHTML = "0";
+    meMsgEl.innerHTML = "";
+
+    var pairs = meSize.cards / 2;
+    meCols = meSize.cols;
+
+    // 絵を ペアぶん用意して まぜる
+    meFaces = [];
+    for (var p = 0; p < pairs; p++) { meFaces.push(MEM_FACES[p]); meFaces.push(MEM_FACES[p]); }
+    for (var i = meFaces.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = meFaces[i]; meFaces[i] = meFaces[j]; meFaces[j] = t;
+    }
+
+    meDone = [];
+    for (var d = 0; d < meFaces.length; d++) meDone.push(false);
+
+    while (meBody.firstChild) meBody.removeChild(meBody.firstChild);
+    meCells = [];
+    var rows = Math.ceil(meFaces.length / meCols);
+    for (var r = 0; r < rows; r++) {
+      var tr = document.createElement("tr");
+      for (var c = 0; c < meCols; c++) {
+        var idx = r * meCols + c;
+        if (idx >= meFaces.length) break;
+        var td = document.createElement("td");
+        td.className = "card";
+        td.innerHTML = '<span class="face">' + meFaces[idx] + "</span>";
+        (function (i2) { onTap(td, function () { meFlip(i2); }); })(idx);
+        meCells.push(td);
+        tr.appendChild(td);
+      }
+      meBody.appendChild(tr);
+    }
+    meResize();
+  }
+
+  function meResize() {
+    if (!meCells.length) return;
+    var s = fitSize(meCols, 130, 10);
+    meBoard.style.width = (meCols * s + (meCols + 1) * 10) + "px";
+    for (var i = 0; i < meCells.length; i++) {
+      meCells[i].style.height = s + "px";
+      meCells[i].style.fontSize = Math.round(s * 0.52) + "px";
+    }
+  }
+
+  function meFlip(i) {
+    if (meBusy) return;
+    if (meDone[i]) return;
+    if (meOpen.length && meOpen[0] === i) return;   // 同じカードの 2度めくりは無効
+
+    meCells[i].className = "card open";
+    meFlips++;
+    meScoreEl.innerHTML = String(meFlips);
+    meOpen.push(i);
+
+    if (meOpen.length < 2) return;
+
+    var a = meOpen[0], b = meOpen[1];
+    if (meFaces[a] === meFaces[b]) {
+      meDone[a] = true;
+      meDone[b] = true;
+      meCells[a].className = "card done";
+      meCells[b].className = "card done";
+      meOpen = [];
+      for (var k = 0; k < meDone.length; k++) if (!meDone[k]) return;
+      meMsgEl.innerHTML = "ぜんぶ そろいました！ 🎉";
+    } else {
+      meBusy = true;
+      meBackTimer = setTimeout(function () {
+        meCells[a].className = "card";
+        meCells[b].className = "card";
+        meOpen = [];
+        meBusy = false;
+        meBackTimer = null;
+      }, 1200);
+    }
+  }
+
+  onTap($("memory-reset"), meStart);
+
+  // ============================================================
+  // タブの切り替え
+  // ============================================================
+  var tabMo = $("tab-mogura"), tabMe = $("tab-memory");
+  var paneMo = $("game-mogura"), paneMe = $("game-memory");
+
+  function showMogura() {
+    tabMo.className = "tab active";
+    tabMe.className = "tab";
+    paneMo.style.display = "";
+    paneMe.style.display = "none";
+    moStart();
+  }
+
+  function showMemory() {
+    tabMe.className = "tab active";
+    tabMo.className = "tab";
+    paneMe.style.display = "";
+    paneMo.style.display = "none";
+    moStop();          // 裏でもぐらが動き続けないように止める
+    meStart();
+  }
+
+  onTap(tabMo, showMogura);
+  onTap(tabMe, showMemory);
+
+  window.onresize = function () { moResize(); meResize(); };
+
+  // ---- 起動 ----
+  moBuild();
+  meBuildSizeButtons();
+  meStart();
+  moStart();
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.onload = function () {
+      navigator.serviceWorker.register("sw.js")["catch"](function () {});
+    };
+  }
+})();
+</script>
+</body>
+</html>
