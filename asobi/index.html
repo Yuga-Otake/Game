@@ -7,7 +7,7 @@
 
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f6efdd">
-<meta name="description" content="もぐらたたきと しんけいすいじゃくが あそべます">
+<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ぬりえ が あそべます">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -84,7 +84,7 @@
   .tab {
     display: inline-block;
     font-family: inherit;
-    font-size: 21px;
+    font-size: 19px;
     font-weight: 700;
     color: #6d6355;
     color: var(--sub);
@@ -93,11 +93,16 @@
     border: 3px solid #d9cdb2;
     border: 3px solid var(--line);
     border-radius: 14px;
-    padding: 14px 20px;
-    margin: 0 5px 8px;
-    min-width: 190px;
+    padding: 12px 14px;
+    margin: 0 4px 8px;
+    width: 300px;
+    max-width: 100%;
     min-height: 64px;
+    vertical-align: middle;
     cursor: pointer;
+  }
+  @media (max-width: 480px) {
+    .tab { width: 100%; margin-left: 0; margin-right: 0; }
   }
   .tab.active {
     background: #e07a2f;
@@ -128,6 +133,7 @@
     min-height: 38px;
     margin: 16px 0 6px;
   }
+  .msg.again { color: #6d6355; color: var(--sub); }
   .big {
     font-family: inherit;
     font-size: 21px;
@@ -221,6 +227,48 @@
   .card.open .face, .card.done .face { visibility: visible; }
   .card.done { background: #dff0dd; border-color: #8cc094; }
 
+  /* ---- なかまはずれさがし ---- */
+  .pick {
+    background: #ffffff;
+    background: var(--panel);
+    border: 5px solid #d9cdb2;
+    border: 5px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+  .pick.right { background: #dff0dd; border-color: #8cc094; }
+  .pick.wrong { background: #f3e2d2; border-color: #d9a77a; }
+
+  /* ---- ぬりえ ---- */
+  .pcell {
+    border: 2px solid #e2d9c2;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+  }
+  #paint-board { border-spacing: 8px; background: #efe6cf; border-radius: 12px; }
+  .swatch {
+    display: inline-block;
+    vertical-align: middle;
+    width: 54px;
+    height: 52px;
+    padding: 0;
+    margin: 0 3px 6px;
+    border: 4px solid #d9cdb2;
+    border: 4px solid var(--line);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: #2f2a24;
+    cursor: pointer;
+  }
+  .swatch.on { border-color: #2f2a24; border-color: var(--text); }
+
   /* ---- おいわいの紙ふぶき ---- */
   #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; }
   #confetti span { position: fixed; }
@@ -232,9 +280,11 @@
 
 <h1>かんたん ゲーム</h1>
 
-<div class="tabs">
+<div class="tabs" id="tabs">
   <button type="button" class="tab active" id="tab-mogura">🐹 もぐらたたき</button>
   <button type="button" class="tab" id="tab-memory">🎴 しんけいすいじゃく</button>
+  <button type="button" class="tab" id="tab-odd">🔍 なかまはずれ</button>
+  <button type="button" class="tab" id="tab-paint">🎨 ぬりえ</button>
 </div>
 
 <p class="stamps" id="stamps"></p>
@@ -246,7 +296,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>いそがなくて だいじょうぶです。<br>ときどき <b>きんのもぐら</b> が でてきます（3ぴきぶん）。</p>
+  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>いそがなくて だいじょうぶです。<br>ときどき <b>きんのもぐら</b> が でてきます（3びきぶん）。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -258,6 +308,27 @@
   <p class="msg" id="memory-msg"></p>
   <button type="button" class="big" id="memory-reset">もういちど</button>
   <p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。</p>
+</div>
+
+<!-- なかまはずれさがし -->
+<div id="game-odd" style="display:none">
+  <p class="score">できた もんだい　<b id="odd-score">0</b> / 10</p>
+  <div class="ctrl"><span class="label">えのかず</span><span id="odd-sizes"></span></div>
+  <table class="board" id="odd-board"><tbody id="odd-body"></tbody></table>
+  <p class="msg" id="odd-msg"></p>
+  <button type="button" class="big" id="odd-reset">もういちど</button>
+  <p class="note">ひとつだけ ちがう えが あります。<br>それを さわってください。<br>まちがえても なんども えらべます。</p>
+</div>
+
+<!-- ぬりえ -->
+<div id="game-paint" style="display:none">
+  <div class="ctrl"><span class="label">したえ</span><span id="paint-guides"></span></div>
+  <p id="paint-palette" style="margin:0 0 10px"></p>
+  <table class="board" id="paint-board"><tbody id="paint-body"></tbody></table>
+  <p class="msg" id="paint-msg"></p>
+  <button type="button" class="big" id="paint-done">できた！</button>
+  <button type="button" class="big" id="paint-clear">ぜんぶ けす</button>
+  <p class="note">いろを えらんで、マスを さわると ぬれます。<br>うすい いろは したえです。すきに ぬって いいですよ。<br>ぬった えは つぎに ひらいた ときも のこります。</p>
 </div>
 
 <div id="confetti"></div>
@@ -280,13 +351,34 @@
     try { window.localStorage.setItem("asobi-" + key, String(value)); } catch (e) {}
   }
 
-  function fitSize(cols, max, spacing) {
+  function fitSize(cols, max, spacing, min) {
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     var avail = Math.min(vw - 20, 620);
     var s = Math.floor((avail - (cols + 1) * spacing) / cols);
     if (s > max) s = max;
-    if (s < 54) s = 54;
+    if (s < (min || 54)) s = (min || 54);
     return s;
+  }
+
+  // ボタンの並びを作る共通処理。押すと selected が切り替わり onPick が呼ばれる
+  function buildPicker(host, items, isCurrent, cls, onPick) {
+    for (var i = 0; i < items.length; i++) {
+      (function (item) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = cls + (isCurrent(item) ? " on" : "");
+        b.innerHTML = item.label;
+        b.setAttribute("data-key", item.key);
+        onTap(b, function () {
+          var bs = host.getElementsByTagName("button");
+          for (var k = 0; k < bs.length; k++) {
+            bs[k].className = cls + (bs[k].getAttribute("data-key") === String(item.key) ? " on" : "");
+          }
+          onPick(item);
+        });
+        host.appendChild(b);
+      })(items[i]);
+    }
   }
 
   // ============================================================
@@ -338,6 +430,7 @@
   function soundFlip()  { play([420], 0.05, "triangle", 0.1); }
   function soundMatch() { play([880, 1175], 0.11, "sine", 0.18); }
   function soundClear() { play([523, 659, 784, 1047], 0.15, "sine", 0.2); }
+  function soundAgain() { play([330], 0.14, "sine", 0.1); }   // やさしい「ちがうよ」の音
 
   onTap(soundBtn, function () {
     soundOn = !soundOn;
@@ -407,6 +500,7 @@
     stamps++;
     save("clears", stamps);
     paintStamps();
+    el.className = "msg";
     el.innerHTML = text + " " + praise();
     confetti();
     soundClear();
@@ -424,39 +518,23 @@
   ];
 
   var moBoard = $("mogura-board"), moBody = $("mogura-body");
-  var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg"), moSpeedsEl = $("mogura-speeds");
+  var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg");
   var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1, moGold = false;
   var moUpTimer = null, moNextTimer = null, moPopTimer = null, moRunning = false;
   var moSpeed = MO_SPEEDS[0];
 
-  (function restoreSpeed() {
+  (function () {
     var key = load("speed", "slow");
     for (var i = 0; i < MO_SPEEDS.length; i++) if (MO_SPEEDS[i].key === key) moSpeed = MO_SPEEDS[i];
   })();
 
-  function moBuildSpeedButtons() {
-    for (var i = 0; i < MO_SPEEDS.length; i++) {
-      (function (cfg) {
-        var b = document.createElement("button");
-        b.type = "button";
-        b.className = "big" + (cfg === moSpeed ? " on" : "");
-        b.innerHTML = cfg.label;
-        b.setAttribute("data-speed", cfg.key);
-        onTap(b, function () {
-          moSpeed = cfg;
-          save("speed", cfg.key);
-          var bs = moSpeedsEl.getElementsByTagName("button");
-          for (var k = 0; k < bs.length; k++) {
-            bs[k].className = "big" + (bs[k].getAttribute("data-speed") === cfg.key ? " on" : "");
-          }
-          moStart();
-        });
-        moSpeedsEl.appendChild(b);
-      })(MO_SPEEDS[i]);
-    }
-  }
-
   function moBuild() {
+    buildPicker($("mogura-speeds"), MO_SPEEDS, function (c) { return c === moSpeed; }, "big", function (cfg) {
+      moSpeed = cfg;
+      save("speed", cfg.key);
+      moStart();
+    });
+
     while (moBody.firstChild) moBody.removeChild(moBody.firstChild);
     moHoles = [];
     for (var r = 0; r < MO_ROWS; r++) {
@@ -493,7 +571,6 @@
   function moHideCurrent() {
     if (moCurrent >= 0) {
       moHoles[moCurrent].className = "hole";
-      moHoles[moCurrent].getElementsByTagName("span")[0].innerHTML = "🐹";
       moCurrent = -1;
     }
     moGold = false;
@@ -507,11 +584,11 @@
     moLast = i;
     moCurrent = i;
 
-    // 4回に1回くらい きんのもぐら。ただし あと1ぴきの時は ふつうのもぐら
+    // 4回に1回くらい きんのもぐら。ただし ゴールを とびこえない ときだけ
     moGold = (MO_GOAL - moScore) > 2 && Math.random() < 0.25;
 
     var hole = moHoles[i];
-    hole.getElementsByTagName("span")[0].innerHTML = "🐹";
+    // もぐらの絵は かならず 1 文字。2 文字にすると おりかえして まるが たてに のびる
     hole.getElementsByTagName("span")[1].innerHTML = moGold ? "✨＋3" : "＋1";
     hole.className = moGold ? "hole up gold" : "hole up";
 
@@ -527,15 +604,13 @@
     if (moCurrent < 0 || moHoles[moCurrent] !== el) return;   // 空の穴は なにも起きない
 
     moClearTimers();
-    var gained = moGold ? 3 : 1;
-    moScore += gained;
+    moScore += moGold ? 3 : 1;
     if (moScore > MO_GOAL) moScore = MO_GOAL;
     moScoreEl.innerHTML = String(moScore);
 
     if (moGold) soundGold(); else soundHit();
 
     el.className = "hole hit";
-    el.getElementsByTagName("span")[0].innerHTML = "🐹";
     if (moPopTimer !== null) clearTimeout(moPopTimer);
     (function (hole) {
       moPopTimer = setTimeout(function () { hole.className = "hole"; }, 450);
@@ -557,10 +632,8 @@
     moLast = -1;
     moScoreEl.innerHTML = "0";
     moMsgEl.innerHTML = "";
-    for (var i = 0; i < moHoles.length; i++) {
-      moHoles[i].className = "hole";
-      moHoles[i].getElementsByTagName("span")[0].innerHTML = "🐹";
-    }
+    moMsgEl.className = "msg";
+    for (var i = 0; i < moHoles.length; i++) moHoles[i].className = "hole";
     moRunning = true;
     moNextTimer = setTimeout(moSpawn, moSpeed.gap);
   }
@@ -583,65 +656,35 @@
     { key: "fruit", label: "🍎", faces: ["🍎", "🍓", "🍇", "🍊", "🍑", "🍉"] }
   ];
   var MEM_SIZES = [
-    { cards: 4,  cols: 2, label: "4まい" },
-    { cards: 8,  cols: 4, label: "8まい" },
-    { cards: 12, cols: 4, label: "12まい" }
+    { key: "4",  label: "4まい",  cards: 4,  cols: 2 },
+    { key: "8",  label: "8まい",  cards: 8,  cols: 4 },
+    { key: "12", label: "12まい", cards: 12, cols: 4 }
   ];
 
   var meBoard = $("memory-board"), meBody = $("memory-body");
   var meScoreEl = $("memory-score"), meMsgEl = $("memory-msg");
-  var meSizesEl = $("memory-sizes"), meThemesEl = $("memory-themes");
   var meCells = [], meFaces = [], meDone = [], meOpen = [];
   var meFlips = 0, meBusy = false, meBackTimer = null;
   var meSize = MEM_SIZES[1], meTheme = MEM_THEMES[0], meCols = 4;
 
-  (function restoreMemory() {
-    var cards = Number(load("cards", "8"));
-    for (var i = 0; i < MEM_SIZES.length; i++) if (MEM_SIZES[i].cards === cards) meSize = MEM_SIZES[i];
+  (function () {
+    var cards = load("cards", "8");
+    for (var i = 0; i < MEM_SIZES.length; i++) if (MEM_SIZES[i].key === cards) meSize = MEM_SIZES[i];
     var theme = load("theme", "hana");
     for (var j = 0; j < MEM_THEMES.length; j++) if (MEM_THEMES[j].key === theme) meTheme = MEM_THEMES[j];
   })();
 
-  function meBuildButtons() {
-    for (var i = 0; i < MEM_SIZES.length; i++) {
-      (function (cfg) {
-        var b = document.createElement("button");
-        b.type = "button";
-        b.className = "big" + (cfg === meSize ? " on" : "");
-        b.innerHTML = cfg.label;
-        b.setAttribute("data-cards", cfg.cards);
-        onTap(b, function () {
-          meSize = cfg;
-          save("cards", cfg.cards);
-          var bs = meSizesEl.getElementsByTagName("button");
-          for (var k = 0; k < bs.length; k++) {
-            bs[k].className = "big" + (Number(bs[k].getAttribute("data-cards")) === cfg.cards ? " on" : "");
-          }
-          meStart();
-        });
-        meSizesEl.appendChild(b);
-      })(MEM_SIZES[i]);
-    }
-
-    for (var t = 0; t < MEM_THEMES.length; t++) {
-      (function (cfg) {
-        var b = document.createElement("button");
-        b.type = "button";
-        b.className = "big icon" + (cfg === meTheme ? " on" : "");
-        b.innerHTML = cfg.label;
-        b.setAttribute("data-theme", cfg.key);
-        onTap(b, function () {
-          meTheme = cfg;
-          save("theme", cfg.key);
-          var bs = meThemesEl.getElementsByTagName("button");
-          for (var k = 0; k < bs.length; k++) {
-            bs[k].className = "big icon" + (bs[k].getAttribute("data-theme") === cfg.key ? " on" : "");
-          }
-          meStart();
-        });
-        meThemesEl.appendChild(b);
-      })(MEM_THEMES[t]);
-    }
+  function meBuild() {
+    buildPicker($("memory-sizes"), MEM_SIZES, function (c) { return c === meSize; }, "big", function (cfg) {
+      meSize = cfg;
+      save("cards", cfg.key);
+      meStart();
+    });
+    buildPicker($("memory-themes"), MEM_THEMES, function (c) { return c === meTheme; }, "big icon", function (cfg) {
+      meTheme = cfg;
+      save("theme", cfg.key);
+      meStart();
+    });
   }
 
   function meStart() {
@@ -651,6 +694,7 @@
     meOpen = [];
     meScoreEl.innerHTML = "0";
     meMsgEl.innerHTML = "";
+    meMsgEl.className = "msg";
 
     var pairs = meSize.cards / 2;
     meCols = meSize.cols;
@@ -721,7 +765,7 @@
       soundMatch();
 
       for (var k = 0; k < meDone.length; k++) {
-        if (!meDone[k]) { meMsgEl.innerHTML = "そろった！"; return; }
+        if (!meDone[k]) { meMsgEl.className = "msg"; meMsgEl.innerHTML = "そろった！"; return; }
       }
       celebrate(meMsgEl, "ぜんぶ そろいました！");
     } else {
@@ -739,39 +783,345 @@
   onTap($("memory-reset"), meStart);
 
   // ============================================================
+  // なかまはずれさがし
+  // ============================================================
+  // なかまと なかまはずれ。ひと目で ちがいが わかる 組み合わせにする
+  var ODD_PAIRS = [
+    ["🌸", "🌻"], ["🐱", "🐶"], ["🍎", "🍌"], ["⭐", "❤️"], ["🚗", "✈️"],
+    ["🐟", "🐦"], ["🍵", "🍰"], ["☀️", "☂️"], ["🌷", "🍄"], ["🐰", "🐢"],
+    ["🍊", "🍇"], ["⛄", "🎈"], ["🦋", "🐞"], ["🍁", "🌰"], ["🎁", "🔔"]
+  ];
+  var ODD_SIZES = [
+    { key: "4", label: "4つ", count: 4, cols: 2 },
+    { key: "6", label: "6つ", count: 6, cols: 3 },
+    { key: "9", label: "9つ", count: 9, cols: 3 }
+  ];
+  var ODD_GOAL = 10;
+
+  var odBoard = $("odd-board"), odBody = $("odd-body");
+  var odScoreEl = $("odd-score"), odMsgEl = $("odd-msg");
+  var odCells = [], odScore = 0, odTarget = -1, odBusy = false, odNextTimer = null;
+  var odSize = ODD_SIZES[1], odCols = 3;
+
+  (function () {
+    var key = load("odd", "6");
+    for (var i = 0; i < ODD_SIZES.length; i++) if (ODD_SIZES[i].key === key) odSize = ODD_SIZES[i];
+  })();
+
+  function odBuild() {
+    buildPicker($("odd-sizes"), ODD_SIZES, function (c) { return c === odSize; }, "big", function (cfg) {
+      odSize = cfg;
+      save("odd", cfg.key);
+      odStart();
+    });
+  }
+
+  function odStart() {
+    if (odNextTimer !== null) { clearTimeout(odNextTimer); odNextTimer = null; }
+    odBusy = false;
+    odScore = 0;
+    odScoreEl.innerHTML = "0";
+    odMsgEl.innerHTML = "";
+    odMsgEl.className = "msg";
+    odQuestion();
+  }
+
+  function odQuestion() {
+    var pair = ODD_PAIRS[Math.floor(Math.random() * ODD_PAIRS.length)];
+    // どちらを なかまはずれに するかも 入れ替える
+    var same = pair[Math.random() < 0.5 ? 0 : 1];
+    var odd = same === pair[0] ? pair[1] : pair[0];
+
+    var n = odSize.count;
+    odCols = odSize.cols;
+    odTarget = Math.floor(Math.random() * n);
+
+    while (odBody.firstChild) odBody.removeChild(odBody.firstChild);
+    odCells = [];
+    var rows = Math.ceil(n / odCols);
+    for (var r = 0; r < rows; r++) {
+      var tr = document.createElement("tr");
+      for (var c = 0; c < odCols; c++) {
+        var i = r * odCols + c;
+        if (i >= n) break;
+        var td = document.createElement("td");
+        td.className = "pick";
+        td.innerHTML = (i === odTarget ? odd : same);
+        (function (i2) { onTap(td, function () { odPick(i2); }); })(i);
+        odCells.push(td);
+        tr.appendChild(td);
+      }
+      odBody.appendChild(tr);
+    }
+    odResize();
+  }
+
+  function odResize() {
+    if (!odCells.length) return;
+    var s = fitSize(odCols, 150, 10);
+    odBoard.style.width = (odCols * s + (odCols + 1) * 10) + "px";
+    for (var i = 0; i < odCells.length; i++) {
+      odCells[i].style.height = s + "px";
+      odCells[i].style.fontSize = Math.round(s * 0.55) + "px";
+    }
+  }
+
+  function odPick(i) {
+    if (odBusy) return;
+
+    if (i !== odTarget) {
+      // まちがえても へらない。やさしく もういちど
+      odCells[i].className = "pick wrong";
+      odMsgEl.className = "msg again";
+      odMsgEl.innerHTML = "ちがうみたい。もういちど さがしてみて";
+      soundAgain();
+      (function (cell) {
+        setTimeout(function () { if (cell.className === "pick wrong") cell.className = "pick"; }, 700);
+      })(odCells[i]);
+      return;
+    }
+
+    odBusy = true;
+    odCells[i].className = "pick right";
+    odScore++;
+    odScoreEl.innerHTML = String(odScore);
+    soundMatch();
+
+    if (odScore >= ODD_GOAL) {
+      celebrate(odMsgEl, "10もん できました！");
+      odBusy = false;
+      return;
+    }
+
+    odMsgEl.className = "msg";
+    odMsgEl.innerHTML = "せいかい！";
+    odNextTimer = setTimeout(function () {
+      odMsgEl.innerHTML = "";
+      odQuestion();
+      odBusy = false;
+      odNextTimer = null;
+    }, 900);
+  }
+
+  function odStop() {
+    if (odNextTimer !== null) { clearTimeout(odNextTimer); odNextTimer = null; }
+    odBusy = false;
+  }
+
+  onTap($("odd-reset"), odStart);
+
+  // ============================================================
+  // ぬりえ
+  // ============================================================
+  var PA_COLORS = ["#ffffff", "#e4584f", "#ef9d3a", "#f2d047", "#5aa95f", "#5ab4d6", "#4a6fd0", "#9a6bc9", "#ef93b8", "#a1734a"];
+  var PA_LABELS = ["けす", "", "", "", "", "", "", "", "", ""];
+  var PA_N = 7;   // 7 × 7 マス
+
+  // したえ。'.' は なにも なし、数字は PA_COLORS の ばんごう
+  var PA_GUIDES = [
+    { key: "free", label: "じゆう", rows: null },
+    { key: "hana", label: "はな", rows: [
+      "..888..",
+      ".88388.",
+      ".83338.",
+      ".88388.",
+      "..888..",
+      "...4...",
+      "..444.."
+    ] },
+    { key: "chou", label: "ちょう", rows: [
+      "77.9.77",
+      "7779777",
+      ".779777",
+      "...9...",
+      ".779777",
+      "7779777",
+      "77.9.77"
+    ] },
+    { key: "sakana", label: "さかな", rows: [
+      ".......",
+      "..555.9",
+      ".555559",
+      "5551559",
+      ".555559",
+      "..555.9",
+      "......."
+    ] }
+  ];
+
+  var paBoard = $("paint-board"), paBody = $("paint-body"), paMsgEl = $("paint-msg");
+  var paCells = [], paData = [], paColor = 1, paGuide = PA_GUIDES[0], paBuilt = false;
+
+  (function () {
+    var key = load("guide", "free");
+    for (var i = 0; i < PA_GUIDES.length; i++) if (PA_GUIDES[i].key === key) paGuide = PA_GUIDES[i];
+    var c = Number(load("color", "1"));
+    if (c >= 0 && c < PA_COLORS.length) paColor = c;
+  })();
+
+  // したえは うすい いろで みせる (白と混ぜて明るくする)
+  function pale(hex) {
+    var r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex.substr(3, 2), 16), b = parseInt(hex.substr(5, 2), 16);
+    function mix(v) { return Math.round(v + (255 - v) * 0.78); }
+    return "rgb(" + mix(r) + "," + mix(g) + "," + mix(b) + ")";
+  }
+
+  function paGuideColor(i) {
+    if (!paGuide.rows) return "";
+    var ch = paGuide.rows[(i / PA_N) | 0].charAt(i % PA_N);
+    return ch === "." ? "" : pale(PA_COLORS[Number(ch)]);
+  }
+
+  function paPaintCell(i) {
+    var v = paData[i];
+    if (v > 0) paCells[i].style.background = PA_COLORS[v];
+    else paCells[i].style.background = paGuideColor(i) || "#ffffff";
+  }
+
+  function paLoadData() {
+    var saved = load("canvas-" + paGuide.key, "");
+    paData = [];
+    for (var i = 0; i < PA_N * PA_N; i++) {
+      var ch = saved.charAt(i);
+      paData.push(ch >= "0" && ch <= "9" ? Number(ch) : 0);
+    }
+  }
+
+  function paSaveData() { save("canvas-" + paGuide.key, paData.join("")); }
+
+  function paBuild() {
+    buildPicker($("paint-guides"), PA_GUIDES, function (g) { return g === paGuide; }, "big", function (g) {
+      paGuide = g;
+      save("guide", g.key);
+      paStart();
+    });
+
+    // いろのボタン
+    var pal = $("paint-palette");
+    for (var i = 0; i < PA_COLORS.length; i++) {
+      (function (idx) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "swatch" + (idx === paColor ? " on" : "");
+        b.style.background = PA_COLORS[idx];
+        b.innerHTML = PA_LABELS[idx];
+        b.setAttribute("data-color", idx);
+        onTap(b, function () {
+          paColor = idx;
+          save("color", idx);
+          var bs = pal.getElementsByTagName("button");
+          for (var k = 0; k < bs.length; k++) {
+            bs[k].className = "swatch" + (Number(bs[k].getAttribute("data-color")) === idx ? " on" : "");
+          }
+          soundFlip();
+        });
+        pal.appendChild(b);
+      })(i);
+    }
+
+    while (paBody.firstChild) paBody.removeChild(paBody.firstChild);
+    paCells = [];
+    for (var r = 0; r < PA_N; r++) {
+      var tr = document.createElement("tr");
+      for (var c = 0; c < PA_N; c++) {
+        var td = document.createElement("td");
+        td.className = "pcell";
+        (function (i2) { onTap(td, function () { paTap(i2); }); })(r * PA_N + c);
+        paCells.push(td);
+        tr.appendChild(td);
+      }
+      paBody.appendChild(tr);
+    }
+    paBuilt = true;
+    paResize();
+  }
+
+  function paResize() {
+    if (!paCells.length) return;
+    var s = fitSize(PA_N, 64, 8, 30);
+    paBoard.style.width = (PA_N * s + (PA_N + 1) * 8) + "px";
+    for (var i = 0; i < paCells.length; i++) paCells[i].style.height = s + "px";
+  }
+
+  function paTap(i) {
+    paData[i] = paColor;
+    paPaintCell(i);
+    paSaveData();
+    paMsgEl.innerHTML = "";
+    paMsgEl.className = "msg";
+    soundFlip();
+  }
+
+  function paStart() {
+    if (!paBuilt) paBuild();
+    paLoadData();
+    paMsgEl.innerHTML = "";
+    paMsgEl.className = "msg";
+    for (var i = 0; i < paCells.length; i++) paPaintCell(i);
+    paResize();
+  }
+
+  onTap($("paint-clear"), function () {
+    for (var i = 0; i < paData.length; i++) paData[i] = 0;
+    paSaveData();
+    for (var j = 0; j < paCells.length; j++) paPaintCell(j);
+    paMsgEl.innerHTML = "";
+    paMsgEl.className = "msg";
+    soundFlip();
+  });
+
+  onTap($("paint-done"), function () {
+    var painted = 0;
+    for (var i = 0; i < paData.length; i++) if (paData[i] > 0) painted++;
+    if (painted < 10) {
+      paMsgEl.className = "msg again";
+      paMsgEl.innerHTML = "もう すこし ぬってみましょう";
+      soundAgain();
+      return;
+    }
+    celebrate(paMsgEl, "すてきな えが できました！");
+  });
+
+  // ============================================================
   // タブの切り替え
   // ============================================================
-  var tabMo = $("tab-mogura"), tabMe = $("tab-memory");
-  var paneMo = $("game-mogura"), paneMe = $("game-memory");
+  var TABS = [
+    { key: "mogura", tab: "tab-mogura", pane: "game-mogura", show: moStart, hide: moStop },
+    { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: null },
+    { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop },
+    { key: "paint",  tab: "tab-paint",  pane: "game-paint",  show: paStart, hide: null }
+  ];
 
-  function showMogura() {
-    tabMo.className = "tab active";
-    tabMe.className = "tab";
-    paneMo.style.display = "";
-    paneMe.style.display = "none";
-    moStart();
+  function showTab(key) {
+    for (var i = 0; i < TABS.length; i++) {
+      var t = TABS[i];
+      var on = t.key === key;
+      $(t.tab).className = on ? "tab active" : "tab";
+      $(t.pane).style.display = on ? "" : "none";
+      // ほかのゲームが 裏で 動きつづけないように 止める
+      if (!on && t.hide) t.hide();
+    }
+    for (var j = 0; j < TABS.length; j++) {
+      if (TABS[j].key === key) { save("tab", key); TABS[j].show(); return; }
+    }
   }
 
-  function showMemory() {
-    tabMe.className = "tab active";
-    tabMo.className = "tab";
-    paneMe.style.display = "";
-    paneMo.style.display = "none";
-    moStop();          // 裏でもぐらが動き続けないように止める
-    meStart();
+  for (var t = 0; t < TABS.length; t++) {
+    (function (cfg) { onTap($(cfg.tab), function () { showTab(cfg.key); }); })(TABS[t]);
   }
 
-  onTap(tabMo, showMogura);
-  onTap(tabMe, showMemory);
-
-  window.onresize = function () { moResize(); meResize(); };
+  window.onresize = function () { moResize(); meResize(); odResize(); paResize(); };
 
   // ---- 起動 ----
-  moBuildSpeedButtons();
   moBuild();
-  meBuildButtons();
-  meStart();
-  moStart();
+  meBuild();
+  odBuild();
+  paBuild();
+
+  var startTab = load("tab", "mogura");
+  var known = false;
+  for (var s = 0; s < TABS.length; s++) if (TABS[s].key === startTab) known = true;
+  showTab(known ? startTab : "mogura");
 
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
     window.onload = function () {

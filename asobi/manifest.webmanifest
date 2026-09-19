@@ -1,7 +1,7 @@
 {
   "name": "かんたん ゲーム",
   "short_name": "かんたんゲーム",
-  "description": "もぐらたたきと しんけいすいじゃくが あそべます",
+  "description": "もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ぬりえ が あそべます",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
