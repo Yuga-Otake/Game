@@ -4,7 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>マインスイーパー</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1e2430">
+<meta name="description" content="ブラウザで遊べるマインスイーパー">
+
+<!-- ホーム画面に追加したときにアプリとして起動するための指定 (iOS) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="マインスイーパー">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+
 <style>
+  /* 変数に対応していない古いブラウザ向けに、各所で素の色を先に書いてから var() で上書きする */
   :root {
     --bg: #1e2430;
     --panel: #2a3240;
@@ -21,110 +35,133 @@
     margin: 0;
     padding: 0;
     min-height: 100%;
+    background: #1e2430;
     background: var(--bg);
+    color: #e8ecf2;
     color: var(--text);
-    font-family: "Helvetica Neue", Arial, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
   }
   body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    text-align: center;
     padding: 16px 12px 32px;
-    gap: 14px;
+    /* ホーム画面から起動したときにステータスバーと重ならないようにする */
+    padding-top: calc(16px + constant(safe-area-inset-top));
+    padding-top: calc(16px + env(safe-area-inset-top));
   }
   h1 {
     font-size: 20px;
     letter-spacing: .08em;
-    margin: 4px 0 0;
+    margin: 4px 0 14px;
     font-weight: 600;
   }
-  .levels { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+  /* 見出し・操作パネルは inline-block で組む (Flexbox/Grid に依存しない) */
+  .levels { margin: 0 0 14px; }
   .levels button {
+    display: inline-block;
+    background: #2a3240;
     background: var(--panel);
+    color: #e8ecf2;
     color: var(--text);
     border: 1px solid #3c4657;
     border-radius: 8px;
     padding: 7px 14px;
+    margin: 0 4px 6px;
     font-size: 13px;
     cursor: pointer;
     font-family: inherit;
   }
-  .levels button.active { background: var(--accent); color: #23282f; border-color: var(--accent); font-weight: 700; }
+  .levels button.active {
+    background: #ffcc44;
+    background: var(--accent);
+    color: #23282f;
+    border-color: #ffcc44;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
   .status {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    display: inline-block;
+    background: #2a3240;
     background: var(--panel);
     border-radius: 10px;
     padding: 8px 14px;
-    min-width: 260px;
+    margin: 0 0 14px;
+    white-space: nowrap;
   }
+  .status > * { display: inline-block; vertical-align: middle; }
   .counter {
-    font-variant-numeric: tabular-nums;
     font-size: 20px;
     font-weight: 700;
     letter-spacing: .05em;
-    min-width: 62px;
+    min-width: 74px;
     text-align: center;
   }
   #reset {
     font-size: 24px;
     line-height: 1;
+    background: #4a5568;
     background: var(--cell);
     border: none;
     border-radius: 8px;
     width: 46px;
     height: 40px;
+    margin: 0 10px;
     cursor: pointer;
+    padding: 0;
   }
-  #reset:active { background: var(--cell-hi); }
-  .board-wrap { overflow: auto; max-width: 100%; padding-bottom: 4px; }
+  #reset:active { background: #5a6578; background: var(--cell-hi); }
+
+  .board-wrap { overflow: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+
+  /* 盤面は table で組む。CSS Grid 非対応の古い Safari でも必ず格子になる */
   #board {
-    display: grid;
-    gap: 2px;
+    table-layout: fixed;          /* 幅を詰められて盤面が歪むのを防ぐ */
+    border-collapse: separate;
+    border-spacing: 2px;
+    margin: 0 auto;
+    background: #1a1f29;
     background: var(--line);
     padding: 2px;
     border-radius: 6px;
-    touch-action: manipulation;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
+    -webkit-touch-callout: none;   /* 長押しでコピーメニューが出るのを防ぐ */
   }
   .cell {
-    width: 30px;
     height: 30px;
-    border: none;
     padding: 0;
     border-radius: 3px;
+    background: #4a5568;
     background: var(--cell);
     color: #fff;
     font-size: 16px;
     font-weight: 700;
     font-family: inherit;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    text-align: center;
+    vertical-align: middle;
     cursor: pointer;
   }
-  .cell:hover:not(.open) { background: var(--cell-hi); }
   .cell.open {
+    background: #d8dde5;
     background: var(--open);
     cursor: default;
   }
-  .cell.open.even { background: var(--open-alt); }
+  .cell.open.even { background: #ccd2dc; background: var(--open-alt); }
   .cell.mine { background: #d9534f; }
   .cell.mine-hit { background: #ff3b30; }
   .cell.wrong { background: #8a5a5a; }
   .c1 { color: #1976d2; } .c2 { color: #2e7d32; } .c3 { color: #d32f2f; }
   .c4 { color: #512da8; } .c5 { color: #a1450d; } .c6 { color: #00838f; }
   .c7 { color: #37474f; } .c8 { color: #757575; }
-  .message { font-size: 15px; min-height: 22px; font-weight: 600; }
+
+  .message { font-size: 15px; min-height: 22px; font-weight: 600; margin: 14px 0 0; }
   .message.win { color: #7ee08a; }
   .message.lose { color: #ff8a80; }
-  .help { font-size: 12px; color: #97a1b2; text-align: center; line-height: 1.7; max-width: 340px; }
-  @media (max-width: 480px) {
-    .cell { width: 26px; height: 26px; font-size: 14px; }
-  }
+  .help { font-size: 12px; color: #97a1b2; line-height: 1.7; margin: 10px auto 0; max-width: 340px; }
+
 </style>
 </head>
 <body>
@@ -134,31 +171,32 @@
 
   <div class="status">
     <div class="counter" id="mines">💣 0</div>
-    <button id="reset" title="リセット">🙂</button>
+    <button id="reset" title="リセット" type="button">🙂</button>
     <div class="counter" id="timer">⏱ 0</div>
   </div>
 
-  <div class="board-wrap"><div id="board"></div></div>
+  <div class="board-wrap"><table id="board"><tbody id="board-body"></tbody></table></div>
 
-  <div class="message" id="message"></div>
+  <p class="message" id="message"></p>
 
-  <div class="help">
+  <p class="help">
     左クリック: 開く / 右クリック: 旗 🚩<br>
     数字マスをクリック: 周囲の旗が足りていれば一斉に開く<br>
     スマホ: タップで開く / 長押しで旗
-  </div>
+  </p>
 
 <script>
 (function () {
   "use strict";
 
-  var LEVELS = {
-    easy:   { label: "初級 9×9",      rows: 9,  cols: 9,  mines: 10 },
-    normal: { label: "中級 16×16",    rows: 16, cols: 16, mines: 40 },
-    hard:   { label: "上級 16×30",    rows: 16, cols: 30, mines: 99 }
-  };
+  var LEVELS = [
+    { key: "easy",   label: "初級 9×9",   rows: 9,  cols: 9,  mines: 10 },
+    { key: "normal", label: "中級 16×16", rows: 16, cols: 16, mines: 40 },
+    { key: "hard",   label: "上級 16×30", rows: 16, cols: 30, mines: 99 }
+  ];
 
   var boardEl   = document.getElementById("board");
+  var bodyEl    = document.getElementById("board-body");
   var minesEl   = document.getElementById("mines");
   var timerEl   = document.getElementById("timer");
   var resetEl   = document.getElementById("reset");
@@ -171,6 +209,11 @@
   var cells;                     // DOM 要素
   var started, over, openedCount, flagCount;
   var timerId = null, elapsed = 0;
+
+  function levelConfig(key) {
+    for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].key === key) return LEVELS[i];
+    return LEVELS[0];
+  }
 
   // ---- 盤面の生成 ------------------------------------------------------
   function idx(r, c) { return r * cols + c; }
@@ -188,7 +231,7 @@
   }
 
   function newGame() {
-    var cfg = LEVELS[level];
+    var cfg = levelConfig(level);
     rows = cfg.rows; cols = cfg.cols; mineCount = cfg.mines;
 
     var n = rows * cols;
@@ -205,8 +248,8 @@
     stopTimer();
     elapsed = 0;
 
-    resetEl.textContent = "🙂";
-    messageEl.textContent = "";
+    resetEl.innerHTML = "🙂";
+    messageEl.innerHTML = "";
     messageEl.className = "message";
 
     render();
@@ -223,7 +266,7 @@
     var pool = [];
     for (var i = 0; i < n; i++) if (!safe[i]) pool.push(i);
 
-    // 置ける枠が足りない場合 (極小盤) は安全域を縮める
+    // 置ける枠が足りない場合 (極小盤) は置ける分だけにする
     var toPlace = Math.min(mineCount, pool.length);
 
     for (var k = 0; k < toPlace; k++) {
@@ -242,25 +285,45 @@
 
   // ---- 描画 ------------------------------------------------------------
   function render() {
-    boardEl.style.gridTemplateColumns = "repeat(" + cols + ", auto)";
-    boardEl.textContent = "";
+    while (bodyEl.firstChild) bodyEl.removeChild(bodyEl.firstChild);
     cells = new Array(rows * cols);
 
     var frag = document.createDocumentFragment();
-    for (var i = 0; i < rows * cols; i++) {
-      var b = document.createElement("button");
-      b.className = "cell";
-      b.type = "button";
-      b.dataset.i = i;
-      cells[i] = b;
-      frag.appendChild(b);
+    for (var r = 0; r < rows; r++) {
+      var tr = document.createElement("tr");
+      for (var c = 0; c < cols; c++) {
+        var i = idx(r, c);
+        var td = document.createElement("td");
+        td.className = "cell";
+        td.setAttribute("data-i", i);
+        cells[i] = td;
+        tr.appendChild(td);
+      }
+      frag.appendChild(tr);
     }
-    boardEl.appendChild(frag);
+    bodyEl.appendChild(frag);
+    applyBoardSize();
+  }
+
+  // table-layout: fixed なので、表全体の幅を決めれば列幅も決まる。
+  // 画面が狭いときだけマスを小さくし、入りきらない分は横スクロールで見せる。
+  function cellSize() {
+    return (window.innerWidth || 1024) <= 480 ? 26 : 30;
+  }
+
+  function applyBoardSize() {
+    var s = cellSize();
+    boardEl.style.width = (cols * s + (cols + 1) * 2) + "px";
+    for (var i = 0; i < cells.length; i++) {
+      cells[i].style.height = s + "px";
+      cells[i].style.fontSize = Math.round(s * 0.53) + "px";
+    }
   }
 
   function paint(i) {
     var el = cells[i];
     var cls = "cell";
+    var text = "";
 
     if (open[i]) {
       cls += " open";
@@ -268,29 +331,22 @@
       if ((r + c) % 2 === 0) cls += " even";
       if (mine[i]) {
         cls += " mine";
-        el.textContent = "💣";
+        text = "💣";
       } else if (count[i] > 0) {
         cls += " c" + count[i];
-        el.textContent = String(count[i]);
-      } else {
-        el.textContent = "";
+        text = String(count[i]);
       }
     } else if (flag[i]) {
-      el.textContent = "🚩";
-    } else {
-      el.textContent = "";
+      text = "🚩";
     }
 
     el.className = cls;
-  }
-
-  function paintAll() {
-    for (var i = 0; i < cells.length; i++) paint(i);
+    el.innerHTML = text;
   }
 
   function updateStatus() {
-    minesEl.textContent = "💣 " + (mineCount - flagCount);
-    timerEl.textContent = "⏱ " + elapsed;
+    minesEl.innerHTML = "💣 " + (mineCount - flagCount);
+    timerEl.innerHTML = "⏱ " + elapsed;
   }
 
   // ---- タイマー --------------------------------------------------------
@@ -320,12 +376,12 @@
     if (mine[i]) {
       open[i] = 1;
       paint(i);
-      cells[i].classList.add("mine-hit");
+      cells[i].className += " mine-hit";
       lose();
       return;
     }
 
-    // 0 マスは幅優先で連鎖的に開く
+    // 空きマスは連鎖的に開く
     var stack = [i];
     while (stack.length) {
       var cur = stack.pop();
@@ -375,12 +431,12 @@
         open[i] = 1;
         paint(i);
       } else if (!mine[i] && flag[i]) {
-        cells[i].classList.add("wrong");
-        cells[i].textContent = "✖";
+        cells[i].className += " wrong";
+        cells[i].innerHTML = "✖";
       }
     }
-    resetEl.textContent = "😵";
-    messageEl.textContent = "ドカン！ 地雷を踏みました";
+    resetEl.innerHTML = "😵";
+    messageEl.innerHTML = "ドカン！ 地雷を踏みました";
     messageEl.className = "message lose";
   }
 
@@ -392,29 +448,38 @@
       if (mine[i] && !flag[i]) { flag[i] = 1; flagCount++; paint(i); }
     }
     updateStatus();
-    resetEl.textContent = "😎";
-    messageEl.textContent = "クリア！ タイム " + elapsed + " 秒";
+    resetEl.innerHTML = "😎";
+    messageEl.innerHTML = "クリア！ タイム " + elapsed + " 秒";
     messageEl.className = "message win";
   }
 
   // ---- 入力 ------------------------------------------------------------
-  function cellIndexFrom(target) {
-    var el = target.closest ? target.closest(".cell") : null;
-    return el ? Number(el.dataset.i) : -1;
+  // Element.closest がない古いブラウザでも動くように自前で親をたどる
+  function cellIndexFrom(node) {
+    while (node && node !== boardEl) {
+      if (node.nodeType === 1 && node.getAttribute) {
+        var v = node.getAttribute("data-i");
+        if (v !== null) return Number(v);
+      }
+      node = node.parentNode;
+    }
+    return -1;
   }
 
-  boardEl.addEventListener("click", function (e) {
+  boardEl.onclick = function (e) {
     if (longPressFired) { longPressFired = false; return; }
-    var i = cellIndexFrom(e.target);
+    var i = cellIndexFrom((e || window.event).target || (e || window.event).srcElement);
     if (i < 0) return;
     if (open[i]) chord(i); else reveal(i);
-  });
+  };
 
-  boardEl.addEventListener("contextmenu", function (e) {
-    e.preventDefault();
-    var i = cellIndexFrom(e.target);
+  boardEl.oncontextmenu = function (e) {
+    e = e || window.event;
+    if (e.preventDefault) e.preventDefault();
+    var i = cellIndexFrom(e.target || e.srcElement);
     if (i >= 0) toggleFlag(i);
-  });
+    return false;
+  };
 
   // スマホ: 長押しで旗
   var pressTimer = null, longPressFired = false;
@@ -427,40 +492,53 @@
       longPressFired = true;
       toggleFlag(i);
     }, 400);
-  }, { passive: true });
+  }, false);
 
   function cancelPress() {
     if (pressTimer !== null) { clearTimeout(pressTimer); pressTimer = null; }
   }
-  boardEl.addEventListener("touchend", cancelPress);
+  boardEl.addEventListener("touchend", cancelPress, false);
   boardEl.addEventListener("touchmove", function () {
     cancelPress();
     longPressFired = false;
-  });
+  }, false);
   boardEl.addEventListener("touchcancel", function () {
     cancelPress();
     longPressFired = false;
-  });
+  }, false);
 
-  resetEl.addEventListener("click", newGame);
+  resetEl.onclick = newGame;
+
+  window.onresize = function () { if (cells) applyBoardSize(); };
 
   // ---- 難易度ボタン ----------------------------------------------------
-  Object.keys(LEVELS).forEach(function (key) {
-    var b = document.createElement("button");
-    b.textContent = LEVELS[key].label;
-    b.dataset.level = key;
-    if (key === level) b.className = "active";
-    b.addEventListener("click", function () {
-      level = key;
-      Array.prototype.forEach.call(levelsEl.children, function (x) {
-        x.className = x.dataset.level === key ? "active" : "";
-      });
-      newGame();
-    });
-    levelsEl.appendChild(b);
-  });
+  for (var li = 0; li < LEVELS.length; li++) {
+    (function (cfg) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = cfg.label;
+      b.setAttribute("data-level", cfg.key);
+      if (cfg.key === level) b.className = "active";
+      b.onclick = function () {
+        level = cfg.key;
+        var bs = levelsEl.getElementsByTagName("button");
+        for (var k = 0; k < bs.length; k++) {
+          bs[k].className = bs[k].getAttribute("data-level") === cfg.key ? "active" : "";
+        }
+        newGame();
+      };
+      levelsEl.appendChild(b);
+    })(LEVELS[li]);
+  }
 
   newGame();
+
+  // オフラインでも遊べるようにする (未対応のブラウザでは何も起きない)
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
 })();
 </script>
 </body>
