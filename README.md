@@ -35,6 +35,12 @@
 
 ## 公開
 
-`.github/workflows/pages.yml` が、デフォルトブランチへの push のたびに
+`.github/workflows/pages.yml` が、`main` と作業ブランチへの push のたびに
 リポジトリの中身をそのまま GitHub Pages へデプロイします。
 ビルド手順はありません（静的ファイルのみ）。
+
+- リポジトリの Settings → Pages の Source は **GitHub Actions**。
+- デプロイできるブランチは `github-pages` 環境の Deployment branches で制限されています。
+  ここに載っていないブランチから実行すると、ジョブは開始前に
+  `not allowed to deploy to github-pages due to environment protection rules`
+  で失敗します。
