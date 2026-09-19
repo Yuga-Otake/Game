@@ -51,10 +51,36 @@
     -webkit-touch-callout: none;
   }
 
-  h1 { font-size: 24px; margin: 2px 0 14px; font-weight: 700; letter-spacing: .04em; }
+  /* 右上の音ボタンに文字がかぶらないよう、左右に同じ余白をとる */
+  h1 { font-size: 24px; margin: 2px 0 12px; padding: 0 70px; font-weight: 700; letter-spacing: .04em; }
+  @media (max-width: 380px) {
+    h1 { font-size: 20px; padding: 0 64px; }
+    #sound { width: 56px; height: 52px; font-size: 21px; }
+  }
+
+  /* ---- 音のオン・オフ ---- */
+  #sound {
+    position: absolute;
+    right: 12px;
+    top: 10px;
+    top: calc(10px + constant(safe-area-inset-top));
+    top: calc(10px + env(safe-area-inset-top));
+    font-family: inherit;
+    font-size: 24px;
+    line-height: 1;
+    width: 62px;
+    height: 56px;
+    padding: 0;
+    background: #ffffff;
+    background: var(--panel);
+    border: 3px solid #d9cdb2;
+    border: 3px solid var(--line);
+    border-radius: 14px;
+    cursor: pointer;
+  }
 
   /* ---- タブ ---- */
-  .tabs { margin: 0 0 18px; }
+  .tabs { margin: 0 0 10px; }
   .tab {
     display: inline-block;
     font-family: inherit;
@@ -81,19 +107,25 @@
     color: #fff;
   }
 
-  /* ---- 共通パーツ ---- */
-  .score {
-    font-size: 24px;
-    font-weight: 700;
+  /* ---- はなまるの記録 ---- */
+  .stamps {
+    font-size: 17px;
+    color: #6d6355;
+    color: var(--sub);
     margin: 0 0 14px;
+    min-height: 26px;
   }
+  .stamps .marks { font-size: 22px; letter-spacing: .06em; }
+
+  /* ---- 共通パーツ ---- */
+  .score { font-size: 24px; font-weight: 700; margin: 0 0 12px; }
   .score b { color: #e07a2f; color: var(--accent); font-size: 30px; }
   .msg {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
     color: #3f8f4f;
     color: var(--good);
-    min-height: 34px;
+    min-height: 38px;
     margin: 16px 0 6px;
   }
   .big {
@@ -107,7 +139,7 @@
     border: 3px solid #d9cdb2;
     border: 3px solid var(--line);
     border-radius: 14px;
-    padding: 14px 28px;
+    padding: 14px 24px;
     margin: 6px 4px 0;
     min-height: 62px;
     cursor: pointer;
@@ -120,7 +152,18 @@
     border-color: var(--accent);
     color: #fff;
   }
-  .sizes { margin: 0 0 14px; }
+  .big.icon { font-size: 28px; padding: 10px 18px; min-width: 76px; }
+
+  .ctrl { margin: 0 0 10px; }
+  .ctrl .label {
+    display: inline-block;
+    font-size: 17px;
+    color: #6d6355;
+    color: var(--sub);
+    margin: 0 6px 0 0;
+    vertical-align: middle;
+  }
+  .ctrl .big { margin-top: 0; margin-bottom: 6px; vertical-align: middle; }
   .note { font-size: 16px; color: #6d6355; color: var(--sub); margin: 18px 0 0; line-height: 1.7; }
 
   table.board {
@@ -143,16 +186,18 @@
   .hole .mole { visibility: hidden; }
   .hole.up .mole { visibility: visible; }
   .hole.up { background: #d9c8a0; }
+  .hole.gold { background: #ffe9a8; border-color: #e8b53c; }
   .hole .pop {
     position: absolute;
     left: 0;
     right: 0;
-    top: 4px;
+    top: 2px;
     color: #3f8f4f;
     color: var(--good);
     font-weight: 700;
     visibility: hidden;
   }
+  .hole.hit { background: #dff0dd; border-color: #8cc094; }
   .hole.hit .pop { visibility: visible; }
 
   /* ---- しんけいすいじゃく ---- */
@@ -173,9 +218,15 @@
   }
   .card.open .face, .card.done .face { visibility: visible; }
   .card.done { background: #dff0dd; border-color: #8cc094; }
+
+  /* ---- おいわいの紙ふぶき ---- */
+  #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; }
+  #confetti span { position: fixed; }
 </style>
 </head>
 <body>
+
+<button type="button" id="sound" title="おと">🔊</button>
 
 <h1>かんたん ゲーム</h1>
 
@@ -184,35 +235,49 @@
   <button type="button" class="tab" id="tab-memory">🎴 しんけいすいじゃく</button>
 </div>
 
+<p class="stamps" id="stamps"></p>
+
 <!-- もぐらたたき -->
 <div id="game-mogura">
   <p class="score">たたいた かず　<b id="mogura-score">0</b> / 10</p>
+  <div class="ctrl"><span class="label">はやさ</span><span id="mogura-speeds"></span></div>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
-  <button type="button" class="big" id="mogura-reset">さいしょから</button>
-  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>いそがなくて だいじょうぶです。</p>
+  <button type="button" class="big" id="mogura-reset">もういちど</button>
+  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>いそがなくて だいじょうぶです。<br>ときどき <b>きんのもぐら</b> が でてきます（3ぴきぶん）。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
 <div id="game-memory" style="display:none">
   <p class="score">めくった かいすう　<b id="memory-score">0</b></p>
-  <div class="sizes" id="memory-sizes"></div>
+  <div class="ctrl"><span class="label">まいすう</span><span id="memory-sizes"></span></div>
+  <div class="ctrl"><span class="label">えがら</span><span id="memory-themes"></span></div>
   <table class="board" id="memory-board"><tbody id="memory-body"></tbody></table>
   <p class="msg" id="memory-msg"></p>
-  <button type="button" class="big" id="memory-reset">さいしょから</button>
+  <button type="button" class="big" id="memory-reset">もういちど</button>
   <p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。</p>
 </div>
+
+<div id="confetti"></div>
 
 <script>
 (function () {
   "use strict";
 
   function $(id) { return document.getElementById(id); }
-
-  // タップと同じ要領で、古い環境でも拾えるように click を使う
   function onTap(el, fn) { el.onclick = fn; }
 
-  // 画面の幅から、マスの大きさを決める
+  // 古い環境やプライベートブラウズでも落ちないように、保存は必ず try で包む
+  function load(key, dflt) {
+    try {
+      var v = window.localStorage.getItem("asobi-" + key);
+      return v === null ? dflt : v;
+    } catch (e) { return dflt; }
+  }
+  function save(key, value) {
+    try { window.localStorage.setItem("asobi-" + key, String(value)); } catch (e) {}
+  }
+
   function fitSize(cols, max, spacing) {
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     var avail = Math.min(vw - 20, 620);
@@ -223,16 +288,171 @@
   }
 
   // ============================================================
+  // おと
+  // ============================================================
+  var AudioCtx = window.AudioContext || window.webkitAudioContext;
+  var actx = null;
+  var soundOn = load("sound", "1") === "1";
+  var soundBtn = $("sound");
+
+  function paintSoundButton() { soundBtn.innerHTML = soundOn ? "🔊" : "🔇"; }
+
+  function audio() {
+    if (!AudioCtx) return null;
+    if (!actx) { try { actx = new AudioCtx(); } catch (e) { actx = null; } }
+    // iOS は画面を触ったあとでないと音が出ないので、その都度起こす
+    if (actx && actx.state === "suspended" && actx.resume) {
+      try { actx.resume(); } catch (e) {}
+    }
+    return actx;
+  }
+
+  // freqs を順番に鳴らす。鳴らせない環境では黙って何もしない
+  function play(freqs, dur, type, gain) {
+    if (!soundOn) return;
+    var ctx = audio();
+    if (!ctx) return;
+    try {
+      var t0 = ctx.currentTime;
+      for (var i = 0; i < freqs.length; i++) {
+        var osc = ctx.createOscillator();
+        var amp = ctx.createGain();
+        osc.type = type || "sine";
+        osc.frequency.value = freqs[i];
+        var at = t0 + i * dur;
+        amp.gain.setValueAtTime(0.0001, at);
+        amp.gain.linearRampToValueAtTime(gain || 0.16, at + 0.012);
+        amp.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        osc.connect(amp);
+        amp.connect(ctx.destination);
+        if (osc.start) { osc.start(at); osc.stop(at + dur + 0.02); }
+        else if (osc.noteOn) { osc.noteOn(at); osc.noteOff(at + dur + 0.02); }
+      }
+    } catch (e) {}
+  }
+
+  function soundHit()   { play([740, 520], 0.09, "sine", 0.2); }
+  function soundGold()  { play([784, 988, 1319], 0.1, "sine", 0.2); }
+  function soundFlip()  { play([420], 0.05, "triangle", 0.1); }
+  function soundMatch() { play([880, 1175], 0.11, "sine", 0.18); }
+  function soundClear() { play([523, 659, 784, 1047], 0.15, "sine", 0.2); }
+
+  onTap(soundBtn, function () {
+    soundOn = !soundOn;
+    save("sound", soundOn ? "1" : "0");
+    paintSoundButton();
+    if (soundOn) soundMatch();
+  });
+  paintSoundButton();
+
+  // ============================================================
+  // ごほうび (紙ふぶき / ほめことば / はなまる)
+  // ============================================================
+  var PRAISE = ["じょうず！", "すごい！", "やったね！", "おみごと！", "はなまる！"];
+  function praise() { return PRAISE[Math.floor(Math.random() * PRAISE.length)]; }
+
+  var confBox = $("confetti"), confTimer = null;
+
+  function confetti() {
+    var chars = ["🌸", "🎉", "💮", "⭐", "🎊", "🍀"];
+    var height = (window.innerHeight || 800) + 80;
+    var items = [];
+
+    confBox.innerHTML = "";
+    for (var i = 0; i < 26; i++) {
+      var s = document.createElement("span");
+      s.innerHTML = chars[Math.floor(Math.random() * chars.length)];
+      s.style.left = Math.floor(Math.random() * 92) + "%";
+      s.style.fontSize = (22 + Math.floor(Math.random() * 20)) + "px";
+      var y = -40 - Math.floor(Math.random() * 260);
+      s.style.top = y + "px";
+      confBox.appendChild(s);
+      items.push({ el: s, y: y, v: 13 + Math.random() * 13 });
+    }
+
+    if (confTimer !== null) clearInterval(confTimer);
+    confTimer = setInterval(function () {
+      var alive = 0;
+      for (var k = 0; k < items.length; k++) {
+        if (items[k].y > height) continue;
+        items[k].y += items[k].v;
+        items[k].el.style.top = items[k].y + "px";
+        alive++;
+      }
+      if (!alive) {
+        clearInterval(confTimer);
+        confTimer = null;
+        confBox.innerHTML = "";
+      }
+    }, 33);
+  }
+
+  var stampsEl = $("stamps");
+  var stamps = Number(load("clears", "0")) || 0;
+
+  function paintStamps() {
+    if (stamps <= 0) {
+      stampsEl.innerHTML = "クリアすると はなまるが たまります";
+      return;
+    }
+    var shown = stamps > 10 ? 10 : stamps;
+    var marks = "";
+    for (var i = 0; i < shown; i++) marks += "💮";
+    stampsEl.innerHTML = '<span class="marks">' + marks + "</span>　" + stamps + "かい クリア";
+  }
+
+  function celebrate(el, text) {
+    stamps++;
+    save("clears", stamps);
+    paintStamps();
+    el.innerHTML = text + " " + praise();
+    confetti();
+    soundClear();
+  }
+
+  paintStamps();
+
+  // ============================================================
   // もぐらたたき
   // ============================================================
   var MO_COLS = 3, MO_ROWS = 2, MO_GOAL = 10;
-  var MO_UP_MS = 2200;   // もぐらが出ている時間
-  var MO_GAP_MS = 700;   // つぎに出るまでの間
+  var MO_SPEEDS = [
+    { key: "slow", label: "ゆっくり", up: 2800, gap: 900 },
+    { key: "normal", label: "ふつう", up: 1900, gap: 600 }
+  ];
 
   var moBoard = $("mogura-board"), moBody = $("mogura-body");
-  var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg");
-  var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1;
+  var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg"), moSpeedsEl = $("mogura-speeds");
+  var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1, moGold = false;
   var moUpTimer = null, moNextTimer = null, moPopTimer = null, moRunning = false;
+  var moSpeed = MO_SPEEDS[0];
+
+  (function restoreSpeed() {
+    var key = load("speed", "slow");
+    for (var i = 0; i < MO_SPEEDS.length; i++) if (MO_SPEEDS[i].key === key) moSpeed = MO_SPEEDS[i];
+  })();
+
+  function moBuildSpeedButtons() {
+    for (var i = 0; i < MO_SPEEDS.length; i++) {
+      (function (cfg) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "big" + (cfg === moSpeed ? " on" : "");
+        b.innerHTML = cfg.label;
+        b.setAttribute("data-speed", cfg.key);
+        onTap(b, function () {
+          moSpeed = cfg;
+          save("speed", cfg.key);
+          var bs = moSpeedsEl.getElementsByTagName("button");
+          for (var k = 0; k < bs.length; k++) {
+            bs[k].className = "big" + (bs[k].getAttribute("data-speed") === cfg.key ? " on" : "");
+          }
+          moStart();
+        });
+        moSpeedsEl.appendChild(b);
+      })(MO_SPEEDS[i]);
+    }
+  }
 
   function moBuild() {
     while (moBody.firstChild) moBody.removeChild(moBody.firstChild);
@@ -253,13 +473,13 @@
   }
 
   function moResize() {
+    if (!moHoles.length) return;
     var s = fitSize(MO_COLS, 140, 10);
     moBoard.style.width = (MO_COLS * s + (MO_COLS + 1) * 10) + "px";
     for (var i = 0; i < moHoles.length; i++) {
       moHoles[i].style.height = s + "px";
       moHoles[i].style.fontSize = Math.round(s * 0.5) + "px";
-      var pop = moHoles[i].getElementsByTagName("span")[1];
-      pop.style.fontSize = Math.round(s * 0.22) + "px";
+      moHoles[i].getElementsByTagName("span")[1].style.fontSize = Math.round(s * 0.2) + "px";
     }
   }
 
@@ -271,8 +491,10 @@
   function moHideCurrent() {
     if (moCurrent >= 0) {
       moHoles[moCurrent].className = "hole";
+      moHoles[moCurrent].getElementsByTagName("span")[0].innerHTML = "🐹";
       moCurrent = -1;
     }
+    moGold = false;
   }
 
   function moSpawn() {
@@ -282,12 +504,20 @@
     while (moHoles.length > 1 && i === moLast);
     moLast = i;
     moCurrent = i;
-    moHoles[i].className = "hole up";
-    // たたかなくても、しばらくすると ひっこむ (失敗にはならない)
+
+    // 4回に1回くらい きんのもぐら。ただし あと1ぴきの時は ふつうのもぐら
+    moGold = (MO_GOAL - moScore) > 2 && Math.random() < 0.25;
+
+    var hole = moHoles[i];
+    hole.getElementsByTagName("span")[0].innerHTML = moGold ? "✨🐹" : "🐹";
+    hole.getElementsByTagName("span")[1].innerHTML = moGold ? "＋3" : "＋1";
+    hole.className = moGold ? "hole up gold" : "hole up";
+
+    // たたかなくても しばらくすると ひっこむ (失敗にはならない)
     moUpTimer = setTimeout(function () {
       moHideCurrent();
-      moNextTimer = setTimeout(moSpawn, MO_GAP_MS);
-    }, MO_UP_MS);
+      moNextTimer = setTimeout(moSpawn, moSpeed.gap);
+    }, moSpeed.up);
   }
 
   function moHit(el) {
@@ -295,20 +525,28 @@
     if (moCurrent < 0 || moHoles[moCurrent] !== el) return;   // 空の穴は なにも起きない
 
     moClearTimers();
-    moScore++;
+    var gained = moGold ? 3 : 1;
+    moScore += gained;
+    if (moScore > MO_GOAL) moScore = MO_GOAL;
     moScoreEl.innerHTML = String(moScore);
 
+    if (moGold) soundGold(); else soundHit();
+
     el.className = "hole hit";
+    el.getElementsByTagName("span")[0].innerHTML = "🐹";
     if (moPopTimer !== null) clearTimeout(moPopTimer);
-    moPopTimer = setTimeout(function () { el.className = "hole"; }, 400);
+    (function (hole) {
+      moPopTimer = setTimeout(function () { hole.className = "hole"; }, 450);
+    })(el);
     moCurrent = -1;
+    moGold = false;
 
     if (moScore >= MO_GOAL) {
       moRunning = false;
-      moMsgEl.innerHTML = "おめでとう！ " + MO_GOAL + "ぴき たたけました 🎉";
+      celebrate(moMsgEl, "ぜんぶ たたけました！");
       return;
     }
-    moNextTimer = setTimeout(moSpawn, MO_GAP_MS);
+    moNextTimer = setTimeout(moSpawn, moSpeed.gap);
   }
 
   function moStart() {
@@ -317,9 +555,12 @@
     moLast = -1;
     moScoreEl.innerHTML = "0";
     moMsgEl.innerHTML = "";
-    for (var i = 0; i < moHoles.length; i++) moHoles[i].className = "hole";
+    for (var i = 0; i < moHoles.length; i++) {
+      moHoles[i].className = "hole";
+      moHoles[i].getElementsByTagName("span")[0].innerHTML = "🐹";
+    }
     moRunning = true;
-    moNextTimer = setTimeout(moSpawn, MO_GAP_MS);
+    moNextTimer = setTimeout(moSpawn, moSpeed.gap);
   }
 
   function moStop() {
@@ -334,19 +575,32 @@
   // ============================================================
   // しんけいすいじゃく
   // ============================================================
-  var MEM_FACES = ["🌸", "🐱", "🍎", "🐶", "🍓", "🌻"];
+  var MEM_THEMES = [
+    { key: "hana", label: "🌸", faces: ["🌸", "🌻", "🌷", "🌹", "🍀", "🌼"] },
+    { key: "animal", label: "🐱", faces: ["🐱", "🐶", "🐰", "🐼", "🐤", "🐸"] },
+    { key: "fruit", label: "🍎", faces: ["🍎", "🍓", "🍇", "🍊", "🍑", "🍉"] }
+  ];
   var MEM_SIZES = [
-    { label: "4まい", cards: 4,  cols: 2 },
-    { label: "8まい", cards: 8,  cols: 4 },
-    { label: "12まい", cards: 12, cols: 4 }
+    { cards: 4,  cols: 2, label: "4まい" },
+    { cards: 8,  cols: 4, label: "8まい" },
+    { cards: 12, cols: 4, label: "12まい" }
   ];
 
   var meBoard = $("memory-board"), meBody = $("memory-body");
-  var meScoreEl = $("memory-score"), meMsgEl = $("memory-msg"), meSizesEl = $("memory-sizes");
+  var meScoreEl = $("memory-score"), meMsgEl = $("memory-msg");
+  var meSizesEl = $("memory-sizes"), meThemesEl = $("memory-themes");
   var meCells = [], meFaces = [], meDone = [], meOpen = [];
-  var meFlips = 0, meBusy = false, meBackTimer = null, meSize = MEM_SIZES[1], meCols = 4;
+  var meFlips = 0, meBusy = false, meBackTimer = null;
+  var meSize = MEM_SIZES[1], meTheme = MEM_THEMES[0], meCols = 4;
 
-  function meBuildSizeButtons() {
+  (function restoreMemory() {
+    var cards = Number(load("cards", "8"));
+    for (var i = 0; i < MEM_SIZES.length; i++) if (MEM_SIZES[i].cards === cards) meSize = MEM_SIZES[i];
+    var theme = load("theme", "hana");
+    for (var j = 0; j < MEM_THEMES.length; j++) if (MEM_THEMES[j].key === theme) meTheme = MEM_THEMES[j];
+  })();
+
+  function meBuildButtons() {
     for (var i = 0; i < MEM_SIZES.length; i++) {
       (function (cfg) {
         var b = document.createElement("button");
@@ -356,6 +610,7 @@
         b.setAttribute("data-cards", cfg.cards);
         onTap(b, function () {
           meSize = cfg;
+          save("cards", cfg.cards);
           var bs = meSizesEl.getElementsByTagName("button");
           for (var k = 0; k < bs.length; k++) {
             bs[k].className = "big" + (Number(bs[k].getAttribute("data-cards")) === cfg.cards ? " on" : "");
@@ -364,6 +619,26 @@
         });
         meSizesEl.appendChild(b);
       })(MEM_SIZES[i]);
+    }
+
+    for (var t = 0; t < MEM_THEMES.length; t++) {
+      (function (cfg) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "big icon" + (cfg === meTheme ? " on" : "");
+        b.innerHTML = cfg.label;
+        b.setAttribute("data-theme", cfg.key);
+        onTap(b, function () {
+          meTheme = cfg;
+          save("theme", cfg.key);
+          var bs = meThemesEl.getElementsByTagName("button");
+          for (var k = 0; k < bs.length; k++) {
+            bs[k].className = "big icon" + (bs[k].getAttribute("data-theme") === cfg.key ? " on" : "");
+          }
+          meStart();
+        });
+        meThemesEl.appendChild(b);
+      })(MEM_THEMES[t]);
     }
   }
 
@@ -378,12 +653,14 @@
     var pairs = meSize.cards / 2;
     meCols = meSize.cols;
 
-    // 絵を ペアぶん用意して まぜる
     meFaces = [];
-    for (var p = 0; p < pairs; p++) { meFaces.push(MEM_FACES[p]); meFaces.push(MEM_FACES[p]); }
+    for (var p = 0; p < pairs; p++) {
+      meFaces.push(meTheme.faces[p]);
+      meFaces.push(meTheme.faces[p]);
+    }
     for (var i = meFaces.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
-      var t = meFaces[i]; meFaces[i] = meFaces[j]; meFaces[j] = t;
+      var tmp = meFaces[i]; meFaces[i] = meFaces[j]; meFaces[j] = tmp;
     }
 
     meDone = [];
@@ -425,6 +702,7 @@
     if (meOpen.length && meOpen[0] === i) return;   // 同じカードの 2度めくりは無効
 
     meCells[i].className = "card open";
+    soundFlip();
     meFlips++;
     meScoreEl.innerHTML = String(meFlips);
     meOpen.push(i);
@@ -438,8 +716,12 @@
       meCells[a].className = "card done";
       meCells[b].className = "card done";
       meOpen = [];
-      for (var k = 0; k < meDone.length; k++) if (!meDone[k]) return;
-      meMsgEl.innerHTML = "ぜんぶ そろいました！ 🎉";
+      soundMatch();
+
+      for (var k = 0; k < meDone.length; k++) {
+        if (!meDone[k]) { meMsgEl.innerHTML = "そろった！"; return; }
+      }
+      celebrate(meMsgEl, "ぜんぶ そろいました！");
     } else {
       meBusy = true;
       meBackTimer = setTimeout(function () {
@@ -483,8 +765,9 @@
   window.onresize = function () { moResize(); meResize(); };
 
   // ---- 起動 ----
+  moBuildSpeedButtons();
   moBuild();
-  meBuildSizeButtons();
+  meBuildButtons();
   meStart();
   moStart();
 
