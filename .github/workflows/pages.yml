@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [claude/minesweeper-game-950hy8]
+    branches: [main, claude/minesweeper-game-950hy8]
   workflow_dispatch:
 
 permissions:
