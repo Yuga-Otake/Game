@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>マインスイーパー</title>
+<style>
+  :root {
+    --bg: #1e2430;
+    --panel: #2a3240;
+    --cell: #4a5568;
+    --cell-hi: #5a6578;
+    --open: #d8dde5;
+    --open-alt: #ccd2dc;
+    --line: #1a1f29;
+    --text: #e8ecf2;
+    --accent: #ffcc44;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Helvetica Neue", Arial, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px 32px;
+    gap: 14px;
+  }
+  h1 {
+    font-size: 20px;
+    letter-spacing: .08em;
+    margin: 4px 0 0;
+    font-weight: 600;
+  }
+  .levels { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .levels button {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid #3c4657;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .levels button.active { background: var(--accent); color: #23282f; border-color: var(--accent); font-weight: 700; }
+  .status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-width: 260px;
+  }
+  .counter {
+    font-variant-numeric: tabular-nums;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    min-width: 62px;
+    text-align: center;
+  }
+  #reset {
+    font-size: 24px;
+    line-height: 1;
+    background: var(--cell);
+    border: none;
+    border-radius: 8px;
+    width: 46px;
+    height: 40px;
+    cursor: pointer;
+  }
+  #reset:active { background: var(--cell-hi); }
+  .board-wrap { overflow: auto; max-width: 100%; padding-bottom: 4px; }
+  #board {
+    display: grid;
+    gap: 2px;
+    background: var(--line);
+    padding: 2px;
+    border-radius: 6px;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .cell {
+    width: 30px;
+    height: 30px;
+    border: none;
+    padding: 0;
+    border-radius: 3px;
+    background: var(--cell);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .cell:hover:not(.open) { background: var(--cell-hi); }
+  .cell.open {
+    background: var(--open);
+    cursor: default;
+  }
+  .cell.open.even { background: var(--open-alt); }
+  .cell.mine { background: #d9534f; }
+  .cell.mine-hit { background: #ff3b30; }
+  .cell.wrong { background: #8a5a5a; }
+  .c1 { color: #1976d2; } .c2 { color: #2e7d32; } .c3 { color: #d32f2f; }
+  .c4 { color: #512da8; } .c5 { color: #a1450d; } .c6 { color: #00838f; }
+  .c7 { color: #37474f; } .c8 { color: #757575; }
+  .message { font-size: 15px; min-height: 22px; font-weight: 600; }
+  .message.win { color: #7ee08a; }
+  .message.lose { color: #ff8a80; }
+  .help { font-size: 12px; color: #97a1b2; text-align: center; line-height: 1.7; max-width: 340px; }
+  @media (max-width: 480px) {
+    .cell { width: 26px; height: 26px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+  <h1>マインスイーパー</h1>
+
+  <div class="levels" id="levels"></div>
+
+  <div class="status">
+    <div class="counter" id="mines">💣 0</div>
+    <button id="reset" title="リセット">🙂</button>
+    <div class="counter" id="timer">⏱ 0</div>
+  </div>
+
+  <div class="board-wrap"><div id="board"></div></div>
+
+  <div class="message" id="message"></div>
+
+  <div class="help">
+    左クリック: 開く / 右クリック: 旗 🚩<br>
+    数字マスをクリック: 周囲の旗が足りていれば一斉に開く<br>
+    スマホ: タップで開く / 長押しで旗
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LEVELS = {
+    easy:   { label: "初級 9×9",      rows: 9,  cols: 9,  mines: 10 },
+    normal: { label: "中級 16×16",    rows: 16, cols: 16, mines: 40 },
+    hard:   { label: "上級 16×30",    rows: 16, cols: 30, mines: 99 }
+  };
+
+  var boardEl   = document.getElementById("board");
+  var minesEl   = document.getElementById("mines");
+  var timerEl   = document.getElementById("timer");
+  var resetEl   = document.getElementById("reset");
+  var messageEl = document.getElementById("message");
+  var levelsEl  = document.getElementById("levels");
+
+  var level = "easy";
+  var rows, cols, mineCount;
+  var mine, open, flag, count;   // 盤面データ (1次元配列)
+  var cells;                     // DOM 要素
+  var started, over, openedCount, flagCount;
+  var timerId = null, elapsed = 0;
+
+  // ---- 盤面の生成 ------------------------------------------------------
+  function idx(r, c) { return r * cols + c; }
+
+  function forEachNeighbor(i, fn) {
+    var r = (i / cols) | 0, c = i % cols;
+    for (var dr = -1; dr <= 1; dr++) {
+      for (var dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        var nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+        fn(idx(nr, nc));
+      }
+    }
+  }
+
+  function newGame() {
+    var cfg = LEVELS[level];
+    rows = cfg.rows; cols = cfg.cols; mineCount = cfg.mines;
+
+    var n = rows * cols;
+    mine  = new Uint8Array(n);
+    open  = new Uint8Array(n);
+    flag  = new Uint8Array(n);
+    count = new Uint8Array(n);
+
+    started = false;
+    over = false;
+    openedCount = 0;
+    flagCount = 0;
+
+    stopTimer();
+    elapsed = 0;
+
+    resetEl.textContent = "🙂";
+    messageEl.textContent = "";
+    messageEl.className = "message";
+
+    render();
+    updateStatus();
+  }
+
+  // 最初のクリックとその周囲には地雷を置かない
+  function placeMines(safeIndex) {
+    var n = rows * cols;
+    var safe = {};
+    safe[safeIndex] = true;
+    forEachNeighbor(safeIndex, function (j) { safe[j] = true; });
+
+    var pool = [];
+    for (var i = 0; i < n; i++) if (!safe[i]) pool.push(i);
+
+    // 置ける枠が足りない場合 (極小盤) は安全域を縮める
+    var toPlace = Math.min(mineCount, pool.length);
+
+    for (var k = 0; k < toPlace; k++) {
+      var pick = k + Math.floor(Math.random() * (pool.length - k));
+      var tmp = pool[k]; pool[k] = pool[pick]; pool[pick] = tmp;
+      mine[pool[k]] = 1;
+    }
+
+    for (var m = 0; m < n; m++) {
+      if (mine[m]) continue;
+      var c = 0;
+      forEachNeighbor(m, function (j) { if (mine[j]) c++; });
+      count[m] = c;
+    }
+  }
+
+  // ---- 描画 ------------------------------------------------------------
+  function render() {
+    boardEl.style.gridTemplateColumns = "repeat(" + cols + ", auto)";
+    boardEl.textContent = "";
+    cells = new Array(rows * cols);
+
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < rows * cols; i++) {
+      var b = document.createElement("button");
+      b.className = "cell";
+      b.type = "button";
+      b.dataset.i = i;
+      cells[i] = b;
+      frag.appendChild(b);
+    }
+    boardEl.appendChild(frag);
+  }
+
+  function paint(i) {
+    var el = cells[i];
+    var cls = "cell";
+
+    if (open[i]) {
+      cls += " open";
+      var r = (i / cols) | 0, c = i % cols;
+      if ((r + c) % 2 === 0) cls += " even";
+      if (mine[i]) {
+        cls += " mine";
+        el.textContent = "💣";
+      } else if (count[i] > 0) {
+        cls += " c" + count[i];
+        el.textContent = String(count[i]);
+      } else {
+        el.textContent = "";
+      }
+    } else if (flag[i]) {
+      el.textContent = "🚩";
+    } else {
+      el.textContent = "";
+    }
+
+    el.className = cls;
+  }
+
+  function paintAll() {
+    for (var i = 0; i < cells.length; i++) paint(i);
+  }
+
+  function updateStatus() {
+    minesEl.textContent = "💣 " + (mineCount - flagCount);
+    timerEl.textContent = "⏱ " + elapsed;
+  }
+
+  // ---- タイマー --------------------------------------------------------
+  function startTimer() {
+    if (timerId !== null) return;
+    timerId = setInterval(function () {
+      elapsed++;
+      if (elapsed > 999) elapsed = 999;
+      updateStatus();
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerId !== null) { clearInterval(timerId); timerId = null; }
+  }
+
+  // ---- ゲーム操作 ------------------------------------------------------
+  function reveal(i) {
+    if (over || open[i] || flag[i]) return;
+
+    if (!started) {
+      started = true;
+      placeMines(i);
+      startTimer();
+    }
+
+    if (mine[i]) {
+      open[i] = 1;
+      paint(i);
+      cells[i].classList.add("mine-hit");
+      lose();
+      return;
+    }
+
+    // 0 マスは幅優先で連鎖的に開く
+    var stack = [i];
+    while (stack.length) {
+      var cur = stack.pop();
+      if (open[cur] || flag[cur]) continue;
+      open[cur] = 1;
+      openedCount++;
+      paint(cur);
+      if (count[cur] === 0) {
+        forEachNeighbor(cur, function (j) {
+          if (!open[j] && !flag[j] && !mine[j]) stack.push(j);
+        });
+      }
+    }
+
+    checkWin();
+  }
+
+  function toggleFlag(i) {
+    if (over || open[i]) return;
+    flag[i] = flag[i] ? 0 : 1;
+    flagCount += flag[i] ? 1 : -1;
+    paint(i);
+    updateStatus();
+  }
+
+  // 数字マスのコード打ち (周囲の旗が数字と一致したら残りを開く)
+  function chord(i) {
+    if (over || !open[i] || count[i] === 0) return;
+
+    var flags = 0;
+    forEachNeighbor(i, function (j) { if (flag[j]) flags++; });
+    if (flags !== count[i]) return;
+
+    var targets = [];
+    forEachNeighbor(i, function (j) { if (!flag[j] && !open[j]) targets.push(j); });
+    for (var k = 0; k < targets.length; k++) {
+      reveal(targets[k]);
+      if (over) return;
+    }
+  }
+
+  function lose() {
+    over = true;
+    stopTimer();
+    for (var i = 0; i < mine.length; i++) {
+      if (mine[i] && !flag[i]) {
+        open[i] = 1;
+        paint(i);
+      } else if (!mine[i] && flag[i]) {
+        cells[i].classList.add("wrong");
+        cells[i].textContent = "✖";
+      }
+    }
+    resetEl.textContent = "😵";
+    messageEl.textContent = "ドカン！ 地雷を踏みました";
+    messageEl.className = "message lose";
+  }
+
+  function checkWin() {
+    if (openedCount !== rows * cols - mineCount) return;
+    over = true;
+    stopTimer();
+    for (var i = 0; i < mine.length; i++) {
+      if (mine[i] && !flag[i]) { flag[i] = 1; flagCount++; paint(i); }
+    }
+    updateStatus();
+    resetEl.textContent = "😎";
+    messageEl.textContent = "クリア！ タイム " + elapsed + " 秒";
+    messageEl.className = "message win";
+  }
+
+  // ---- 入力 ------------------------------------------------------------
+  function cellIndexFrom(target) {
+    var el = target.closest ? target.closest(".cell") : null;
+    return el ? Number(el.dataset.i) : -1;
+  }
+
+  boardEl.addEventListener("click", function (e) {
+    if (longPressFired) { longPressFired = false; return; }
+    var i = cellIndexFrom(e.target);
+    if (i < 0) return;
+    if (open[i]) chord(i); else reveal(i);
+  });
+
+  boardEl.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+    var i = cellIndexFrom(e.target);
+    if (i >= 0) toggleFlag(i);
+  });
+
+  // スマホ: 長押しで旗
+  var pressTimer = null, longPressFired = false;
+
+  boardEl.addEventListener("touchstart", function (e) {
+    var i = cellIndexFrom(e.target);
+    if (i < 0) return;
+    longPressFired = false;
+    pressTimer = setTimeout(function () {
+      longPressFired = true;
+      toggleFlag(i);
+    }, 400);
+  }, { passive: true });
+
+  function cancelPress() {
+    if (pressTimer !== null) { clearTimeout(pressTimer); pressTimer = null; }
+  }
+  boardEl.addEventListener("touchend", cancelPress);
+  boardEl.addEventListener("touchmove", function () {
+    cancelPress();
+    longPressFired = false;
+  });
+  boardEl.addEventListener("touchcancel", function () {
+    cancelPress();
+    longPressFired = false;
+  });
+
+  resetEl.addEventListener("click", newGame);
+
+  // ---- 難易度ボタン ----------------------------------------------------
+  Object.keys(LEVELS).forEach(function (key) {
+    var b = document.createElement("button");
+    b.textContent = LEVELS[key].label;
+    b.dataset.level = key;
+    if (key === level) b.className = "active";
+    b.addEventListener("click", function () {
+      level = key;
+      Array.prototype.forEach.call(levelsEl.children, function (x) {
+        x.className = x.dataset.level === key ? "active" : "";
+      });
+      newGame();
+    });
+    levelsEl.appendChild(b);
+  });
+
+  newGame();
+})();
+</script>
+</body>
+</html>
