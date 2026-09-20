@@ -274,6 +274,7 @@
   /* ---- どうぶつゲーム ---- */
   .best { font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px; min-height: 22px; }
   .nextface { font-size: 32px; vertical-align: middle; }
+  .rank { font-size: 19px; font-weight: 700; color: #c2691f; vertical-align: middle; }
   .dex { margin: 0 auto 2px; max-width: 620px; line-height: 1.4; }
   .dex b { white-space: nowrap; font-weight: normal; }   /* 行のあたまが 矢印だけに ならないように */
   .dex span { font-size: 25px; vertical-align: middle; }
@@ -356,7 +357,7 @@
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
 <div id="game-animal" style="display:none">
   <div class="ctrl"><span class="label">なにで あそぶ</span><span id="animal-themes"></span></div>
-  <p class="score">てんすう　<b id="animal-score">0</b>　　つぎは　<span id="animal-next-face" class="nextface">🐭</span></p>
+  <p class="score">てんすう　<b id="animal-score">0</b>　<span id="animal-rank" class="rank"></span>　つぎは　<span id="animal-next-face" class="nextface">🐭</span></p>
   <p class="dex" id="animal-dex"></p>
   <p class="best" id="animal-best"></p>
   <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
@@ -1145,6 +1146,26 @@
   // いちばん 大きい 🐘 は 箱の 7わり ちかくを しめる。ここまで 大きいと
   // 🐘 が できた あとは すぐ いっぱいに なるが、🐘 が できること 自体が
   // クリアなので それで よい。
+  // てんすうに おうじた しょうごう。さかいめは じっさいに あそんだ
+  // てんすうの ちらばりから きめる (あとで 差し替え)
+  var AN_RANKS = [
+    { min: 60,   mark: "🌱", name: "しんじん" },
+    { min: 150,  mark: "⭐", name: "なかなか" },
+    { min: 260,  mark: "🎖", name: "じょうず" },
+    { min: 400,  mark: "🏅", name: "たつじん" },
+    { min: 600,  mark: "👑", name: "めいじん" }
+  ];
+
+  function anRankIndex(score) {
+    var r = -1;
+    for (var i = 0; i < AN_RANKS.length; i++) if (score >= AN_RANKS[i].min) r = i;
+    return r;
+  }
+  function anRankLabel(score) {
+    var i = anRankIndex(score);
+    return i < 0 ? "" : AN_RANKS[i].mark + " " + AN_RANKS[i].name;
+  }
+
   var AN_BASE = 0.055;
   var AN_STEPS = [1.41, 1.41, 1.41, 1.41, 1.41, 1.41];
   var AN_GRAVITY = 0.26;         // ゆっくり おちる
@@ -1168,8 +1189,27 @@
   var anW = 360, anH = 440, anDpr = 1;
   var anBodies = [], anSprites = [], anRadii = [];
   var anScore = 0, anBest = 0;   // anLoadTheme() が ゲームごとの きろくを 入れる
+  var anRankEl = $("animal-rank");
+  var anRankShown = -1;          // いま 出している しょうごう。あがったら しらせる
+
+  function anPaintScore() {
+    anScoreEl.innerHTML = String(anScore);
+    anRankEl.innerHTML = anRankLabel(anScore);
+
+    var now = anRankIndex(anScore);
+    if (now > anRankShown && anRankShown >= -1 && now >= 0 && anStarted) {
+      // しょうごうが あがった。おしまいの メッセージは じゃま しない
+      if (!anOver) {
+        anMsgEl.className = "msg";
+        anMsgEl.innerHTML = AN_RANKS[now].mark + " " + AN_RANKS[now].name + " に なりました！";
+        soundGold();
+      }
+    }
+    anRankShown = now;
+  }
   var anNext = 0, anOver = false, anOverCount = 0, anBiggestSeen = false;
   var anRaf = null, anRunning = false, anCooldown = 0;
+  var anStarted = false;         // はじまる まえの 書きかえで しょうごうを しらせない ための めじるし
 
   function anRadius(type) { return anRadii[type]; }
 
@@ -1367,7 +1407,7 @@
     anScore += anScoreFor(type);
     // いちばん 大きい どうぶつを つくれたら おおきな てんすう
     if (type + 1 >= AN_LAST) anScore += 100;
-    anScoreEl.innerHTML = String(anScore);
+    anPaintScore();
 
     anAdd(type + 1, x, y, 0, 0);
     if (type + 1 >= AN_LAST) {
@@ -1545,7 +1585,7 @@
   }
 
   function anPaintBest() {
-    var txt = anBest > 0 ? "（さいこう " + anBest + "てん" : "";
+    var txt = anBest > 0 ? "（さいこう " + anBest + "てん " + anRankLabel(anBest) : "";
     if (anBigMade > 0) txt += (txt ? "・" : "（") + anFaces()[AN_LAST] + " " + anBigMade + "こ";
     anBestEl.innerHTML = txt ? txt + "）" : "";
   }
@@ -1605,7 +1645,10 @@
     anOverCount = 0;
     anBiggestSeen = false;
     anCooldown = 0;
-    anScoreEl.innerHTML = "0";
+    anStarted = false;
+    anRankShown = anRankIndex(0);
+    anPaintScore();
+    anStarted = true;
     anMsgEl.innerHTML = "";
     anMsgEl.className = "msg";
     anPaintBest();
