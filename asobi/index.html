@@ -314,23 +314,25 @@
 
 <!-- もぐらたたき -->
 <div id="game-mogura">
-  <p class="score">たたいた かず　<b id="mogura-score">0</b> / 10</p>
+  <p class="score">たたいた かず　<b id="mogura-score">0</b> / 10　　⏱ <b id="mogura-time">0</b> びょう</p>
+  <p class="best" id="mogura-best"></p>
   <div class="ctrl"><span class="label">はやさ</span><span id="mogura-speeds"></span></div>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>いそがなくて だいじょうぶです。<br>ときどき <b>きんのもぐら</b> が でてきます（3びきぶん）。</p>
+  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>はやく さわれるほど てんすうが 高く なります。<br>おそくても てんすうは へりません。<br>ときどき <b>きんのもぐら</b> が でてきます（3びきぶん・てんすうも 3ばい）。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
 <div id="game-memory" style="display:none">
-  <p class="score">めくった かいすう　<b id="memory-score">0</b></p>
+  <p class="score">めくった かいすう　<b id="memory-score">0</b>　　⏱ <b id="memory-time">0</b> びょう</p>
+  <p class="best" id="memory-best"></p>
   <div class="ctrl"><span class="label">まいすう</span><span id="memory-sizes"></span></div>
   <div class="ctrl"><span class="label">えがら</span><span id="memory-themes"></span></div>
   <table class="board" id="memory-board"><tbody id="memory-body"></tbody></table>
   <p class="msg" id="memory-msg"></p>
   <button type="button" class="big" id="memory-reset">もういちど</button>
-  <p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。</p>
+  <p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。<br>はやく そろえるほど、むだな めくりが 少ないほど<br>てんすうが 高く なります。</p>
 </div>
 
 <!-- なかまはずれさがし -->
@@ -554,7 +556,46 @@
 
   var moBoard = $("mogura-board"), moBody = $("mogura-body");
   var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg");
+  // たたくまでが はやいほど たくさん もらえる。おそくても へらない
+  // 実測: 1.6びょうで たたくと 120てん、0.9びょうで 200てん、0.2びょうで 300てん
+  var MO_RANKS = [40, 80, 120, 170, 220];
+  var MO_POINTS = [
+    { within: 600,  point: 30 },
+    { within: 1200, point: 20 },
+    { within: 2000, point: 12 }
+  ];
+  var MO_SLOW = 8;               // それより おそくても これだけは もらえる
+
   var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1, moGold = false;
+  var moPoints = 0, moUpAt = 0, moBeganAt = 0, moSeconds = 0, moClockTimer = null;
+  var moBest = Number(load("mogura-best", "0")) || 0;
+  var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
+
+  function moPointFor(ms) {
+    for (var i = 0; i < MO_POINTS.length; i++) if (ms <= MO_POINTS[i].within) return MO_POINTS[i].point;
+    return MO_SLOW;
+  }
+
+  function moPaintBest() {
+    var now = moPoints > 0 ? "てんすう " + moPoints + " " + rankLabelOf(moPoints, MO_RANKS) : "";
+    var best = moBest > 0 ? "（さいこう " + moBest + "てん " + rankLabelOf(moBest, MO_RANKS) + "）" : "";
+    moBestEl.innerHTML = now + (now && best ? "　" : "") + best;
+  }
+
+  function moStartClock() {
+    moBeganAt = new Date().getTime();
+    moSeconds = 0;
+    moTimeEl.innerHTML = "0";
+    if (moClockTimer !== null) clearInterval(moClockTimer);
+    moClockTimer = setInterval(function () {
+      moSeconds = Math.floor((new Date().getTime() - moBeganAt) / 1000);
+      if (moSeconds > 999) moSeconds = 999;
+      moTimeEl.innerHTML = String(moSeconds);
+    }, 250);
+  }
+  function moStopClock() {
+    if (moClockTimer !== null) { clearInterval(moClockTimer); moClockTimer = null; }
+  }
   var moUpTimer = null, moNextTimer = null, moPopTimer = null, moRunning = false;
   var moSpeed = MO_SPEEDS[0];
 
@@ -626,6 +667,7 @@
     // もぐらの絵は かならず 1 文字。2 文字にすると おりかえして まるが たてに のびる
     hole.getElementsByTagName("span")[1].innerHTML = moGold ? "✨＋3" : "＋1";
     hole.className = moGold ? "hole up gold" : "hole up";
+    moUpAt = new Date().getTime();
 
     // たたかなくても しばらくすると ひっこむ (失敗にはならない)
     moUpTimer = setTimeout(function () {
@@ -643,6 +685,11 @@
     if (moScore > MO_GOAL) moScore = MO_GOAL;
     moScoreEl.innerHTML = String(moScore);
 
+    // たたくまでの はやさで てんすうが きまる。きんのもぐらは 3ばい
+    var got = moPointFor(new Date().getTime() - moUpAt) * (moGold ? 3 : 1);
+    moPoints += got;
+    moPaintBest();
+
     if (moGold) soundGold(); else soundHit();
 
     el.className = "hole hit";
@@ -655,7 +702,12 @@
 
     if (moScore >= MO_GOAL) {
       moRunning = false;
-      celebrate(moMsgEl, "ぜんぶ たたけました！");
+      moStopClock();
+      var best = moPoints > moBest;
+      if (best) { moBest = moPoints; save("mogura-best", moBest); }
+      moPaintBest();
+      celebrate(moMsgEl, moSeconds + "びょうで " + moPoints + "てん！" +
+        (best ? " さいこう きろく！" : ""));
       return;
     }
     moNextTimer = setTimeout(moSpawn, moSpeed.gap);
@@ -669,12 +721,16 @@
     moMsgEl.innerHTML = "";
     moMsgEl.className = "msg";
     for (var i = 0; i < moHoles.length; i++) moHoles[i].className = "hole";
+    moPoints = 0;
+    moPaintBest();
+    moStartClock();
     moRunning = true;
     moNextTimer = setTimeout(moSpawn, moSpeed.gap);
   }
 
   function moStop() {
     moRunning = false;
+    moStopClock();
     moClearTimers();
     if (moPopTimer !== null) { clearTimeout(moPopTimer); moPopTimer = null; }
     moHideCurrent();
@@ -698,8 +754,57 @@
 
   var meBoard = $("memory-board"), meBody = $("memory-body");
   var meScoreEl = $("memory-score"), meMsgEl = $("memory-msg");
+  // ぜんぶ そろえたら 100てん。そのうえで はやさと、むだな めくりの 少なさで 加点する。
+  // まいすうで 点が かわらないよう、めやすに 対する わりあいで 計算する
+  // (そうしないと 12まいを えらぶだけで 点が 高く なってしまう)。
+  // 人が かんぺきに あそんで 212てん あたりなので、👑 は その へんに おく。
+  //   ふつう 137 / じょうず 185 / かんぺき 212
+  var ME_RANKS = [60, 100, 140, 180, 210];
+  var ME_PAIR_POINT = 20;        // とちゅう けいかの めやす (1ペアごと)
+  var ME_DONE_POINT = 100;       // ぜんぶ そろえた ぶん
+  var ME_FAST_POINT = 80;        // はやさで もらえる さいだい
+  var ME_NEAT_POINT = 70;        // むだの 少なさで もらえる さいだい
+  var ME_SEC_PER_CARD = 8;       // このくらいで そろえば 早いほうだ、という めやす
+  var ME_FLIP_PER_CARD = 3;      // 1まいあたり これだけ めくれば ふつう
+
   var meCells = [], meFaces = [], meDone = [], meOpen = [];
   var meFlips = 0, meBusy = false, meBackTimer = null;
+  var meBeganAt = 0, meSeconds = 0, meClockTimer = null;
+  var meBest = Number(load("memory-best", "0")) || 0;
+  var meTimeEl = $("memory-time"), meBestEl = $("memory-best");
+
+  function mePaintBest(now) {
+    var cur = now > 0 ? "てんすう " + now + " " + rankLabelOf(now, ME_RANKS) : "";
+    var best = meBest > 0 ? "（さいこう " + meBest + "てん " + rankLabelOf(meBest, ME_RANKS) + "）" : "";
+    meBestEl.innerHTML = cur + (cur && best ? "　" : "") + best;
+  }
+
+  function meStartClock() {
+    meBeganAt = new Date().getTime();
+    meSeconds = 0;
+    meTimeEl.innerHTML = "0";
+    if (meClockTimer !== null) clearInterval(meClockTimer);
+    meClockTimer = setInterval(function () {
+      meSeconds = Math.floor((new Date().getTime() - meBeganAt) / 1000);
+      if (meSeconds > 999) meSeconds = 999;
+      meTimeEl.innerHTML = String(meSeconds);
+    }, 250);
+  }
+  function meStopClock() {
+    if (meClockTimer !== null) { clearInterval(meClockTimer); meClockTimer = null; }
+  }
+
+  // ぜんぶ そろえた ぶん + はやさ + むだの 少なさ。
+  // はやさも むだの 少なさも 「めやすに 対する わりあい」 なので、
+  // 4まいでも 12まいでも 同じ くらいの てんすうに なる
+  function meFinalScore() {
+    var cards = meSize.cards;
+    var secGoal = cards * ME_SEC_PER_CARD;
+    var flipGoal = cards * ME_FLIP_PER_CARD;
+    var fast = Math.max(0, secGoal - meSeconds) / secGoal * ME_FAST_POINT;
+    var neat = Math.max(0, flipGoal - meFlips) / flipGoal * ME_NEAT_POINT;
+    return Math.round(ME_DONE_POINT + fast + neat);
+  }
   var meSize = MEM_SIZES[1], meTheme = MEM_THEMES[0], meCols = 4;
 
   (function () {
@@ -730,6 +835,8 @@
     meScoreEl.innerHTML = "0";
     meMsgEl.innerHTML = "";
     meMsgEl.className = "msg";
+    mePaintBest(0);
+    meStartClock();
 
     var pairs = meSize.cards / 2;
     meCols = meSize.cols;
@@ -799,10 +906,21 @@
       meOpen = [];
       soundMatch();
 
+      // いま までに そろえた ぶんだけ 見せる (はやさの ボーナスは さいごに つく)
+      var pairsDone = 0;
+      for (var d2 = 0; d2 < meDone.length; d2++) if (meDone[d2]) pairsDone++;
+      mePaintBest((pairsDone / 2) * ME_PAIR_POINT);
+
       for (var k = 0; k < meDone.length; k++) {
         if (!meDone[k]) { meMsgEl.className = "msg"; meMsgEl.innerHTML = "そろった！"; return; }
       }
-      celebrate(meMsgEl, "ぜんぶ そろいました！");
+
+      meStopClock();
+      var pts = meFinalScore();
+      var isBest = pts > meBest;
+      if (isBest) { meBest = pts; save("memory-best", meBest); }
+      mePaintBest(pts);
+      celebrate(meMsgEl, meSeconds + "びょうで " + pts + "てん！" + (isBest ? " さいこう きろく！" : ""));
     } else {
       meBusy = true;
       meBackTimer = setTimeout(function () {
@@ -813,6 +931,12 @@
         meBackTimer = null;
       }, 1200);
     }
+  }
+
+  function meStop() {
+    meStopClock();
+    if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
+    meBusy = false;
   }
 
   onTap($("memory-reset"), meStart);
@@ -1146,6 +1270,26 @@
   // いちばん 大きい 🐘 は 箱の 7わり ちかくを しめる。ここまで 大きいと
   // 🐘 が できた あとは すぐ いっぱいに なるが、🐘 が できること 自体が
   // クリアなので それで よい。
+  // ---- しょうごう (ゲームごとに さかいめが ちがう) ----
+  var RANK_MARKS = [
+    { mark: "🌱", name: "しんじん" },
+    { mark: "⭐", name: "なかなか" },
+    { mark: "🎖", name: "じょうず" },
+    { mark: "🏅", name: "たつじん" },
+    { mark: "👑", name: "めいじん" }
+  ];
+
+  // mins は 5つ。その てんすうに とどいたら つぎの しょうごうに なる
+  function rankIndexOf(score, mins) {
+    var r = -1;
+    for (var i = 0; i < mins.length; i++) if (score >= mins[i]) r = i;
+    return r;
+  }
+  function rankLabelOf(score, mins) {
+    var i = rankIndexOf(score, mins);
+    return i < 0 ? "" : RANK_MARKS[i].mark + " " + RANK_MARKS[i].name;
+  }
+
   // てんすうに おうじた しょうごう。
   // さかいめは じっさいに 16ラウンド あそんだ てんすうの ちらばりから きめた。
   //   さいてい 39 / した4ぶんの1 91 / まんなか 103 / うえ4ぶんの1 115 / さいこう 272
@@ -1692,7 +1836,7 @@
   // ============================================================
   var TABS = [
     { key: "mogura", tab: "tab-mogura", pane: "game-mogura", show: moStart, hide: moStop },
-    { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: null },
+    { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: meStop },
     { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop },
     { key: "paint",  tab: "tab-paint",  pane: "game-paint",  show: paStart, hide: null },
     { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop }
