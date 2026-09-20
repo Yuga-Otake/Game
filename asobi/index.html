@@ -1120,9 +1120,15 @@
   // どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる)
   // ============================================================
   // 小さい → 大きい の順。くっつくと ひとつ 右のどうぶつ になる
-  var AN_FACES = ["🐭", "🐹", "🐰", "🐱", "🐶", "🐷", "🐮", "🐯", "🐻", "🐘"];
+  var AN_FACES = ["🐭", "🐹", "🐰", "🐱", "🐶", "🐷", "🐮", "🐯", "🐻", "🦛", "🐘", "🐳"];
   var AN_LAST = AN_FACES.length - 1;
-  var AN_DROPPABLE = 4;          // おちてくるのは 小さい 4 しゅるい だけ
+  var AN_DROPPABLE = 5;          // おちてくるのは 小さい 5 しゅるい だけ
+
+  // 1だんごとの 大きさの ばい。序盤は ちいさく、終盤は 1.3ばい ちかく。
+  // 合体すると 2ひきぶんの 面積が (ばい)^2 に なるので、ばいが 大きいほど
+  // 合体しても 場所が あかず、終盤ほど 箱が つまりやすい。
+  var AN_BASE = 0.039;
+  var AN_STEPS = [1.17, 1.18, 1.19, 1.20, 1.21, 1.21, 1.22, 1.23, 1.23, 1.24, 1.25];
   var AN_GRAVITY = 0.26;         // ゆっくり おちる
   var AN_MU = 0.55;              // まさつ。これで ころがって ななめを むく
   var AN_MAX_SPIN = 0.32;
@@ -1183,9 +1189,10 @@
   function anBuildSprites() {
     anRadii = [];
     anSprites = [];
+    var frac = AN_BASE;
     for (var i = 0; i < AN_FACES.length; i++) {
-      // 1だんごとに 1.24ばい。いちばん 小さいのと 大きいので 7ばい ちがう
-      var r = Math.round(anW * 0.039 * Math.pow(1.24, i));
+      if (i > 0) frac *= AN_STEPS[i - 1];
+      var r = Math.round(anW * frac);
       anRadii.push(r);
       var c = document.createElement("canvas");
       var size = Math.ceil(r * 2 * anDpr);
@@ -1205,21 +1212,12 @@
   function anResize() {
     if (!anCtx) return;
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
-    var vh = window.innerHeight || document.documentElement.clientHeight || 800;
     var w = Math.min(vw - 30, 360);
     if (w < 240) w = 240;
+    // 箱の かたちは どの 画面でも おなじに する。
+    // 画面に あわせて 高さを 変えると、むきを かえた だけで むずかしさと
+    // さいこう てんすうの いみが 変わってしまう。よこむきでは すこし スクロールしてもらう
     var h = Math.round(w * 1.22);
-    // タブレットの よこむきなど 画面が ひくい ときは、箱が 下に はみ出さないようにする。
-    // 上の 見出しの 高さは 変わるので、そのつど はかって あわせる
-    if (vw >= 700) {
-      var top = 0;
-      try { top = anCanvas.getBoundingClientRect().top; } catch (e) { top = 0; }
-      if (top > 0) {
-        var fit = Math.round(vh - top - 110);   // 下に メッセージと ボタンの ぶんを のこす
-        if (fit < h) h = fit;
-        if (h < Math.round(w * 0.9)) h = Math.round(w * 0.9);
-      }
-    }
     var changed = (w !== anW);
 
     anW = w;
