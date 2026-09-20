@@ -270,11 +270,9 @@
   .swatch.on { border-color: #2f2a24; border-color: var(--text); }
 
   /* ---- どうぶつゲーム ---- */
-  .best { font-size: 18px; color: #6d6355; color: var(--sub); font-weight: 700; }
-  .next { font-size: 19px; color: #6d6355; color: var(--sub); margin: 0 0 8px; font-weight: 700; }
-  .next span { font-size: 30px; vertical-align: middle; }
-  .dex-label { font-size: 15px; color: #6d6355; color: var(--sub); margin: 0 0 2px; }
-  .dex { margin: 0 auto 8px; max-width: 560px; line-height: 1.6; }
+  .best { font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px; min-height: 22px; }
+  .nextface { font-size: 32px; vertical-align: middle; }
+  .dex { margin: 0 auto 4px; max-width: 620px; line-height: 1.5; }
   .dex b { white-space: nowrap; font-weight: normal; }   /* 行のあたまが 矢印だけに ならないように */
   .dex span { font-size: 25px; vertical-align: middle; }
   .dex i { font-size: 15px; color: #a2977f; font-style: normal; vertical-align: middle; }
@@ -355,10 +353,9 @@
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
 <div id="game-animal" style="display:none">
-  <p class="score">てんすう　<b id="animal-score">0</b>　<span id="animal-best" class="best"></span></p>
-  <p class="dex-label">これまでに でた どうぶつ</p>
+  <p class="score">てんすう　<b id="animal-score">0</b>　　つぎは　<span id="animal-next-face" class="nextface">🐭</span></p>
   <p class="dex" id="animal-dex"></p>
-  <p id="animal-next" class="next">つぎは　<span id="animal-next-face">🐭</span></p>
+  <p class="best" id="animal-best"></p>
   <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
   <p class="msg" id="animal-msg"></p>
   <button type="button" class="big" id="animal-reset">もういちど</button>
@@ -1131,8 +1128,10 @@
   var AN_BASE = 0.034;
   var AN_STEPS = [1.41, 1.41, 1.41, 1.41, 1.41, 1.41];
   var AN_GRAVITY = 0.26;         // ゆっくり おちる
-  var AN_MU = 0.55;              // まさつ。これで ころがって ななめを むく
-  var AN_MAX_SPIN = 0.32;
+  var AN_MU = 0.32;              // まさつ。これで ころがって ななめを むく
+  // まわる はやさの 上限。0.32 だと 毎秒 3かいてん して ぐるぐる して しまう。
+  // 0.06 なら 1しゅう するのに 2びょう 近く かかり、ななめに かたむく くらいに 見える
+  var AN_MAX_SPIN = 0.06;
   var AN_PUSH = 0.6;             // めり込みを 1回で どれだけ 押しもどすか
   var AN_SLOP = 0.5;             // すこし めり込んだままに して、はじかれるのを ふせぐ
   var AN_CALM = 1.3;             // これより おそい ものだけ「つみ上がった」と かぞえる
@@ -1214,7 +1213,7 @@
   function anResize() {
     if (!anCtx) return;
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
-    var w = Math.min(vw - 30, 360);
+    var w = Math.min(vw - 30, 425);
     if (w < 240) w = 240;
     // 箱の かたちは どの 画面でも おなじに する。
     // 画面に あわせて 高さを 変えると、むきを かえた だけで むずかしさと
@@ -1242,7 +1241,7 @@
       type: type, r: anRadius(type),
       x: x, y: y, vx: vx || 0, vy: vy || 0,
       a: (Math.random() - 0.5) * 0.3,          // むき
-      av: (Math.random() - 0.5) * 0.04,        // まわる はやさ
+      av: (Math.random() - 0.5) * 0.02,        // まわる はやさ
       age: 0, dead: false
     });
     anSeen(type);
@@ -1314,7 +1313,7 @@
       b.vy += AN_GRAVITY;
       b.vx *= 0.995;
       b.vy *= 0.995;
-      b.av *= 0.99;
+      b.av *= 0.93;                 // まわり つづけないように つよめに とめる
       b.x += b.vx;
       b.y += b.vy;
       b.a += b.av;
@@ -1405,6 +1404,13 @@
     var alive = [];
     for (i = 0; i < anBodies.length; i++) if (!anBodies[i].dead) alive.push(anBodies[i]);
     anBodies = alive;
+
+    // ほとんど 止まっている どうぶつは、まわるのも 止める
+    for (i = 0; i < anBodies.length; i++) {
+      b = anBodies[i];
+      if (Math.abs(b.vx) < 0.35 && Math.abs(b.vy) < 0.35) b.av *= 0.8;
+      if (Math.abs(b.av) < 0.002) b.av = 0;
+    }
 
     if (anCooldown > 0) anCooldown--;
 
