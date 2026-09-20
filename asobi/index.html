@@ -159,6 +159,8 @@
     color: #fff;
   }
   .big.icon { font-size: 28px; padding: 10px 18px; min-width: 76px; }
+  .big.theme { font-size: 18px; padding: 12px 14px; min-height: 56px; }
+  .big.theme.locked { color: #a2977f; background: #efe8d6; }
 
   .ctrl { margin: 0 0 10px; }
   .ctrl .label {
@@ -304,7 +306,7 @@
   <button type="button" class="tab" id="tab-memory">🎴 しんけいすいじゃく</button>
   <button type="button" class="tab" id="tab-odd">🔍 なかまはずれ</button>
   <button type="button" class="tab" id="tab-paint">🎨 ぬりえ</button>
-  <button type="button" class="tab" id="tab-animal">🐻 どうぶつゲーム</button>
+  <button type="button" class="tab" id="tab-animal">🐻 くっつけゲーム</button>
 </div>
 
 <p class="stamps" id="stamps"></p>
@@ -353,13 +355,14 @@
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
 <div id="game-animal" style="display:none">
+  <div class="ctrl"><span class="label">なにで あそぶ</span><span id="animal-themes"></span></div>
   <p class="score">てんすう　<b id="animal-score">0</b>　　つぎは　<span id="animal-next-face" class="nextface">🐭</span></p>
   <p class="dex" id="animal-dex"></p>
   <p class="best" id="animal-best"></p>
   <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
   <p class="msg" id="animal-msg"></p>
   <button type="button" class="big" id="animal-reset">もういちど</button>
-  <p class="note">おとしたい ところを さわると、どうぶつが おちます。<br>おなじ どうぶつ が くっつくと、大きい どうぶつ に なります。<br>🐘 を つくると 100てん。🐘 は それいじょう 大きく なりません。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
+  <p class="note">おとしたい ところを さわると、おちてきます。<br>おなじ もの どうしが くっつくと、大きく なります。<br>いちばん 大きいものを つくると 100てん。それが クリアで、<br>つぎの ゲームが あそべるように なります。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
 </div>
 
 <div id="confetti"></div>
@@ -1117,8 +1120,19 @@
   // どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる)
   // ============================================================
   // 小さい → 大きい の順。くっつくと ひとつ 右のどうぶつ になる
-  var AN_FACES = ["🐭", "🐹", "🐰", "🐱", "🐶", "🐻", "🐘"];
-  var AN_LAST = AN_FACES.length - 1;
+  // 3つの ゲームは 大きさの きまりを そのまま つかう。ちがうのは 絵だけ。
+  // まえの ゲームで いちばん 大きいものを つくると、つぎの ゲームが あそべる。
+  var AN_THEMES = [
+    { key: "animal",  name: "どうぶつ", icon: "🐭",
+      faces: ["🐭", "🐹", "🐰", "🐱", "🐶", "🐻", "🐘"] },
+    { key: "fish",    name: "さかな",   icon: "🐟",
+      faces: ["🐟", "🐠", "🐡", "🦑", "🐙", "🦈", "🐋"] },
+    { key: "vehicle", name: "のりもの", icon: "🛴",
+      faces: ["🛴", "🚲", "🏍", "🚗", "🚌", "🚂", "✈️"] }
+  ];
+  var AN_LAST = AN_THEMES[0].faces.length - 1;
+  var anTheme = AN_THEMES[0];
+  function anFaces() { return anTheme.faces; }
   var AN_DROPPABLE = 3;          // おちてくるのは 小さい 3 しゅるい だけ
 
   // 1だんごとに 1.41ばい (2の へいほうこん)。
@@ -1152,7 +1166,7 @@
 
   var anW = 360, anH = 440, anDpr = 1;
   var anBodies = [], anSprites = [], anRadii = [];
-  var anScore = 0, anBest = Number(load("animal-best", "0")) || 0;
+  var anScore = 0, anBest = 0;   // anLoadTheme() が ゲームごとの きろくを 入れる
   var anNext = 0, anOver = false, anOverCount = 0, anBiggestSeen = false;
   var anRaf = null, anRunning = false, anCooldown = 0;
 
@@ -1160,15 +1174,57 @@
 
   // どこまで でたか。まだ でていない どうぶつは ハテナで みせる
   var anDexEl = $("animal-dex");
-  var anMax = Number(load("animal-max", "-1"));
-  if (!(anMax >= 0 && anMax <= AN_LAST)) anMax = -1;
-  var anBigMade = Number(load("animal-big", "0")) || 0;
+  // きろくは ゲームごとに わけて もつ
+  function anKey(name) { return "m-" + anTheme.key + "-" + name; }
+
+  // まえの かたち (animal-... ) で ためた きろくを ひきつぐ
+  (function () {
+    if (load("m-animal-moved", "") === "1") return;
+    var pairs = [["animal-best", "m-animal-best"], ["animal-big", "m-animal-big"], ["animal-max", "m-animal-max"]];
+    for (var i = 0; i < pairs.length; i++) {
+      var old = load(pairs[i][0], null);
+      if (old !== null && load(pairs[i][1], null) === null) save(pairs[i][1], old);
+    }
+    if (Number(load("m-animal-max", "-1")) >= AN_LAST) save("m-animal-clear", "1");
+    save("m-animal-moved", "1");
+  })();
+
+  var anMax = -1, anBigMade = 0;
+
+  function anThemeOpen(t) {
+    var i = anThemeIndex(t);
+    return i === 0 || load("m-" + AN_THEMES[i - 1].key + "-clear", "0") === "1";
+  }
+  function anThemeIndex(t) {
+    for (var i = 0; i < AN_THEMES.length; i++) if (AN_THEMES[i] === t) return i;
+    return 0;
+  }
+  function anLoadTheme() {
+    anMax = Number(load(anKey("max"), "-1"));
+    if (!(anMax >= 0 && anMax <= AN_LAST)) anMax = -1;
+    anBigMade = Number(load(anKey("big"), "0")) || 0;
+    anBest = Number(load(anKey("best"), "0")) || 0;
+  }
+
+  // いちばん 大きいものを つくれたら クリア。つぎの ゲームが あく
+  function anClearTheme() {
+    var first = load(anKey("clear"), "0") !== "1";
+    save(anKey("clear"), "1");
+    var i = anThemeIndex(anTheme);
+    var next = AN_THEMES[i + 1];
+    celebrate(anMsgEl, anFaces()[AN_LAST] + " が できました！");
+    if (first && next) {
+      anBuildThemeButtons();
+      anMsgEl.innerHTML = anFaces()[AN_LAST] + " が できました！ "
+        + next.name + " が あそべるように なりました！";
+    }
+  }
 
   function anPaintDex() {
     var html = "";
-    for (var i = 0; i < AN_FACES.length; i++) {
+    for (var i = 0; i < anFaces().length; i++) {
       var face = i <= anMax
-        ? "<span>" + AN_FACES[i] + "</span>"
+        ? "<span>" + anFaces()[i] + "</span>"
         : '<span class="yet">❓</span>';
       // 矢印と どうぶつを ひとまとまりにし、その あいだに すきまを 入れる。
       // すきまが ないと 行を おりかえせる 場所が なく、横に はみ出してしまう
@@ -1183,12 +1239,41 @@
     if (type <= anMax) return;
     var firstBig = type >= AN_DROPPABLE;
     anMax = type;
-    save("animal-max", anMax);
+    save(anKey("max"), anMax);
     anPaintDex();
     if (firstBig && type < AN_LAST) {
       anMsgEl.className = "msg";
-      anMsgEl.innerHTML = "はじめての " + AN_FACES[type] + " が でました！";
+      anMsgEl.innerHTML = "はじめての " + anFaces()[type] + " が でました！";
       soundGold();
+    }
+  }
+
+  function anBuildThemeButtons() {
+    var host = $("animal-themes");
+    while (host.firstChild) host.removeChild(host.firstChild);
+    for (var i = 0; i < AN_THEMES.length; i++) {
+      (function (t) {
+        var open = anThemeOpen(t);
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "big theme" + (t === anTheme ? " on" : "") + (open ? "" : " locked");
+        b.innerHTML = open ? t.icon + " " + t.name : "🔒 " + t.name;
+        onTap(b, function () {
+          if (!open) {
+            // まだ あいていない。なにを つくれば いいか だけ 教える
+            var prev = AN_THEMES[anThemeIndex(t) - 1];
+            anMsgEl.className = "msg again";
+            anMsgEl.innerHTML = prev.faces[AN_LAST] + " を つくると あそべます";
+            soundAgain();
+            return;
+          }
+          anTheme = t;
+          save("m-theme", t.key);
+          anBuildThemeButtons();
+          anStart();
+        });
+        host.appendChild(b);
+      })(AN_THEMES[i]);
     }
   }
 
@@ -1197,7 +1282,7 @@
     anRadii = [];
     anSprites = [];
     var frac = AN_BASE;
-    for (var i = 0; i < AN_FACES.length; i++) {
+    for (var i = 0; i < anFaces().length; i++) {
       if (i > 0) frac *= AN_STEPS[i - 1];
       var r = Math.round(anW * frac);
       anRadii.push(r);
@@ -1210,7 +1295,7 @@
         g.textAlign = "center";
         g.textBaseline = "middle";
         g.font = Math.floor(r * 1.85 * anDpr) + "px sans-serif";
-        g.fillText(AN_FACES[i], size / 2, size / 2 + r * 0.06 * anDpr);
+        g.fillText(anFaces()[i], size / 2, size / 2 + r * 0.06 * anDpr);
       }
       anSprites.push(c);
     }
@@ -1255,7 +1340,7 @@
 
   function anPickNext() {
     anNext = Math.floor(Math.random() * AN_DROPPABLE);
-    anNextEl.innerHTML = AN_FACES[anNext];
+    anNextEl.innerHTML = anFaces()[anNext];
   }
 
   function anDrop(x) {
@@ -1285,12 +1370,12 @@
     anAdd(type + 1, x, y, 0, 0);
     if (type + 1 >= AN_LAST) {
       anBigMade++;
-      save("animal-big", anBigMade);
+      save(anKey("big"), anBigMade);
       anPaintBest();
     }
     if (type + 1 >= AN_LAST && !anBiggestSeen) {
       anBiggestSeen = true;
-      celebrate(anMsgEl, AN_FACES[AN_LAST] + " が できました！");
+      anClearTheme();
     } else {
       soundMatch();
     }
@@ -1443,7 +1528,7 @@
     var best = anScore > anBest && anScore > 0;
     if (best) {
       anBest = anScore;
-      save("animal-best", anBest);
+      save(anKey("best"), anBest);
     }
     anPaintBest();
 
@@ -1459,7 +1544,7 @@
 
   function anPaintBest() {
     var txt = anBest > 0 ? "（さいこう " + anBest + "てん" : "";
-    if (anBigMade > 0) txt += (txt ? "・" : "（") + AN_FACES[AN_LAST] + " " + anBigMade + "とう";
+    if (anBigMade > 0) txt += (txt ? "・" : "（") + anFaces()[AN_LAST] + " " + anBigMade + "こ";
     anBestEl.innerHTML = txt ? txt + "）" : "";
   }
 
@@ -1511,6 +1596,7 @@
 
   function anStart() {
     anStop();
+    anLoadTheme();
     anBodies = [];
     anScore = 0;
     anOver = false;
@@ -1532,6 +1618,14 @@
     anRunning = false;
     if (anRaf !== null) { anCancel(anRaf); anRaf = null; }
   }
+
+  (function () {
+    var key = load("m-theme", "animal");
+    for (var i = 0; i < AN_THEMES.length; i++) {
+      if (AN_THEMES[i].key === key && anThemeOpen(AN_THEMES[i])) anTheme = AN_THEMES[i];
+    }
+    anBuildThemeButtons();
+  })();
 
   if (anCtx) {
     onTap(anCanvas, function (e) {
