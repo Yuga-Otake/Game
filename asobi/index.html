@@ -320,7 +320,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>はやく さわれるほど てんすうが 高く なります。<br>おそくても てんすうは へりません。<br>ときどき <b>きんのもぐら</b> が でてきます（3びきぶん・てんすうも 3ばい）。</p>
+  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんのもぐら</b> が でてきます（3びきぶん・てんすうも 3ばい）。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -565,9 +565,12 @@
     { within: 2000, point: 12 }
   ];
   var MO_SLOW = 8;               // それより おそくても これだけは もらえる
+  var MO_EXTRA = 4;              // 出ている あいだの 2かいめ いこうの 1たたき
+  var MO_EXTRA_MAX = 10;         // 1ぴきあたり の れんだの うけつけ かいすう
 
   var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1, moGold = false;
   var moPoints = 0, moUpAt = 0, moBeganAt = 0, moSeconds = 0, moClockTimer = null;
+  var moCounted = false, moExtra = 0;   // いまの もぐらを もう かぞえたか / れんだの かいすう
   var moBest = Number(load("mogura-best", "0")) || 0;
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
 
@@ -668,6 +671,8 @@
     hole.getElementsByTagName("span")[1].innerHTML = moGold ? "✨＋3" : "＋1";
     hole.className = moGold ? "hole up gold" : "hole up";
     moUpAt = new Date().getTime();
+    moCounted = false;
+    moExtra = 0;
 
     // たたかなくても しばらくすると ひっこむ (失敗にはならない)
     moUpTimer = setTimeout(function () {
@@ -680,37 +685,50 @@
     if (!moRunning) return;
     if (moCurrent < 0 || moHoles[moCurrent] !== el) return;   // 空の穴は なにも起きない
 
-    moClearTimers();
-    moScore += moGold ? 3 : 1;
-    if (moScore > MO_GOAL) moScore = MO_GOAL;
-    moScoreEl.innerHTML = String(moScore);
+    var mult = moGold ? 3 : 1;
+    var got;
 
-    // たたくまでの はやさで てんすうが きまる。きんのもぐらは 3ばい
-    var got = moPointFor(new Date().getTime() - moUpAt) * (moGold ? 3 : 1);
+    if (!moCounted) {
+      // 1かいめ。ここで かずが すすむ。たたくまでの はやさで てんすうが きまる
+      moCounted = true;
+      moScore += mult;
+      if (moScore > MO_GOAL) moScore = MO_GOAL;
+      moScoreEl.innerHTML = String(moScore);
+      got = moPointFor(new Date().getTime() - moUpAt) * mult;
+      if (moGold) soundGold(); else soundHit();
+    } else if (moExtra < MO_EXTRA_MAX) {
+      // 2かいめ いこう。でている あいだは なんども たたける
+      moExtra++;
+      got = MO_EXTRA * mult;
+      soundHit();
+    } else {
+      return;   // たたきすぎ。ここから さきは つかない
+    }
+
     moPoints += got;
     moPaintBest();
 
-    if (moGold) soundGold(); else soundHit();
-
-    el.className = "hole hit";
+    // もぐらは ひっこまない。たたけたことが わかるよう 一しゅん 光らせる
+    el.getElementsByTagName("span")[1].innerHTML = "＋" + got;
+    el.className = (moGold ? "hole up gold hit" : "hole up hit");
     if (moPopTimer !== null) clearTimeout(moPopTimer);
-    (function (hole) {
-      moPopTimer = setTimeout(function () { hole.className = "hole"; }, 450);
-    })(el);
-    moCurrent = -1;
-    moGold = false;
+    (function (hole, gold) {
+      moPopTimer = setTimeout(function () {
+        if (hole.className.indexOf("up") >= 0) hole.className = gold ? "hole up gold" : "hole up";
+      }, 160);
+    })(el, moGold);
 
     if (moScore >= MO_GOAL) {
       moRunning = false;
+      moClearTimers();
+      moHideCurrent();
       moStopClock();
       var best = moPoints > moBest;
       if (best) { moBest = moPoints; save("mogura-best", moBest); }
       moPaintBest();
       celebrate(moMsgEl, moSeconds + "びょうで " + moPoints + "てん！" +
         (best ? " さいこう きろく！" : ""));
-      return;
     }
-    moNextTimer = setTimeout(moSpawn, moSpeed.gap);
   }
 
   function moStart() {
