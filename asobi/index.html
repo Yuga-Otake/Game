@@ -7,7 +7,7 @@
 
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f6efdd">
-<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ぬりえ が あそべます">
+<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ぬりえ・どうぶつゲーム が あそべます">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -84,7 +84,7 @@
   .tab {
     display: inline-block;
     font-family: inherit;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 700;
     color: #6d6355;
     color: var(--sub);
@@ -93,9 +93,9 @@
     border: 3px solid #d9cdb2;
     border: 3px solid var(--line);
     border-radius: 14px;
-    padding: 12px 14px;
+    padding: 12px 10px;
     margin: 0 4px 8px;
-    width: 300px;
+    width: 236px;
     max-width: 100%;
     min-height: 64px;
     vertical-align: middle;
@@ -269,6 +269,21 @@
   }
   .swatch.on { border-color: #2f2a24; border-color: var(--text); }
 
+  /* ---- どうぶつゲーム ---- */
+  .best { font-size: 18px; color: #6d6355; color: var(--sub); font-weight: 700; }
+  .next { font-size: 19px; color: #6d6355; color: var(--sub); margin: 0 0 8px; font-weight: 700; }
+  .next span { font-size: 30px; vertical-align: middle; }
+  #animal-wrap { margin: 0 auto; }
+  #animal-canvas {
+    display: block;
+    margin: 0 auto;
+    background: #fffaf0;
+    border: 4px solid #d9cdb2;
+    border: 4px solid var(--line);
+    border-radius: 14px;
+    cursor: pointer;
+  }
+
   /* ---- おいわいの紙ふぶき ---- */
   #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; }
   #confetti span { position: fixed; }
@@ -285,6 +300,7 @@
   <button type="button" class="tab" id="tab-memory">🎴 しんけいすいじゃく</button>
   <button type="button" class="tab" id="tab-odd">🔍 なかまはずれ</button>
   <button type="button" class="tab" id="tab-paint">🎨 ぬりえ</button>
+  <button type="button" class="tab" id="tab-animal">🐻 どうぶつゲーム</button>
 </div>
 
 <p class="stamps" id="stamps"></p>
@@ -329,6 +345,16 @@
   <button type="button" class="big" id="paint-done">できた！</button>
   <button type="button" class="big" id="paint-clear">ぜんぶ けす</button>
   <p class="note">いろを えらんで、マスを さわると ぬれます。<br>うすい いろは したえです。すきに ぬって いいですよ。<br>ぬった えは つぎに ひらいた ときも のこります。</p>
+</div>
+
+<!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
+<div id="game-animal" style="display:none">
+  <p class="score">てんすう　<b id="animal-score">0</b>　<span id="animal-best" class="best"></span></p>
+  <p id="animal-next" class="next">つぎは　<span id="animal-next-face">🐭</span></p>
+  <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
+  <p class="msg" id="animal-msg"></p>
+  <button type="button" class="big" id="animal-reset">もういちど</button>
+  <p class="note">おとしたい ところを さわると、どうぶつが おちます。<br>おなじ どうぶつ が くっつくと、大きい どうぶつ に なります。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
 </div>
 
 <div id="confetti"></div>
@@ -1083,13 +1109,326 @@
   });
 
   // ============================================================
+  // どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる)
+  // ============================================================
+  // 小さい → 大きい の順。くっつくと ひとつ 右のどうぶつ になる
+  var AN_FACES = ["🐭", "🐹", "🐰", "🐱", "🐶", "🐷", "🐮", "🐯", "🐻", "🐘"];
+  var AN_LAST = AN_FACES.length - 1;
+  var AN_DROPPABLE = 4;          // おちてくるのは 小さい 4 しゅるい だけ
+  var AN_GRAVITY = 0.55;
+  var AN_ITER = 5;               // 押しあいを ならす 回数
+  var AN_LINE = 0.13;            // このたかさを こえたら おしまい (高さに対する割合)
+  var AN_OVER_FRAMES = 80;       // こえたまま この フレーム つづいたら おしまい
+
+  var anCanvas = $("animal-canvas");
+  var anCtx = anCanvas.getContext ? anCanvas.getContext("2d") : null;
+  var anScoreEl = $("animal-score"), anBestEl = $("animal-best");
+  var anMsgEl = $("animal-msg"), anNextEl = $("animal-next-face");
+
+  var anW = 360, anH = 440, anDpr = 1;
+  var anBodies = [], anSprites = [], anRadii = [];
+  var anScore = 0, anBest = Number(load("animal-best", "0")) || 0;
+  var anNext = 0, anOver = false, anOverCount = 0, anBiggestSeen = false;
+  var anRaf = null, anRunning = false, anCooldown = 0;
+
+  function anRadius(type) { return anRadii[type]; }
+
+  // どうぶつの絵は まいかい 描くと 重いので、いちど 画像にしてから 使いまわす
+  function anBuildSprites() {
+    anRadii = [];
+    anSprites = [];
+    for (var i = 0; i < AN_FACES.length; i++) {
+      var r = Math.round(anW * 0.05 * Math.pow(1.17, i));
+      anRadii.push(r);
+      var c = document.createElement("canvas");
+      var size = Math.ceil(r * 2 * anDpr);
+      c.width = size;
+      c.height = size;
+      var g = c.getContext("2d");
+      if (g) {
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.font = Math.floor(r * 1.85 * anDpr) + "px sans-serif";
+        g.fillText(AN_FACES[i], size / 2, size / 2 + r * 0.06 * anDpr);
+      }
+      anSprites.push(c);
+    }
+  }
+
+  function anResize() {
+    if (!anCtx) return;
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    var w = Math.min(vw - 30, 360);
+    if (w < 240) w = 240;
+    var h = Math.round(w * 1.22);
+    // タブレットの よこむきなど 画面が ひくい ときは、箱が 下に はみ出さないようにする
+    if (vw >= 700) {
+      var fit = vh - 350;
+      if (fit < h) h = fit;
+      if (h < Math.round(w * 0.9)) h = Math.round(w * 0.9);
+    }
+    var changed = (w !== anW);
+
+    anW = w;
+    anH = h;
+    anDpr = window.devicePixelRatio > 1 ? 2 : 1;
+
+    anCanvas.style.width = anW + "px";
+    anCanvas.style.height = anH + "px";
+    anCanvas.width = Math.round(anW * anDpr);
+    anCanvas.height = Math.round(anH * anDpr);
+
+    anBuildSprites();
+    // 幅が変わったら、いまの どうぶつの 大きさも 合わせる
+    for (var i = 0; i < anBodies.length; i++) anBodies[i].r = anRadius(anBodies[i].type);
+    if (changed) anDraw();
+  }
+
+  function anAdd(type, x, y, vx, vy) {
+    anBodies.push({
+      type: type, r: anRadius(type),
+      x: x, y: y, vx: vx || 0, vy: vy || 0,
+      age: 0, dead: false
+    });
+  }
+
+  function anPickNext() {
+    anNext = Math.floor(Math.random() * AN_DROPPABLE);
+    anNextEl.innerHTML = AN_FACES[anNext];
+  }
+
+  function anDrop(x) {
+    if (anOver || !anRunning || anCooldown > 0) return;
+    var r = anRadius(anNext);
+    if (x < r + 2) x = r + 2;
+    if (x > anW - r - 2) x = anW - r - 2;
+    anAdd(anNext, x, r + 4, 0, 0);
+    anCooldown = 22;
+    soundFlip();
+    anPickNext();
+  }
+
+  function anScoreFor(type) { return (type + 1) * (type + 2) / 2; }
+
+  function anMerge(a, b) {
+    var type = a.type;
+    var x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
+    a.dead = true;
+    b.dead = true;
+
+    anScore += anScoreFor(type);
+    anScoreEl.innerHTML = String(anScore);
+
+    if (type >= AN_LAST) {
+      // いちばん 大きい どうぶつ どうしは きえて、おおきな てんすう
+      anScore += 100;
+      anScoreEl.innerHTML = String(anScore);
+      soundClear();
+      return;
+    }
+
+    anAdd(type + 1, x, y, 0, -1.2);
+    if (type + 1 >= AN_LAST && !anBiggestSeen) {
+      anBiggestSeen = true;
+      celebrate(anMsgEl, AN_FACES[AN_LAST] + " が できました！");
+    } else {
+      soundMatch();
+    }
+  }
+
+  function anStep() {
+    var i, j, b;
+
+    for (i = 0; i < anBodies.length; i++) {
+      b = anBodies[i];
+      b.age++;
+      b.vy += AN_GRAVITY;
+      b.vx *= 0.995;
+      b.vy *= 0.995;
+      b.x += b.vx;
+      b.y += b.vy;
+    }
+
+    var merges = [];
+    for (var it = 0; it < AN_ITER; it++) {
+      // かべと ゆか
+      for (i = 0; i < anBodies.length; i++) {
+        b = anBodies[i];
+        if (b.dead) continue;
+        if (b.x - b.r < 0) { b.x = b.r; if (b.vx < 0) b.vx = -b.vx * 0.3; }
+        if (b.x + b.r > anW) { b.x = anW - b.r; if (b.vx > 0) b.vx = -b.vx * 0.3; }
+        if (b.y + b.r > anH) { b.y = anH - b.r; if (b.vy > 0) b.vy = -b.vy * 0.15; b.vx *= 0.88; }
+        if (b.y - b.r < -anH) { b.y = -anH + b.r; }
+      }
+      // どうぶつ どうし
+      for (i = 0; i < anBodies.length; i++) {
+        var a = anBodies[i];
+        if (a.dead) continue;
+        for (j = i + 1; j < anBodies.length; j++) {
+          b = anBodies[j];
+          if (b.dead) continue;
+          var dx = b.x - a.x, dy = b.y - a.y;
+          var rr = a.r + b.r;
+          var d2 = dx * dx + dy * dy;
+          if (d2 >= rr * rr) continue;
+          var d = Math.sqrt(d2);
+          if (d < 0.0001) { dx = 0.1; dy = 0; d = 0.1; }
+
+          if (a.type === b.type && it === 0) { merges.push([a, b]); a.dead = true; b.dead = true; break; }
+
+          var nx = dx / d, ny = dy / d;
+          var overlap = rr - d;
+          var ma = a.r * a.r, mb = b.r * b.r, tot = ma + mb;
+          a.x -= nx * overlap * (mb / tot);
+          a.y -= ny * overlap * (mb / tot);
+          b.x += nx * overlap * (ma / tot);
+          b.y += ny * overlap * (ma / tot);
+
+          var rvn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+          if (rvn < 0) {
+            var imp = -(1.08) * rvn / (1 / ma + 1 / mb);
+            a.vx -= imp * nx / ma; a.vy -= imp * ny / ma;
+            b.vx += imp * nx / mb; b.vy += imp * ny / mb;
+          }
+        }
+      }
+    }
+
+    for (i = 0; i < merges.length; i++) anMerge(merges[i][0], merges[i][1]);
+
+    // きえた どうぶつを とりのぞく
+    var alive = [];
+    for (i = 0; i < anBodies.length; i++) if (!anBodies[i].dead) alive.push(anBodies[i]);
+    anBodies = alive;
+
+    if (anCooldown > 0) anCooldown--;
+
+    // つみあがりすぎたら おしまい
+    var lineY = anH * AN_LINE;
+    var over = false;
+    for (i = 0; i < anBodies.length; i++) {
+      b = anBodies[i];
+      if (b.age > 40 && b.y - b.r < lineY) { over = true; break; }
+    }
+    if (over) {
+      anOverCount++;
+      if (anOverCount > AN_OVER_FRAMES) anFinish();
+    } else {
+      anOverCount = 0;
+    }
+  }
+
+  function anFinish() {
+    anOver = true;
+    anRunning = false;
+
+    var best = anScore > anBest && anScore > 0;
+    if (best) {
+      anBest = anScore;
+      save("animal-best", anBest);
+    }
+    anPaintBest();
+
+    anMsgEl.className = "msg";
+    if (best) {
+      // さいこう てんすうを こえたら はなまる
+      celebrate(anMsgEl, "いっぱいに なりました。" + anScore + "てん　さいこう きろく！");
+    } else {
+      anMsgEl.innerHTML = "いっぱいに なりました。" + anScore + "てん";
+      soundAgain();
+    }
+  }
+
+  function anPaintBest() {
+    anBestEl.innerHTML = anBest > 0 ? "（さいこう " + anBest + "てん）" : "";
+  }
+
+  function anDraw() {
+    if (!anCtx) return;
+    var g = anCtx;
+    g.setTransform(anDpr, 0, 0, anDpr, 0, 0);
+    g.clearRect(0, 0, anW, anH);
+
+    // おしまいの めやすの線
+    var lineY = anH * AN_LINE;
+    g.strokeStyle = "#e6d7b6";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(0, lineY);
+    g.lineTo(anW, lineY);
+    g.stroke();
+
+    for (var i = 0; i < anBodies.length; i++) {
+      var b = anBodies[i];
+      var sp = anSprites[b.type];
+      if (!sp) continue;
+      g.drawImage(sp, b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
+    }
+  }
+
+  function anFrame() {
+    if (!anRunning) { anRaf = null; return; }
+    anStep();
+    anDraw();
+    anRaf = anRequest(anFrame);
+  }
+
+  var anRequest = (function () {
+    var raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+    if (raf) return function (fn) { return raf.call(window, fn); };
+    return function (fn) { return setTimeout(fn, 16); };
+  })();
+
+  var anCancel = (function () {
+    var caf = window.cancelAnimationFrame || window.webkitCancelAnimationFrame;
+    if (caf) return function (id) { caf.call(window, id); };
+    return function (id) { clearTimeout(id); };
+  })();
+
+  function anStart() {
+    anStop();
+    anBodies = [];
+    anScore = 0;
+    anOver = false;
+    anOverCount = 0;
+    anBiggestSeen = false;
+    anCooldown = 0;
+    anScoreEl.innerHTML = "0";
+    anMsgEl.innerHTML = "";
+    anMsgEl.className = "msg";
+    anPaintBest();
+    anResize();
+    anPickNext();
+    anRunning = true;
+    anFrame();
+  }
+
+  function anStop() {
+    anRunning = false;
+    if (anRaf !== null) { anCancel(anRaf); anRaf = null; }
+  }
+
+  if (anCtx) {
+    onTap(anCanvas, function (e) {
+      e = e || window.event;
+      var rect = anCanvas.getBoundingClientRect();
+      var cx = (e.clientX !== undefined ? e.clientX : 0) - rect.left;
+      anDrop(cx);
+    });
+  }
+
+  onTap($("animal-reset"), anStart);
+
+  // ============================================================
   // タブの切り替え
   // ============================================================
   var TABS = [
     { key: "mogura", tab: "tab-mogura", pane: "game-mogura", show: moStart, hide: moStop },
     { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: null },
     { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop },
-    { key: "paint",  tab: "tab-paint",  pane: "game-paint",  show: paStart, hide: null }
+    { key: "paint",  tab: "tab-paint",  pane: "game-paint",  show: paStart, hide: null },
+    { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop }
   ];
 
   function showTab(key) {
@@ -1110,7 +1449,7 @@
     (function (cfg) { onTap($(cfg.tab), function () { showTab(cfg.key); }); })(TABS[t]);
   }
 
-  window.onresize = function () { moResize(); meResize(); odResize(); paResize(); };
+  window.onresize = function () { moResize(); meResize(); odResize(); paResize(); anResize(); };
 
   // ---- 起動 ----
   moBuild();
