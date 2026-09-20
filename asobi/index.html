@@ -123,7 +123,7 @@
   .stamps .marks { font-size: 22px; letter-spacing: .06em; }
 
   /* ---- 共通パーツ ---- */
-  .score { font-size: 24px; font-weight: 700; margin: 0 0 12px; }
+  .score { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
   .score b { color: #e07a2f; color: var(--accent); font-size: 30px; }
   .msg {
     font-size: 26px;
@@ -159,7 +159,7 @@
     color: #fff;
   }
   .big.icon { font-size: 28px; padding: 10px 18px; min-width: 76px; }
-  .big.theme { font-size: 18px; padding: 12px 14px; min-height: 56px; }
+  .big.theme { font-size: 17px; padding: 9px 12px; min-height: 48px; margin-bottom: 4px; }
   .big.theme.locked { color: #a2977f; background: #efe8d6; }
 
   .ctrl { margin: 0 0 10px; }
@@ -274,7 +274,7 @@
   /* ---- どうぶつゲーム ---- */
   .best { font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px; min-height: 22px; }
   .nextface { font-size: 32px; vertical-align: middle; }
-  .dex { margin: 0 auto 4px; max-width: 620px; line-height: 1.5; }
+  .dex { margin: 0 auto 2px; max-width: 620px; line-height: 1.4; }
   .dex b { white-space: nowrap; font-weight: normal; }   /* 行のあたまが 矢印だけに ならないように */
   .dex span { font-size: 25px; vertical-align: middle; }
   .dex i { font-size: 15px; color: #a2977f; font-style: normal; vertical-align: middle; }
@@ -1308,8 +1308,9 @@
     if (w < 240) w = 240;
     // 箱の かたちは どの 画面でも おなじに する。
     // 画面に あわせて 高さを 変えると、むきを かえた だけで むずかしさと
-    // さいこう てんすうの いみが 変わってしまう。よこむきでは すこし スクロールしてもらう
-    var h = Math.round(w * 1.22);
+    // さいこう てんすうの いみが 変わってしまう。よこむきでは すこし スクロールしてもらう。
+    // たての ながさは、iPad で「もういちど」の ボタンまで 画面に 入る ように きめてある
+    var h = Math.round(w * 1.09);
     var changed = (w !== anW);
 
     anW = w;
