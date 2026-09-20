@@ -1126,6 +1126,9 @@
   var AN_GRAVITY = 0.26;         // ゆっくり おちる
   var AN_MU = 0.55;              // まさつ。これで ころがって ななめを むく
   var AN_MAX_SPIN = 0.32;
+  var AN_PUSH = 0.6;             // めり込みを 1回で どれだけ 押しもどすか
+  var AN_SLOP = 0.5;             // すこし めり込んだままに して、はじかれるのを ふせぐ
+  var AN_CALM = 1.3;             // これより おそい ものだけ「つみ上がった」と かぞえる
   var AN_ITER = 5;               // 押しあいを ならす 回数
   var AN_LINE = 0.13;            // このたかさを こえたら おしまい (高さに対する割合)
   var AN_OVER_FRAMES = 80;       // こえたまま この フレーム つづいたら おしまい
@@ -1279,7 +1282,7 @@
       return;
     }
 
-    anAdd(type + 1, x, y, 0, -1.2);
+    anAdd(type + 1, x, y, 0, 0);
     if (type + 1 >= AN_LAST && !anBiggestSeen) {
       anBiggestSeen = true;
       celebrate(anMsgEl, AN_FACES[AN_LAST] + " が できました！");
@@ -1325,17 +1328,17 @@
         if (b.dead) continue;
         if (b.x - b.r < 0) {
           b.x = b.r;
-          if (b.vx < 0) b.vx = -b.vx * 0.3;
+          if (b.vx < 0) b.vx = -b.vx * 0.12;
           anRub(b, b.vy - b.av * b.r, 0, -1);    // ひだりの かべ
         }
         if (b.x + b.r > anW) {
           b.x = anW - b.r;
-          if (b.vx > 0) b.vx = -b.vx * 0.3;
+          if (b.vx > 0) b.vx = -b.vx * 0.12;
           anRub(b, b.vy + b.av * b.r, 0, 1);     // みぎの かべ
         }
         if (b.y + b.r > anH) {
           b.y = anH - b.r;
-          if (b.vy > 0) b.vy = -b.vy * 0.15;
+          if (b.vy > 0) b.vy = -b.vy * 0.04;
           anRub(b, b.vx - b.av * b.r, 1, 1);     // ゆか
         }
         if (b.y - b.r < -anH) { b.y = -anH + b.r; }
@@ -1357,7 +1360,9 @@
           if (a.type === b.type && it === 0) { merges.push([a, b]); a.dead = true; b.dead = true; break; }
 
           var nx = dx / d, ny = dy / d;
-          var overlap = rr - d;
+          var overlap = rr - d - AN_SLOP;
+          if (overlap < 0) overlap = 0;
+          overlap *= AN_PUSH;
           var ma = a.r * a.r, mb = b.r * b.r, tot = ma + mb;
           a.x -= nx * overlap * (mb / tot);
           a.y -= ny * overlap * (mb / tot);
@@ -1366,7 +1371,7 @@
 
           var rvn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
           if (rvn < 0) {
-            var imp = -(1.08) * rvn / (1 / ma + 1 / mb);
+            var imp = -rvn / (1 / ma + 1 / mb);   // はねかえり なし
             a.vx -= imp * nx / ma; a.vy -= imp * ny / ma;
             b.vx += imp * nx / mb; b.vy += imp * ny / mb;
           }
@@ -1404,7 +1409,8 @@
     var over = false;
     for (i = 0; i < anBodies.length; i++) {
       b = anBodies[i];
-      if (b.age > 40 && b.y - b.r < lineY) { over = true; break; }
+      if (b.age > 40 && b.y - b.r < lineY &&
+          Math.abs(b.vy) < AN_CALM && Math.abs(b.vx) < AN_CALM) { over = true; break; }
     }
     if (over) {
       anOverCount++;
