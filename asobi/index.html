@@ -273,6 +273,12 @@
   .best { font-size: 18px; color: #6d6355; color: var(--sub); font-weight: 700; }
   .next { font-size: 19px; color: #6d6355; color: var(--sub); margin: 0 0 8px; font-weight: 700; }
   .next span { font-size: 30px; vertical-align: middle; }
+  .dex-label { font-size: 15px; color: #6d6355; color: var(--sub); margin: 0 0 2px; }
+  .dex { margin: 0 auto 8px; max-width: 560px; line-height: 1.6; }
+  .dex b { white-space: nowrap; font-weight: normal; }   /* 行のあたまが 矢印だけに ならないように */
+  .dex span { font-size: 25px; vertical-align: middle; }
+  .dex i { font-size: 15px; color: #a2977f; font-style: normal; vertical-align: middle; }
+  .dex .yet { opacity: .45; }
   #animal-wrap { margin: 0 auto; }
   #animal-canvas {
     display: block;
@@ -350,11 +356,13 @@
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
 <div id="game-animal" style="display:none">
   <p class="score">てんすう　<b id="animal-score">0</b>　<span id="animal-best" class="best"></span></p>
+  <p class="dex-label">これまでに でた どうぶつ</p>
+  <p class="dex" id="animal-dex"></p>
   <p id="animal-next" class="next">つぎは　<span id="animal-next-face">🐭</span></p>
   <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
   <p class="msg" id="animal-msg"></p>
   <button type="button" class="big" id="animal-reset">もういちど</button>
-  <p class="note">おとしたい ところを さわると、どうぶつが おちます。<br>おなじ どうぶつ が くっつくと、大きい どうぶつ に なります。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
+  <p class="note">おとしたい ところを さわると、どうぶつが おちます。<br>おなじ どうぶつ が くっつくと、大きい どうぶつ に なります。<br>はじめて でた どうぶつは、うえの ハテナが めくれます。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
 </div>
 
 <div id="confetti"></div>
@@ -1115,7 +1123,9 @@
   var AN_FACES = ["🐭", "🐹", "🐰", "🐱", "🐶", "🐷", "🐮", "🐯", "🐻", "🐘"];
   var AN_LAST = AN_FACES.length - 1;
   var AN_DROPPABLE = 4;          // おちてくるのは 小さい 4 しゅるい だけ
-  var AN_GRAVITY = 0.55;
+  var AN_GRAVITY = 0.26;         // ゆっくり おちる
+  var AN_MU = 0.55;              // まさつ。これで ころがって ななめを むく
+  var AN_MAX_SPIN = 0.32;
   var AN_ITER = 5;               // 押しあいを ならす 回数
   var AN_LINE = 0.13;            // このたかさを こえたら おしまい (高さに対する割合)
   var AN_OVER_FRAMES = 80;       // こえたまま この フレーム つづいたら おしまい
@@ -1132,6 +1142,36 @@
   var anRaf = null, anRunning = false, anCooldown = 0;
 
   function anRadius(type) { return anRadii[type]; }
+
+  // どこまで でたか。まだ でていない どうぶつは ハテナで みせる
+  var anDexEl = $("animal-dex");
+  var anMax = Number(load("animal-max", "-1"));
+  if (!(anMax >= 0 && anMax <= AN_LAST)) anMax = -1;
+
+  function anPaintDex() {
+    var html = "";
+    for (var i = 0; i < AN_FACES.length; i++) {
+      var face = i <= anMax
+        ? "<span>" + AN_FACES[i] + "</span>"
+        : '<span class="yet">❓</span>';
+      html += "<b>" + (i > 0 ? "<i> → </i>" : "") + face + "</b>";
+    }
+    anDexEl.innerHTML = html;
+  }
+
+  // でた どうぶつを おぼえる。はじめての 大きい どうぶつは しらせる
+  function anSeen(type) {
+    if (type <= anMax) return;
+    var firstBig = type >= AN_DROPPABLE;
+    anMax = type;
+    save("animal-max", anMax);
+    anPaintDex();
+    if (firstBig && type < AN_LAST) {
+      anMsgEl.className = "msg";
+      anMsgEl.innerHTML = "はじめての " + AN_FACES[type] + " が でました！";
+      soundGold();
+    }
+  }
 
   // どうぶつの絵は まいかい 描くと 重いので、いちど 画像にしてから 使いまわす
   function anBuildSprites() {
@@ -1189,8 +1229,11 @@
     anBodies.push({
       type: type, r: anRadius(type),
       x: x, y: y, vx: vx || 0, vy: vy || 0,
+      a: (Math.random() - 0.5) * 0.3,          // むき
+      av: (Math.random() - 0.5) * 0.04,        // まわる はやさ
       age: 0, dead: false
     });
+    anSeen(type);
   }
 
   function anPickNext() {
@@ -1237,6 +1280,20 @@
     }
   }
 
+  function anClampSpin(b) {
+    if (b.av > AN_MAX_SPIN) b.av = AN_MAX_SPIN;
+    else if (b.av < -AN_MAX_SPIN) b.av = -AN_MAX_SPIN;
+  }
+
+  // かべや ゆかを こすった ぶんだけ、すべりを へらして そのぶん まわす。
+  // slip は 接している点の すべる はやさ、axis は 0=たて 1=よこ、sign は まわる むき。
+  function anRub(b, slip, axis, sign) {
+    var j = -slip * AN_MU / 3;
+    if (axis === 1) b.vx += j; else b.vy += j;
+    b.av += sign * -2 * j / b.r;
+    anClampSpin(b);
+  }
+
   function anStep() {
     var i, j, b;
 
@@ -1246,8 +1303,10 @@
       b.vy += AN_GRAVITY;
       b.vx *= 0.995;
       b.vy *= 0.995;
+      b.av *= 0.99;
       b.x += b.vx;
       b.y += b.vy;
+      b.a += b.av;
     }
 
     var merges = [];
@@ -1256,9 +1315,21 @@
       for (i = 0; i < anBodies.length; i++) {
         b = anBodies[i];
         if (b.dead) continue;
-        if (b.x - b.r < 0) { b.x = b.r; if (b.vx < 0) b.vx = -b.vx * 0.3; }
-        if (b.x + b.r > anW) { b.x = anW - b.r; if (b.vx > 0) b.vx = -b.vx * 0.3; }
-        if (b.y + b.r > anH) { b.y = anH - b.r; if (b.vy > 0) b.vy = -b.vy * 0.15; b.vx *= 0.88; }
+        if (b.x - b.r < 0) {
+          b.x = b.r;
+          if (b.vx < 0) b.vx = -b.vx * 0.3;
+          anRub(b, b.vy - b.av * b.r, 0, -1);    // ひだりの かべ
+        }
+        if (b.x + b.r > anW) {
+          b.x = anW - b.r;
+          if (b.vx > 0) b.vx = -b.vx * 0.3;
+          anRub(b, b.vy + b.av * b.r, 0, 1);     // みぎの かべ
+        }
+        if (b.y + b.r > anH) {
+          b.y = anH - b.r;
+          if (b.vy > 0) b.vy = -b.vy * 0.15;
+          anRub(b, b.vx - b.av * b.r, 1, 1);     // ゆか
+        }
         if (b.y - b.r < -anH) { b.y = -anH + b.r; }
       }
       // どうぶつ どうし
@@ -1290,6 +1361,22 @@
             var imp = -(1.08) * rvn / (1 / ma + 1 / mb);
             a.vx -= imp * nx / ma; a.vy -= imp * ny / ma;
             b.vx += imp * nx / mb; b.vy += imp * ny / mb;
+          }
+
+          // 接している点での すべり。まわっている ぶんも 入れて 計算する
+          var tx = -ny, ty = nx;
+          var rvx = (b.vx + b.av * b.r * ny) - (a.vx - a.av * a.r * ny);
+          var rvy = (b.vy - b.av * b.r * nx) - (a.vy + a.av * a.r * nx);
+          var vt = rvx * tx + rvy * ty;
+          if (vt !== 0) {
+            // 円板の 慣性モーメント 0.5*m*r^2 から、まさつの ききめは 3/m になる
+            var jt = -vt / (3 / ma + 3 / mb) * AN_MU;
+            a.vx -= jt * tx / ma; a.vy -= jt * ty / ma;
+            b.vx += jt * tx / mb; b.vy += jt * ty / mb;
+            a.av += -2 * jt / (ma * a.r);
+            b.av += -2 * jt / (mb * b.r);
+            anClampSpin(a);
+            anClampSpin(b);
           }
         }
       }
@@ -1363,7 +1450,11 @@
       var b = anBodies[i];
       var sp = anSprites[b.type];
       if (!sp) continue;
-      g.drawImage(sp, b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
+      g.save();
+      g.translate(b.x, b.y);
+      g.rotate(b.a);
+      g.drawImage(sp, -b.r, -b.r, b.r * 2, b.r * 2);
+      g.restore();
     }
   }
 
@@ -1398,6 +1489,7 @@
     anMsgEl.innerHTML = "";
     anMsgEl.className = "msg";
     anPaintBest();
+    anPaintDex();
     anResize();
     anPickNext();
     anRunning = true;
