@@ -1154,7 +1154,10 @@
       var face = i <= anMax
         ? "<span>" + AN_FACES[i] + "</span>"
         : '<span class="yet">❓</span>';
-      html += "<b>" + (i > 0 ? "<i> → </i>" : "") + face + "</b>";
+      // 矢印と どうぶつを ひとまとまりにし、その あいだに すきまを 入れる。
+      // すきまが ないと 行を おりかえせる 場所が なく、横に はみ出してしまう
+      var item = "<b>" + (i > 0 ? "<i> → </i>" : "") + face + "</b>";
+      html += (i > 0 ? " " : "") + item;
     }
     anDexEl.innerHTML = html;
   }
@@ -1202,11 +1205,16 @@
     var w = Math.min(vw - 30, 360);
     if (w < 240) w = 240;
     var h = Math.round(w * 1.22);
-    // タブレットの よこむきなど 画面が ひくい ときは、箱が 下に はみ出さないようにする
+    // タブレットの よこむきなど 画面が ひくい ときは、箱が 下に はみ出さないようにする。
+    // 上の 見出しの 高さは 変わるので、そのつど はかって あわせる
     if (vw >= 700) {
-      var fit = vh - 350;
-      if (fit < h) h = fit;
-      if (h < Math.round(w * 0.9)) h = Math.round(w * 0.9);
+      var top = 0;
+      try { top = anCanvas.getBoundingClientRect().top; } catch (e) { top = 0; }
+      if (top > 0) {
+        var fit = Math.round(vh - top - 110);   // 下に メッセージと ボタンの ぶんを のこす
+        if (fit < h) h = fit;
+        if (h < Math.round(w * 0.9)) h = Math.round(w * 0.9);
+      }
     }
     var changed = (w !== anW);
 
