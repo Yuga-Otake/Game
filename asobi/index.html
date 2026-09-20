@@ -362,7 +362,7 @@
   <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
   <p class="msg" id="animal-msg"></p>
   <button type="button" class="big" id="animal-reset">もういちど</button>
-  <p class="note">おとしたい ところを さわると、どうぶつが おちます。<br>おなじ どうぶつ が くっつくと、大きい どうぶつ に なります。<br>はじめて でた どうぶつは、うえの ハテナが めくれます。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
+  <p class="note">おとしたい ところを さわると、どうぶつが おちます。<br>おなじ どうぶつ が くっつくと、大きい どうぶつ に なります。<br>🐘 を つくると 100てん。🐘 は それいじょう 大きく なりません。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
 </div>
 
 <div id="confetti"></div>
@@ -1120,15 +1120,16 @@
   // どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる)
   // ============================================================
   // 小さい → 大きい の順。くっつくと ひとつ 右のどうぶつ になる
-  var AN_FACES = ["🐭", "🐹", "🐰", "🐱", "🐶", "🐷", "🐮", "🐯", "🐻", "🦛", "🐘", "🐳"];
+  var AN_FACES = ["🐭", "🐹", "🐰", "🐱", "🐶", "🐻", "🐘"];
   var AN_LAST = AN_FACES.length - 1;
-  var AN_DROPPABLE = 5;          // おちてくるのは 小さい 5 しゅるい だけ
+  var AN_DROPPABLE = 3;          // おちてくるのは 小さい 3 しゅるい だけ
 
-  // 1だんごとの 大きさの ばい。序盤は ちいさく、終盤は 1.3ばい ちかく。
-  // 合体すると 2ひきぶんの 面積が (ばい)^2 に なるので、ばいが 大きいほど
-  // 合体しても 場所が あかず、終盤ほど 箱が つまりやすい。
-  var AN_BASE = 0.039;
-  var AN_STEPS = [1.17, 1.18, 1.19, 1.20, 1.21, 1.21, 1.22, 1.23, 1.23, 1.24, 1.25];
+  // 1だんごとに 1.41ばい (2の へいほうこん)。
+  // 合体すると 2ひきぶんの 面積が (ばい)^2 に なる。1.41ばい だと ちょうど
+  // 2ばい なので、合体しても 場所が あかない。だから 箱は かならず つまる。
+  // ここを 小さくすると 合体の たびに 場所が あいて、いつまでも おわらなく なる。
+  var AN_BASE = 0.034;
+  var AN_STEPS = [1.41, 1.41, 1.41, 1.41, 1.41, 1.41];
   var AN_GRAVITY = 0.26;         // ゆっくり おちる
   var AN_MU = 0.55;              // まさつ。これで ころがって ななめを むく
   var AN_MAX_SPIN = 0.32;
@@ -1156,6 +1157,7 @@
   var anDexEl = $("animal-dex");
   var anMax = Number(load("animal-max", "-1"));
   if (!(anMax >= 0 && anMax <= AN_LAST)) anMax = -1;
+  var anBigMade = Number(load("animal-big", "0")) || 0;
 
   function anPaintDex() {
     var html = "";
@@ -1271,17 +1273,16 @@
     b.dead = true;
 
     anScore += anScoreFor(type);
+    // いちばん 大きい どうぶつを つくれたら おおきな てんすう
+    if (type + 1 >= AN_LAST) anScore += 100;
     anScoreEl.innerHTML = String(anScore);
 
-    if (type >= AN_LAST) {
-      // いちばん 大きい どうぶつ どうしは きえて、おおきな てんすう
-      anScore += 100;
-      anScoreEl.innerHTML = String(anScore);
-      soundClear();
-      return;
-    }
-
     anAdd(type + 1, x, y, 0, 0);
+    if (type + 1 >= AN_LAST) {
+      anBigMade++;
+      save("animal-big", anBigMade);
+      anPaintBest();
+    }
     if (type + 1 >= AN_LAST && !anBiggestSeen) {
       anBiggestSeen = true;
       celebrate(anMsgEl, AN_FACES[AN_LAST] + " が できました！");
@@ -1356,7 +1357,11 @@
           var d = Math.sqrt(d2);
           if (d < 0.0001) { dx = 0.1; dy = 0; d = 0.1; }
 
-          if (a.type === b.type && it === 0) { merges.push([a, b]); a.dead = true; b.dead = true; break; }
+          // いちばん 大きい どうぶつ どうしは くっつかない。
+          // ここで 消してしまうと 場所が 大きく あいて、いつまでも おわらなく なる
+          if (a.type === b.type && a.type < AN_LAST && it === 0) {
+            merges.push([a, b]); a.dead = true; b.dead = true; break;
+          }
 
           var nx = dx / d, ny = dy / d;
           var overlap = rr - d - AN_SLOP;
@@ -1441,7 +1446,9 @@
   }
 
   function anPaintBest() {
-    anBestEl.innerHTML = anBest > 0 ? "（さいこう " + anBest + "てん）" : "";
+    var txt = anBest > 0 ? "（さいこう " + anBest + "てん" : "";
+    if (anBigMade > 0) txt += (txt ? "・" : "（") + AN_FACES[AN_LAST] + " " + anBigMade + "とう";
+    anBestEl.innerHTML = txt ? txt + "）" : "";
   }
 
   function anDraw() {
