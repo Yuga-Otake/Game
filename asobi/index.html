@@ -1184,7 +1184,8 @@
     anRadii = [];
     anSprites = [];
     for (var i = 0; i < AN_FACES.length; i++) {
-      var r = Math.round(anW * 0.05 * Math.pow(1.17, i));
+      // 1だんごとに 1.24ばい。いちばん 小さいのと 大きいので 7ばい ちがう
+      var r = Math.round(anW * 0.039 * Math.pow(1.24, i));
       anRadii.push(r);
       var c = document.createElement("canvas");
       var size = Math.ceil(r * 2 * anDpr);
