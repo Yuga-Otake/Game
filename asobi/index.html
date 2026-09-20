@@ -314,13 +314,13 @@
 
 <!-- もぐらたたき -->
 <div id="game-mogura">
-  <p class="score">たたいた かず　<b id="mogura-score">0</b> / 10　　⏱ <b id="mogura-time">0</b> びょう</p>
+  <p class="score">たたいた かず　<b id="mogura-score">0</b>　　のこり ⏱ <b id="mogura-time">30</b> びょう</p>
   <p class="best" id="mogura-best"></p>
-  <div class="ctrl"><span class="label">はやさ</span><span id="mogura-speeds"></span></div>
+  <div class="ctrl"><span class="label">なにを たたく</span><span id="mogura-themes"></span></div>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note">もぐらが でてきたら ゆびで さわってください。<br>はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんのもぐら</b> が でてきます（3びきぶん・てんすうも 3ばい）。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -548,22 +548,33 @@
   // ============================================================
   // もぐらたたき
   // ============================================================
-  var MO_COLS = 3, MO_ROWS = 2, MO_GOAL = 10;
-  var MO_SPEEDS = [
-    { key: "slow", label: "ゆっくり", up: 2800, gap: 900 },
-    { key: "normal", label: "ふつう", up: 1900, gap: 600 }
+  // 30びょうで なんかい たたけるかを きそう。
+  // 1つ クリアすると つぎの いきものが でてくる。あとの ものほど はやい。
+  var MO_COLS = 3, MO_ROWS = 2, MO_TIME = 30;
+  // さかいめは 30びょうの ラウンドを たたく はやさを かえて 実測して きめた。
+  //   のんびり 1ぴき 1かいずつ / ゆっくり 2〜3かい / そこそこ / きびきび / はやく れんだ
+  //   もぐら  152 / 276 / 392 /  578 /  840
+  //   ワニ    160 / 400 / 480 / 1008 / 1194
+  //   サメ    150 / 100 / 440 /  492 / 1686
+  // 🏅 たつじん が つぎの いきものが あく ところ。「そこそこ〜きびきび」で とどく。
+  // 👑 は れんだ しないと とどかない ところに おく。
+  // up は でている あいだ。900ミリびょう より みじかいと、ゆっくりの 人は
+  // 1かいも さわれずに おわってしまうので、そこまでは みじかく しない。
+  var MO_THEMES = [
+    { key: "mole",   name: "もぐら",   icon: "🐹", face: "🐹", up: 2800, gap: 900,
+      ranks: [80, 160, 280, 420, 760] },
+    { key: "wani",   name: "ワニ",     icon: "🐊", face: "🐊", up: 1800, gap: 600,
+      ranks: [100, 220, 400, 620, 1050] },
+    { key: "same",   name: "サメ",     icon: "🦈", face: "🦈", up: 1200, gap: 420,
+      ranks: [120, 260, 460, 700, 1300] },
+    { key: "ryu",    name: "ドラゴン", icon: "🐉", face: "🐉", up: 1000, gap: 300,
+      ranks: [140, 300, 540, 820, 1500] }
   ];
+  var MO_OPEN_AT = 3;            // 🏅 たつじん まで いくと つぎが あく
 
   var moBoard = $("mogura-board"), moBody = $("mogura-body");
   var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg");
   // たたくまでが はやいほど たくさん もらえる。おそくても へらない
-  // れんだ できるように してから 実測しなおした てんすう:
-  //   ゆっくり 1かいだけ      120
-  //   ふつうに すこし れんだ   284〜308
-  //   はやく れんだ          552〜624
-  //   とても はやく れんだ     580〜660 (1ぴき 10かいの 上限で ここで 止まる)
-  // 👑 は いちばん はやい あたりに おく。かんたんには とどかない
-  var MO_RANKS = [100, 180, 280, 450, 620];
   var MO_POINTS = [
     { within: 600,  point: 30 },
     { within: 1200, point: 20 },
@@ -574,10 +585,34 @@
   var MO_EXTRA_MAX = 10;         // 1ぴきあたり の れんだの うけつけ かいすう
 
   var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1, moGold = false;
-  var moPoints = 0, moUpAt = 0, moBeganAt = 0, moSeconds = 0, moClockTimer = null;
+  var moPoints = 0, moUpAt = 0, moEndsAt = 0, moLeft = MO_TIME, moClockTimer = null;
   var moCounted = false, moExtra = 0;   // いまの もぐらを もう かぞえたか / れんだの かいすう
-  var moBest = Number(load("mogura-best", "0")) || 0;
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
+
+  // むかしの きろくは もぐらの ものとして ひきつぐ
+  (function () {
+    if (load("mo-moved", "0") === "1") return;
+    var old = Number(load("mogura-best", "0")) || 0;
+    if (old > 0) save("mo-mole-best", old);
+    save("mo-moved", "1");
+  })();
+
+  var moTheme = MO_THEMES[0], moBest = 0;
+
+  function moThemeIndex(t) {
+    for (var i = 0; i < MO_THEMES.length; i++) if (MO_THEMES[i] === t) return i;
+    return 0;
+  }
+  // ひとつ前の いきもので 🏅 たつじん まで とれていたら あく。
+  // べつの しるしを 持たず さいこう てんすうから 見るので、きろくと ずれない
+  function moThemeOpen(t) {
+    var i = moThemeIndex(t);
+    if (i === 0) return true;
+    var prev = MO_THEMES[i - 1];
+    return rankIndexOf(moBestOf(prev), prev.ranks) >= MO_OPEN_AT;
+  }
+  function moBestOf(t) { return Number(load("mo-" + t.key + "-best", "0")) || 0; }
+  function moLoadTheme() { moBest = moBestOf(moTheme); }
 
   function moPointFor(ms) {
     for (var i = 0; i < MO_POINTS.length; i++) if (ms <= MO_POINTS[i].within) return MO_POINTS[i].point;
@@ -585,39 +620,73 @@
   }
 
   function moPaintBest() {
-    var now = moPoints > 0 ? "てんすう " + moPoints + " " + rankLabelOf(moPoints, MO_RANKS) : "";
-    var best = moBest > 0 ? "（さいこう " + moBest + "てん " + rankLabelOf(moBest, MO_RANKS) + "）" : "";
+    var mins = moTheme.ranks;
+    var now = moPoints > 0 ? "てんすう " + moPoints + " " + rankLabelOf(moPoints, mins) : "";
+    var best = moBest > 0 ? "（さいこう " + moBest + "てん " + rankLabelOf(moBest, mins) + "）" : "";
     moBestEl.innerHTML = now + (now && best ? "　" : "") + best;
   }
 
+  function moPaintClock() { moTimeEl.innerHTML = String(moLeft); }
+
   function moStartClock() {
-    moBeganAt = new Date().getTime();
-    moSeconds = 0;
-    moTimeEl.innerHTML = "0";
+    moEndsAt = new Date().getTime() + MO_TIME * 1000;
+    moLeft = MO_TIME;
+    moPaintClock();
     if (moClockTimer !== null) clearInterval(moClockTimer);
     moClockTimer = setInterval(function () {
-      moSeconds = Math.floor((new Date().getTime() - moBeganAt) / 1000);
-      if (moSeconds > 999) moSeconds = 999;
-      moTimeEl.innerHTML = String(moSeconds);
-    }, 250);
+      var left = Math.ceil((moEndsAt - new Date().getTime()) / 1000);
+      if (left < 0) left = 0;
+      if (left !== moLeft) { moLeft = left; moPaintClock(); }
+      if (left <= 0) moFinish();
+    }, 100);
   }
   function moStopClock() {
     if (moClockTimer !== null) { clearInterval(moClockTimer); moClockTimer = null; }
   }
   var moUpTimer = null, moNextTimer = null, moPopTimer = null, moRunning = false;
-  var moSpeed = MO_SPEEDS[0];
 
   (function () {
-    var key = load("speed", "slow");
-    for (var i = 0; i < MO_SPEEDS.length; i++) if (MO_SPEEDS[i].key === key) moSpeed = MO_SPEEDS[i];
+    var key = load("mo-theme", "mole");
+    for (var i = 0; i < MO_THEMES.length; i++) {
+      if (MO_THEMES[i].key === key && moThemeOpen(MO_THEMES[i])) moTheme = MO_THEMES[i];
+    }
+    moLoadTheme();
   })();
 
+  function moBuildThemeButtons() {
+    var host = $("mogura-themes");
+    while (host.firstChild) host.removeChild(host.firstChild);
+    for (var i = 0; i < MO_THEMES.length; i++) {
+      (function (t) {
+        var open = moThemeOpen(t);
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "big theme" + (t === moTheme ? " on" : "") + (open ? "" : " locked");
+        b.innerHTML = open ? t.icon + " " + t.name : "🔒 " + t.name;
+        b.setAttribute("data-key", t.key);
+        onTap(b, function () {
+          if (!open) {
+            // まだ あいていない。なにを すれば いいか だけ 教える
+            var prev = MO_THEMES[moThemeIndex(t) - 1];
+            moMsgEl.className = "msg again";
+            moMsgEl.innerHTML = prev.icon + " で " + RANK_MARKS[MO_OPEN_AT].mark + " " +
+              RANK_MARKS[MO_OPEN_AT].name + "（" + prev.ranks[MO_OPEN_AT] + "てん）を とると あそべます";
+            soundAgain();
+            return;
+          }
+          moTheme = t;
+          save("mo-theme", t.key);
+          moLoadTheme();
+          moBuildThemeButtons();
+          moStart();
+        });
+        host.appendChild(b);
+      })(MO_THEMES[i]);
+    }
+  }
+
   function moBuild() {
-    buildPicker($("mogura-speeds"), MO_SPEEDS, function (c) { return c === moSpeed; }, "big", function (cfg) {
-      moSpeed = cfg;
-      save("speed", cfg.key);
-      moStart();
-    });
+    moBuildThemeButtons();
 
     while (moBody.firstChild) moBody.removeChild(moBody.firstChild);
     moHoles = [];
@@ -668,11 +737,11 @@
     moLast = i;
     moCurrent = i;
 
-    // 4回に1回くらい きんのもぐら。ただし ゴールを とびこえない ときだけ
-    moGold = (MO_GOAL - moScore) > 2 && Math.random() < 0.25;
+    moGold = Math.random() < 0.25;   // 4回に1回くらい きんのもぐら
 
     var hole = moHoles[i];
-    // もぐらの絵は かならず 1 文字。2 文字にすると おりかえして まるが たてに のびる
+    // いきものの絵は かならず 1 文字。2 文字にすると おりかえして まるが たてに のびる
+    hole.getElementsByTagName("span")[0].innerHTML = moTheme.face;
     hole.getElementsByTagName("span")[1].innerHTML = moGold ? "✨＋3" : "＋1";
     hole.className = moGold ? "hole up gold" : "hole up";
     moUpAt = new Date().getTime();
@@ -682,8 +751,8 @@
     // たたかなくても しばらくすると ひっこむ (失敗にはならない)
     moUpTimer = setTimeout(function () {
       moHideCurrent();
-      moNextTimer = setTimeout(moSpawn, moSpeed.gap);
-    }, moSpeed.up);
+      moNextTimer = setTimeout(moSpawn, moTheme.gap);
+    }, moTheme.up);
   }
 
   function moHit(el) {
@@ -694,11 +763,8 @@
     var got;
 
     if (!moCounted) {
-      // 1かいめ。ここで かずが すすむ。たたくまでの はやさで てんすうが きまる
+      // 1かいめ。たたくまでの はやさで てんすうが きまる
       moCounted = true;
-      moScore += mult;
-      if (moScore > MO_GOAL) moScore = MO_GOAL;
-      moScoreEl.innerHTML = String(moScore);
       got = moPointFor(new Date().getTime() - moUpAt) * mult;
       if (moGold) soundGold(); else soundHit();
     } else if (moExtra < MO_EXTRA_MAX) {
@@ -710,10 +776,12 @@
       return;   // たたきすぎ。ここから さきは つかない
     }
 
+    moScore++;                     // 30びょうで たたけた かいすう
+    moScoreEl.innerHTML = String(moScore);
     moPoints += got;
     moPaintBest();
 
-    // もぐらは ひっこまない。たたけたことが わかるよう 一しゅん 光らせる
+    // いきものは ひっこまない。たたけたことが わかるよう 一しゅん 光らせる
     el.getElementsByTagName("span")[1].innerHTML = "＋" + got;
     el.className = (moGold ? "hole up gold hit" : "hole up hit");
     if (moPopTimer !== null) clearTimeout(moPopTimer);
@@ -722,17 +790,40 @@
         if (hole.className.indexOf("up") >= 0) hole.className = gold ? "hole up gold" : "hole up";
       }, 160);
     })(el, moGold);
+  }
 
-    if (moScore >= MO_GOAL) {
-      moRunning = false;
-      moClearTimers();
-      moHideCurrent();
-      moStopClock();
-      var best = moPoints > moBest;
-      if (best) { moBest = moPoints; save("mogura-best", moBest); }
-      moPaintBest();
-      celebrate(moMsgEl, moSeconds + "びょうで " + moPoints + "てん！" +
-        (best ? " さいこう きろく！" : ""));
+  // 30びょう たったら おしまい。てんすうと しょうごうを だす
+  function moFinish() {
+    if (!moRunning) return;
+    moRunning = false;
+    moClearTimers();
+    moHideCurrent();
+    moStopClock();
+    moLeft = 0;
+    moPaintClock();
+
+    var wasOpen = rankIndexOf(moBest, moTheme.ranks) >= MO_OPEN_AT;
+    var best = moPoints > moBest;
+    if (best) { moBest = moPoints; save("mo-" + moTheme.key + "-best", moBest); }
+    moPaintBest();
+
+    // 🏅 たつじん まで いったら つぎの いきものが あく
+    var next = MO_THEMES[moThemeIndex(moTheme) + 1];
+    var opened = !wasOpen && rankIndexOf(moBest, moTheme.ranks) >= MO_OPEN_AT;
+    if (opened) moBuildThemeButtons();
+
+    var text = MO_TIME + "びょうで " + moScore + "かい・" + moPoints + "てん！";
+    var label = rankLabelOf(moPoints, moTheme.ranks);
+    if (label) text += " " + label;
+    if (best) text += " さいこう きろく！";
+    if (opened && next) text += " " + next.icon + " " + next.name + " が あきました！";
+    // はなまるは しょうごうが ついた ラウンドだけ。さわらずに おわった ぶんは かぞえない
+    if (label) {
+      celebrate(moMsgEl, text);
+    } else {
+      moMsgEl.className = "msg";
+      moMsgEl.innerHTML = text + " もういちど どうぞ";
+      soundAgain();
     }
   }
 
@@ -748,7 +839,7 @@
     moPaintBest();
     moStartClock();
     moRunning = true;
-    moNextTimer = setTimeout(moSpawn, moSpeed.gap);
+    moNextTimer = setTimeout(moSpawn, moTheme.gap);
   }
 
   function moStop() {
@@ -757,6 +848,8 @@
     moClearTimers();
     if (moPopTimer !== null) { clearTimeout(moPopTimer); moPopTimer = null; }
     moHideCurrent();
+    moLeft = MO_TIME;
+    moPaintClock();
   }
 
   onTap($("mogura-reset"), moStart);
