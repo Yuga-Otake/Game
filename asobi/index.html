@@ -330,7 +330,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -563,10 +563,12 @@
   var MO_COLS = 3, MO_ROWS = 2, MO_TIME = 30;
   // さかいめは 30びょうの ラウンドを たたく はやさを かえて 実測して きめた。
   //   のんびり 1ぴき 1かいずつ / ゆっくり 2〜3かい / そこそこ / きびきび / はやく れんだ
-  //   もぐら  104 / 228 / 378 /  568 /  980
-  //   ワニ    166 / 215 / 648 /  523 / 1223
-  //   サメ    170 / 100 / 715 /  616 /  977
-  //   ドラゴン 160 / 290 / 210 / 1093 / 1178
+  //   もぐら  205 / 198 / 279 /  354 /  731
+  //   ワニ    270 / 365 / 332 /  724 /  890
+  //   サメ    555 / 405 / 758 /  460 /  954
+  //   ドラゴン 495 / 490 / 753 / 1175 /  868
+  // 1ラウンドは 3〜5わり ばらつく (ボーナスが 来るか、きんいろが 出るかは 運)。
+  // なので さかいめは 1かいの けっかに ぴったり あわせず、すこし 下に とってある。
   // 🏅 たつじん が つぎの いきものが あく ところ。「そこそこ〜きびきび」で とどく。
   // 👑 は れんだ しないと とどかない ところに おく。
   // ドラゴンの 👑 だけは 真・ドラゴンを あける かぎなので、「きびきび」で とどく
@@ -576,19 +578,21 @@
   // up は でている あいだ。900ミリびょう より みじかいと、ゆっくりの 人は
   // 1かいも さわれずに おわってしまうので、そこまでは みじかく しない。
   var MO_THEMES = [
-    { key: "mole",   name: "もぐら",   icon: "🐹", face: "🐹", low: "🐭", up: 2800, gap: 900,
-      ranks: [60, 110, 220, 400, 850] },
-    { key: "wani",   name: "ワニ",     icon: "🐊", face: "🐊", low: "🐹", up: 1800, gap: 600,
-      ranks: [90, 170, 300, 520, 1050] },
-    { key: "same",   name: "サメ",     icon: "🦈", face: "🦈", low: "🐊", up: 1200, gap: 420,
+    { key: "mole",   name: "もぐら",   icon: "🐹", face: "🐹", low: "🐭", up: 2800, gap: 900, at: 1,
+      ranks: [60, 110, 220, 320, 750] },
+    { key: "wani",   name: "ワニ",     icon: "🐊", face: "🐊", low: "🐹", up: 1800, gap: 600, at: 2,
+      ranks: [90, 170, 300, 520, 900] },
+    { key: "same",   name: "サメ",     icon: "🦈", face: "🦈", low: "🐊", up: 1200, gap: 420, at: 2,
       ranks: [100, 190, 340, 580, 950] },
-    { key: "ryu",    name: "ドラゴン", icon: "🐉", face: "🐉", low: "🦈", up: 1000, gap: 300,
+    { key: "ryu",    name: "ドラゴン", icon: "🐉", face: "🐉", low: "🦈", up: 1000, gap: 300, at: 3,
       ranks: [110, 210, 380, 650, 900] },
     // さいごの ひとつだけ しくみが ちがう。下の「真・ドラゴン」を 見てください
-    { key: "shin",   name: "真・ドラゴン", icon: "🔥", face: "🐲", low: "🐊", up: 1000, gap: 300,
+    { key: "shin",   name: "真・ドラゴン", icon: "🔥", face: "🐲", low: "🐊", up: 1000, gap: 300, at: 3,
       ranks: [500, 1000, 1800, 3000, 6000], endless: true, openAt: 4 }
   ];
   var MO_OPEN_AT = 3;            // 🏅 たつじん まで いくと つぎが あく
+  // at は いちどに 何びきまで 出るか。もぐらは 1ぴきの まま にしてある
+  // (いちばん はじめに あそぶ ゲームなので、ここで まようように したくない)
 
   // その ゲームの いきものだけでなく、てんすうの ひくい ものも まざって 出てくる。
   // low は その ゲームより ひとつ 前の いきもの。🐍 は どの ゲームでも いちばん ひくい。
@@ -603,16 +607,20 @@
   ];
   // ---- ボーナスタイム ----
   // ときどき 5びょうだけ ぜんぶ きんいろに なる。その あいだは てんすうの ひくい
-  // いきものは 出ない。出る かくりつは 1ぴきぶんの まちじかん に あわせて あるので、
-  // はやい ゲームでも おそい ゲームでも 「およそ 25びょうに 1かい」で そろう。
+  // いきものは 出ない。出るか どうかは 「前に しらべてから 何ミリびょう たったか」で
+  // きめるので、しらべる 間かくにも ゲームの はやさにも よらず、どれでも
+  // 「およそ 25びょうに 1かい」で そろう。
   var MO_BONUS_MS = 5000;        // ボーナスタイムの ながさ
   var MO_BONUS_EVERY = 25000;    // だいたい これくらいごとに 1かい
   var MO_BONUS_REST = 8000;      // おわってから つぎまで さいてい これだけ あける
   var MO_BONUS_LEAD = 5000;      // はじまって すぐには 出さない
-  var moBonusUntil = 0, moBonusNextOk = 0, moBonusOn = false;
+  var moBonusUntil = 0, moBonusNextOk = 0, moBonusOn = false, moBonusSeenAt = 0;
 
   function moBonusCheck() {
     var now = new Date().getTime();
+    var since = moBonusSeenAt ? now - moBonusSeenAt : 0;
+    if (since > MO_BONUS_EVERY) since = MO_BONUS_EVERY;
+    moBonusSeenAt = now;
     if (now < moBonusUntil) return;                 // いま ボーナス中
     if (moBonusOn) {                                // たったいま おわった
       moBonusOn = false;
@@ -620,7 +628,7 @@
       if (moMsgEl.innerHTML.indexOf("ボーナス") >= 0) moMsgEl.innerHTML = "";
     }
     if (now < moBonusNextOk) return;
-    if (Math.random() >= (moUpNow() + moGapNow()) / MO_BONUS_EVERY) return;
+    if (Math.random() >= since / MO_BONUS_EVERY) return;
     moBonusUntil = now + MO_BONUS_MS;
     moBonusNextOk = moBonusUntil + MO_BONUS_REST;
     moBonusOn = true;
@@ -695,11 +703,10 @@
   var MO_EXTRA = 4;              // 出ている あいだの 2かいめ いこうの 1たたき
   var MO_EXTRA_MAX = 10;         // 1ぴきあたり の れんだの うけつけ かいすう
 
-  var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1, moGold = false;
+  var moHoles = [], moScore = 0, moLast = -1;
   var moPoints = 0, moUpAt = 0, moEndsAt = 0, moLeft = MO_TIME, moClockTimer = null;
   var moBeganAt = 0, moStage = 0, moGrewTimer = null;
   var moCounted = false, moExtra = 0;   // いまの いきものを もう かぞえたか / れんだの かいすう
-  var moValue = 1, moUpClass = "hole up";   // いまの いきものの ねうち / 出ている あいだの 見た目
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
   var moStageEl = $("mogura-stage"), moMedalEl = $("mogura-medals");
 
@@ -815,7 +822,7 @@
   function moStopClock() {
     if (moClockTimer !== null) { clearInterval(moClockTimer); moClockTimer = null; }
   }
-  var moUpTimer = null, moNextTimer = null, moPopTimer = null, moRunning = false;
+  var moRunning = false;
 
   (function () {
     var key = load("mo-theme", "mole");
@@ -891,76 +898,131 @@
     }
   }
 
+  // ---- いきものの 出し入れ ----
+  // ゲームに よっては いちどに 何びきか 出る (moTheme.at)。
+  // 「わく」を そのかず ぶん 持ち、わくごとに べつの 時計で 出したり ひっこめたり
+  // するので、そろって 出て そろって ひっこむ ことには ならない。
+  // わくが ふえても 1びょうあたりに 出る かずは 変えていない。1つの わくが
+  // つぎを 出すまでの 間を わくの かず ばい にして、そのうえで ±4わり ずらして いる。
+  // ふえるのは「同時に 出ている こと」だけで、いそがしさは そのまま。
+  var moState = [];              // 穴ごとの いま出ている いきもの (出ていなければ null)
+  var moNextAt = [];             // わくごとの つぎに 出す 時こく
+  var moTickTimer = null;
+
+  function moSlotCount() { return moTheme.at || 1; }
+
   function moClearTimers() {
-    if (moUpTimer !== null) { clearTimeout(moUpTimer); moUpTimer = null; }
-    if (moNextTimer !== null) { clearTimeout(moNextTimer); moNextTimer = null; }
+    if (moTickTimer !== null) { clearInterval(moTickTimer); moTickTimer = null; }
   }
 
-  function moHideCurrent() {
-    if (moCurrent >= 0) {
-      moHoles[moCurrent].className = "hole";
-      moCurrent = -1;
+  function moHideHole(i) {
+    if (!moState[i]) return;
+    moState[i] = null;
+    moHoles[i].className = "hole";
+  }
+  function moHideAll() {
+    for (var i = 0; i < moHoles.length; i++) moHideHole(i);
+  }
+
+  // 1つの わくが つぎを 出すまでの 間。
+  // わくが n こ なら n ばいに するので、ぜんぶ あわせて 1びょうあたりに 出る かずは
+  // わくが 1この ときと おなじ。そのうえで ±2わり ずらして 時間差を つくる。
+  // ±2わりに 止めてあるのは、みじかい ほうに ふれても 出ている あいだ (moUpNow) より
+  // ながく なる ため。そうしないと 1つの わくから 2ひき 出て しまう。
+  function moGapFor() {
+    var base = moSlotCount() * (moUpNow() + moGapNow());
+    return Math.round(base * (0.8 + 0.4 * Math.random()));
+  }
+
+  function moFreeHole() {
+    var free = [];
+    for (var i = 0; i < moHoles.length; i++) {
+      if (!moState[i] && i !== moLast) free.push(i);
     }
-    moGold = false;
+    if (!free.length) {
+      for (var k = 0; k < moHoles.length; k++) if (!moState[k]) free.push(k);
+    }
+    if (!free.length) return -1;
+    return free[Math.floor(Math.random() * free.length)];
   }
 
-  function moSpawn() {
-    if (!moRunning) return;
-    var i;
-    do { i = Math.floor(Math.random() * moHoles.length); }
-    while (moHoles.length > 1 && i === moLast);
+  function moSpawnOne() {
+    var i = moFreeHole();
+    if (i < 0) return;
     moLast = i;
-    moCurrent = i;
 
-    moBonusCheck();
     // ボーナス中は ぜんぶ その ゲームの いきもので、ぜんぶ きんいろ
     var kind = moBonusOn ? MO_KINDS[0] : moPickKind();
-    moValue = kind.value;
-    // きんいろに なるのは その ゲームの いきものだけ。4回に1回くらい
-    moGold = kind.key === "main" && (moBonusOn || Math.random() < 0.25);
+    var gold = kind.key === "main" && (moBonusOn || Math.random() < 0.25);
     var face = kind.key === "main" ? moTheme.face : (kind.key === "low" ? moTheme.low : MO_SNAKE);
-    moUpClass = "hole up" + (kind.key === "main" ? "" : " " + kind.key) + (moGold ? " gold" : "");
+    var cls = "hole up" + (kind.key === "main" ? "" : " " + kind.key) + (gold ? " gold" : "");
+    var now = new Date().getTime();
+
+    moState[i] = { value: kind.value, gold: gold, upAt: now, until: now + moUpNow(),
+                   counted: false, extra: 0, cls: cls, popUntil: 0 };
 
     var hole = moHoles[i];
     // いきものの絵は かならず 1 文字。2 文字にすると おりかえして まるが たてに のびる
     hole.getElementsByTagName("span")[0].innerHTML = face;
-    hole.getElementsByTagName("span")[1].innerHTML = moGold ? "✨＋3" : "＋1";
-    hole.className = moUpClass;
-    moUpAt = new Date().getTime();
-    moCounted = false;
-    moExtra = 0;
+    hole.getElementsByTagName("span")[1].innerHTML = gold ? "✨＋3" : "＋1";
+    hole.className = cls;
+  }
 
-    // たたかなくても しばらくすると ひっこむ (失敗にはならない)
-    moUpTimer = setTimeout(function () {
-      moHideCurrent();
-      moNextTimer = setTimeout(moSpawn, moGapNow());
-    }, moUpNow());
+  // 50ミリびょう ごとの 見まわり。出す・ひっこめる・たたいた 光りを もどす
+  function moTick() {
+    if (!moRunning) return;
+    var now = new Date().getTime();
+
+    moBonusCheck();
+
+    for (var i = 0; i < moHoles.length; i++) {
+      var st = moState[i];
+      if (!st) continue;
+      // たたかなくても しばらくすると ひっこむ (失敗にはならない)
+      if (now >= st.until) { moHideHole(i); continue; }
+      if (st.popUntil && now >= st.popUntil) {
+        st.popUntil = 0;
+        moHoles[i].className = st.cls;
+      }
+    }
+
+    var slots = moSlotCount();
+    for (var sN = 0; sN < slots; sN++) {
+      if (moNextAt[sN] === undefined) moNextAt[sN] = now;
+      if (now >= moNextAt[sN]) {
+        moSpawnOne();
+        moNextAt[sN] = now + moGapFor();
+      }
+    }
   }
 
   function moHit(el) {
     if (!moRunning) return;
-    if (moCurrent < 0 || moHoles[moCurrent] !== el) return;   // 空の穴は なにも起きない
+    var i = -1;
+    for (var k = 0; k < moHoles.length; k++) if (moHoles[k] === el) { i = k; break; }
+    var st = i < 0 ? null : moState[i];
+    if (!st) return;                          // 空の穴は なにも起きない
 
-    var mult = moGold ? 3 : 1;
+    var mult = st.gold ? 3 : 1;
     var got;
 
-    if (!moCounted) {
+    if (!st.counted) {
       // 1かいめ。たたくまでの はやさで てんすうが きまる
-      moCounted = true;
-      got = Math.round(moPointFor(new Date().getTime() - moUpAt) * mult * moStageMult() * moValue);
+      st.counted = true;
+      got = Math.round(moPointFor(new Date().getTime() - st.upAt) * mult * moStageMult() * st.value);
       // 真・ドラゴン: 1ぴきめの ひとたたきで 時間が のびる。れんだでは のびない。
       // おそいほど もらえる 時間は すくない
       if (moTheme.endless) {
         var span = moUpNow();
-        var used = (new Date().getTime() - moUpAt) / span;
+        var used = (new Date().getTime() - st.upAt) / span;
         var frac = used > 1 ? 0 : 1 - used;
-        moAddTime((span + moGapNow()) / 1000 * MO_BONUS * frac * (moGold ? MO_GOLD_TIME : 1));
+        moAddTime((span + moGapNow()) / 1000 * MO_BONUS * frac * (st.gold ? MO_GOLD_TIME : 1));
       }
-      if (moGold) soundGold(); else soundHit();
-    } else if (moExtra < MO_EXTRA_MAX) {
+      if (st.gold) soundGold(); else soundHit();
+    } else if (st.extra < MO_EXTRA_MAX) {
       // 2かいめ いこう。でている あいだは なんども たたける
-      moExtra++;
-      got = Math.round(MO_EXTRA * mult * moStageMult() * moValue);
+      st.extra++;
+      got = Math.round(MO_EXTRA * mult * moStageMult() * st.value);
       soundHit();
     } else {
       return;   // たたきすぎ。ここから さきは つかない
@@ -973,13 +1035,8 @@
 
     // いきものは ひっこまない。たたけたことが わかるよう 一しゅん 光らせる
     el.getElementsByTagName("span")[1].innerHTML = "＋" + got;
-    el.className = moUpClass + " hit";
-    if (moPopTimer !== null) clearTimeout(moPopTimer);
-    (function (hole, back) {
-      moPopTimer = setTimeout(function () {
-        if (hole.className.indexOf("up") >= 0) hole.className = back;
-      }, 160);
-    })(el, moUpClass);
+    el.className = st.cls + " hit";
+    st.popUntil = new Date().getTime() + 160;
   }
 
   // 30びょう たったら おしまい。てんすうと しょうごうを だす
@@ -987,7 +1044,7 @@
     if (!moRunning) return;
     moRunning = false;
     moClearTimers();
-    moHideCurrent();
+    moHideAll();
     moStopClock();
     moLeft = 0;
     moPaintClock();
@@ -1045,25 +1102,33 @@
     moBonusUntil = 0;
     moBonusOn = false;
     moBonusNextOk = new Date().getTime() + MO_BONUS_LEAD;
+    moBonusSeenAt = 0;
     moBoard.className = "board";
     moPaintBest();
     moPaintStage();
     moStartClock();
     moRunning = true;
-    moNextTimer = setTimeout(moSpawn, moGapNow());
+    // わくごとに すこし ずらして はじめる。ぜんぶ いっしょに 出ないように
+    moState = [];
+    moNextAt = [];
+    var began = new Date().getTime();
+    var one = moUpNow() + moGapNow();
+    for (var sN = 0; sN < moSlotCount(); sN++) {
+      moNextAt[sN] = began + Math.round(one * (0.3 + sN));
+    }
+    moTickTimer = setInterval(moTick, 50);
   }
 
   function moStop() {
     moRunning = false;
     moStopClock();
     moClearTimers();
-    if (moPopTimer !== null) { clearTimeout(moPopTimer); moPopTimer = null; }
     if (moGrewTimer !== null) { clearTimeout(moGrewTimer); moGrewTimer = null; }
     moTimeEl.className = "";
     moBonusUntil = 0;
     moBonusOn = false;
     moBoard.className = "board";
-    moHideCurrent();
+    moHideAll();
     moLeft = MO_TIME;
     moPaintClock();
   }
