@@ -330,7 +330,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。1ぴきでも のがすと 0に もどります。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -663,6 +663,10 @@
   var MO_GOLD_TIME = 2;          // きんいろは 時間も 2ばい
   var MO_CAP_SEC = 45;           // ためられる 時間の うわげん
   var MO_MULT_STEP = 0.5;        // だんかいごとに ふえる てんすうの ばいりつ
+  // れんさ: たたきそこねる まで、たたけた いきものの かず。
+  // のがすと 0に もどる。いまは 真・ドラゴンだけ てんすうに ひびく。
+  var MO_COMBO_STEP = 0.05;      // れんさ 1つ ごとに ふえる ばいりつ
+  var MO_COMBO_MAX = 2.5;        // れんさの ばいりつの うわげん (れんさ 30で いっぱい)
 
   // ちょうこうとくてん の メダル。ふつうの しょうごう(👑)の さらに 上。
   // さかいめは 真・ドラゴンを 反応の はやさを かえて 実測した ところから きめた:
@@ -671,13 +675,16 @@
   //   0.35びょう 155びょう もって  27,689てん
   //   0.25びょう 311びょう もって 100,987てん
   //   0.25びょう＋れんだ 287びょう もって 79,110てん
-  // 🐲 は いちばん 上の あたりに おいて、ずっと さきの 目あてに してある
+  // 🐲 は いちばん 上の あたりに おいて、ずっと さきの 目あてに してある。
+  // じっさいに 人が あそぶと 6,000てん あたり。自動プレイの 0.25びょうは 人より
+  // はやすぎる ので、それに あわせた さかいめは 高すぎた。人の 手が とどく ところまで
+  // 下げて、れんさの ぶん (さいだい 2.5ばい) も 見こんである。
   var MO_SUPER = [
-    { min: 12000,  mark: "💎", name: "ちょうじん",  msg: "ドラゴンが たじろいでいます" },
-    { min: 25000,  mark: "🌟", name: "でんせつ",    msg: "むらじゅうに はなしが ひろまりました" },
-    { min: 45000,  mark: "🏆", name: "むそう",      msg: "もう かなう ものが いません" },
-    { min: 75000,  mark: "⚡", name: "らいじん",    msg: "そらが ゴロゴロ なっています" },
-    { min: 120000, mark: "🐲", name: "りゅうおう",  msg: "ドラゴンが あなたに おじぎを しました" }
+    { min: 10000,  mark: "💎", name: "ちょうじん",  msg: "ドラゴンが たじろいでいます" },
+    { min: 20000,  mark: "🌟", name: "でんせつ",    msg: "むらじゅうに はなしが ひろまりました" },
+    { min: 35000,  mark: "🏆", name: "むそう",      msg: "もう かなう ものが いません" },
+    { min: 60000,  mark: "⚡", name: "らいじん",    msg: "そらが ゴロゴロ なっています" },
+    { min: 100000, mark: "🐲", name: "りゅうおう",  msg: "ドラゴンが あなたに おじぎを しました" }
   ];
   // 12000 のような 大きい かずは よみにくいので 3けたごとに くぎる
   function moComma(n) {
@@ -706,6 +713,7 @@
   var moHoles = [], moScore = 0, moLast = -1;
   var moPoints = 0, moUpAt = 0, moEndsAt = 0, moLeft = MO_TIME, moClockTimer = null;
   var moBeganAt = 0, moStage = 0, moGrewTimer = null;
+  var moCombo = 0, moComboBest = 0;
   var moCounted = false, moExtra = 0;   // いまの いきものを もう かぞえたか / れんだの かいすう
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
   var moStageEl = $("mogura-stage"), moMedalEl = $("mogura-medals");
@@ -747,11 +755,25 @@
     return v < MO_GAP_FLOOR ? MO_GAP_FLOOR : v;
   }
   function moStageMult() { return moTheme.endless ? 1 + moStage * MO_MULT_STEP : 1; }
+  function moComboMult() {
+    if (!moTheme.endless) return 1;
+    var m = 1 + moCombo * MO_COMBO_STEP;
+    return m > MO_COMBO_MAX ? MO_COMBO_MAX : m;
+  }
 
   function moPaintStage() {
     if (!moTheme.endless) { moStageEl.style.display = "none"; return; }
+    var total = moStageMult() * moComboMult();
     moStageEl.style.display = "";
-    moStageEl.innerHTML = "🔥 だんかい " + (moStage + 1) + "　てんすう " + moStageMult() + "ばい";
+    moStageEl.innerHTML = "🔥 だんかい " + (moStage + 1) +
+      "　れんさ " + moCombo + "　てんすう ×" + (Math.round(total * 10) / 10);
+  }
+
+  // のがした ときに よぶ。れんさが きれる
+  function moComboBreak() {
+    if (moCombo === 0) return;
+    moCombo = 0;
+    moPaintStage();
   }
 
   // ためられる 時間には うわげんが ある。ためこんで あんぜんに なりすぎない ように
@@ -978,8 +1000,12 @@
     for (var i = 0; i < moHoles.length; i++) {
       var st = moState[i];
       if (!st) continue;
-      // たたかなくても しばらくすると ひっこむ (失敗にはならない)
-      if (now >= st.until) { moHideHole(i); continue; }
+      // たたかなくても しばらくすると ひっこむ (てんすうは へらないが れんさは きれる)
+      if (now >= st.until) {
+        if (!st.counted) moComboBreak();
+        moHideHole(i);
+        continue;
+      }
       if (st.popUntil && now >= st.popUntil) {
         st.popUntil = 0;
         moHoles[i].className = st.cls;
@@ -1009,7 +1035,11 @@
     if (!st.counted) {
       // 1かいめ。たたくまでの はやさで てんすうが きまる
       st.counted = true;
-      got = Math.round(moPointFor(new Date().getTime() - st.upAt) * mult * moStageMult() * st.value);
+      moCombo++;
+      if (moCombo > moComboBest) moComboBest = moCombo;
+      got = Math.round(moPointFor(new Date().getTime() - st.upAt) *
+                       mult * moStageMult() * moComboMult() * st.value);
+      moPaintStage();
       // 真・ドラゴン: 1ぴきめの ひとたたきで 時間が のびる。れんだでは のびない。
       // おそいほど もらえる 時間は すくない
       if (moTheme.endless) {
@@ -1022,7 +1052,7 @@
     } else if (st.extra < MO_EXTRA_MAX) {
       // 2かいめ いこう。でている あいだは なんども たたける
       st.extra++;
-      got = Math.round(MO_EXTRA * mult * moStageMult() * st.value);
+      got = Math.round(MO_EXTRA * mult * moStageMult() * moComboMult() * st.value);
       soundHit();
     } else {
       return;   // たたきすぎ。ここから さきは つかない
@@ -1064,6 +1094,7 @@
     var text = (moTheme.endless ? lasted : MO_TIME) + "びょうで " + moScore + "かい・" + moPoints + "てん！";
     var label = moLabelOf(moPoints);
     if (label) text += " " + label;
+    if (moTheme.endless && moComboBest > 1) text += " いちばん ながい れんさ " + moComboBest + "！";
     if (best) text += " さいこう きろく！";
     if (opened && next) text += " " + next.icon + " " + next.name + " が あきました！";
 
@@ -1099,6 +1130,8 @@
     for (var i = 0; i < moHoles.length; i++) moHoles[i].className = "hole";
     moPoints = 0;
     moStage = 0;
+    moCombo = 0;
+    moComboBest = 0;
     moBonusUntil = 0;
     moBonusOn = false;
     moBonusNextOk = new Date().getTime() + MO_BONUS_LEAD;
