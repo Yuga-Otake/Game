@@ -180,6 +180,8 @@
     border-spacing: 10px;
     margin: 0 auto;
   }
+  /* ボーナスタイムの あいだは ばんが きんいろ */
+  table.board.bonus { background: #fff3cf; }
 
   /* ---- もぐらたたき ---- */
   .hole {
@@ -328,7 +330,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -561,29 +563,30 @@
   var MO_COLS = 3, MO_ROWS = 2, MO_TIME = 30;
   // さかいめは 30びょうの ラウンドを たたく はやさを かえて 実測して きめた。
   //   のんびり 1ぴき 1かいずつ / ゆっくり 2〜3かい / そこそこ / きびきび / はやく れんだ
-  //   もぐら  102 / 132 / 378 / 369 /  718
-  //   ワニ    113 / 300 / 276 / 397 /  900
-  //   サメ     90 / 205 / 290 / 360 /  963
-  //   ドラゴン  65 /  90 / 200 / 596 / 1029
+  //   もぐら  104 / 228 / 378 /  568 /  980
+  //   ワニ    166 / 215 / 648 /  523 / 1223
+  //   サメ    170 / 100 / 715 /  616 /  977
+  //   ドラゴン 160 / 290 / 210 / 1093 / 1178
   // 🏅 たつじん が つぎの いきものが あく ところ。「そこそこ〜きびきび」で とどく。
   // 👑 は れんだ しないと とどかない ところに おく。
-  // (てんすうの ひくい いきものが まざるように してから 測りなおした。
-  //  まざるぶん てんすうは 2わりほど さがるので、さかいめも 同じだけ 下げてある。
-  //  むずかしさは 前と おなじで、ちがうのは 出てくる ものの 種類だけ)
+  // ドラゴンの 👑 だけは 真・ドラゴンを あける かぎなので、「きびきび」で とどく
+  // ところに 下げてある。まえは 1200 で、いちばん はやく たたいても 1029 しか
+  // 出ず、じっさいには あかない ままだった。
+  // (ボーナスタイムを 入れてから 測りなおした。てんすうは 3〜6わり 上がる)
   // up は でている あいだ。900ミリびょう より みじかいと、ゆっくりの 人は
   // 1かいも さわれずに おわってしまうので、そこまでは みじかく しない。
   var MO_THEMES = [
     { key: "mole",   name: "もぐら",   icon: "🐹", face: "🐹", low: "🐭", up: 2800, gap: 900,
-      ranks: [70, 130, 220, 340, 600] },
+      ranks: [60, 110, 220, 400, 850] },
     { key: "wani",   name: "ワニ",     icon: "🐊", face: "🐊", low: "🐹", up: 1800, gap: 600,
-      ranks: [80, 180, 320, 500, 840] },
+      ranks: [90, 170, 300, 520, 1050] },
     { key: "same",   name: "サメ",     icon: "🦈", face: "🦈", low: "🐊", up: 1200, gap: 420,
-      ranks: [100, 210, 370, 560, 1040] },
+      ranks: [100, 190, 340, 580, 950] },
     { key: "ryu",    name: "ドラゴン", icon: "🐉", face: "🐉", low: "🦈", up: 1000, gap: 300,
-      ranks: [110, 240, 430, 660, 1200] },
+      ranks: [110, 210, 380, 650, 900] },
     // さいごの ひとつだけ しくみが ちがう。下の「真・ドラゴン」を 見てください
     { key: "shin",   name: "真・ドラゴン", icon: "🔥", face: "🐲", low: "🐊", up: 1000, gap: 300,
-      ranks: [400, 800, 1400, 2200, 4500], endless: true, openAt: 4 }
+      ranks: [500, 1000, 1800, 3000, 6000], endless: true, openAt: 4 }
   ];
   var MO_OPEN_AT = 3;            // 🏅 たつじん まで いくと つぎが あく
 
@@ -598,6 +601,35 @@
     { key: "low",   chance: 0.25, value: 0.5 },
     { key: "snake", chance: 0.10, value: 0.25 }
   ];
+  // ---- ボーナスタイム ----
+  // ときどき 5びょうだけ ぜんぶ きんいろに なる。その あいだは てんすうの ひくい
+  // いきものは 出ない。出る かくりつは 1ぴきぶんの まちじかん に あわせて あるので、
+  // はやい ゲームでも おそい ゲームでも 「およそ 25びょうに 1かい」で そろう。
+  var MO_BONUS_MS = 5000;        // ボーナスタイムの ながさ
+  var MO_BONUS_EVERY = 25000;    // だいたい これくらいごとに 1かい
+  var MO_BONUS_REST = 8000;      // おわってから つぎまで さいてい これだけ あける
+  var MO_BONUS_LEAD = 5000;      // はじまって すぐには 出さない
+  var moBonusUntil = 0, moBonusNextOk = 0, moBonusOn = false;
+
+  function moBonusCheck() {
+    var now = new Date().getTime();
+    if (now < moBonusUntil) return;                 // いま ボーナス中
+    if (moBonusOn) {                                // たったいま おわった
+      moBonusOn = false;
+      moBoard.className = "board";
+      if (moMsgEl.innerHTML.indexOf("ボーナス") >= 0) moMsgEl.innerHTML = "";
+    }
+    if (now < moBonusNextOk) return;
+    if (Math.random() >= (moUpNow() + moGapNow()) / MO_BONUS_EVERY) return;
+    moBonusUntil = now + MO_BONUS_MS;
+    moBonusNextOk = moBonusUntil + MO_BONUS_REST;
+    moBonusOn = true;
+    moBoard.className = "board bonus";
+    moMsgEl.className = "msg";
+    moMsgEl.innerHTML = "✨ ボーナスタイム！ いまの あいだは ぜんぶ きんいろ";
+    soundGold();
+  }
+
   function moPickKind() {
     var r = Math.random(), acc = 0;
     for (var i = 0; i < MO_KINDS.length; i++) {
@@ -626,18 +658,18 @@
 
   // ちょうこうとくてん の メダル。ふつうの しょうごう(👑)の さらに 上。
   // さかいめは 真・ドラゴンを 反応の はやさを かえて 実測した ところから きめた:
-  //   0.6びょう   61びょう もって  1,894てん
-  //   0.45びょう  91びょう もって  5,589てん
-  //   0.35びょう 139びょう もって 14,902てん
-  //   0.25びょう 253びょう もって 52,407てん
-  //   0.25びょう＋れんだ 276びょう もって 67,052てん
+  //   0.6びょう   62びょう もって   2,215てん
+  //   0.45びょう 104びょう もって   8,537てん
+  //   0.35びょう 155びょう もって  27,689てん
+  //   0.25びょう 311びょう もって 100,987てん
+  //   0.25びょう＋れんだ 287びょう もって 79,110てん
   // 🐲 は いちばん 上の あたりに おいて、ずっと さきの 目あてに してある
   var MO_SUPER = [
-    { min: 8000,  mark: "💎", name: "ちょうじん",  msg: "ドラゴンが たじろいでいます" },
-    { min: 16000, mark: "🌟", name: "でんせつ",    msg: "むらじゅうに はなしが ひろまりました" },
-    { min: 30000, mark: "🏆", name: "むそう",      msg: "もう かなう ものが いません" },
-    { min: 50000, mark: "⚡", name: "らいじん",    msg: "そらが ゴロゴロ なっています" },
-    { min: 75000, mark: "🐲", name: "りゅうおう",  msg: "ドラゴンが あなたに おじぎを しました" }
+    { min: 12000,  mark: "💎", name: "ちょうじん",  msg: "ドラゴンが たじろいでいます" },
+    { min: 25000,  mark: "🌟", name: "でんせつ",    msg: "むらじゅうに はなしが ひろまりました" },
+    { min: 45000,  mark: "🏆", name: "むそう",      msg: "もう かなう ものが いません" },
+    { min: 75000,  mark: "⚡", name: "らいじん",    msg: "そらが ゴロゴロ なっています" },
+    { min: 120000, mark: "🐲", name: "りゅうおう",  msg: "ドラゴンが あなたに おじぎを しました" }
   ];
   // 12000 のような 大きい かずは よみにくいので 3けたごとに くぎる
   function moComma(n) {
@@ -771,6 +803,8 @@
       var left = Math.ceil((moEndsAt - now) / 1000);
       if (left < 0) left = 0;
       if (left !== moLeft) { moLeft = left; moPaintClock(); }
+      // ボーナスの おわりは、つぎの いきものを またずに 見た目を もどす
+      if (moBonusOn && now >= moBonusUntil) moBonusCheck();
       if (moTheme.endless) {
         var stage = Math.floor((now - moBeganAt) / 1000 / MO_STEP_SEC);
         if (stage !== moStage) { moStage = stage; moPaintStage(); }
@@ -878,10 +912,12 @@
     moLast = i;
     moCurrent = i;
 
-    var kind = moPickKind();
+    moBonusCheck();
+    // ボーナス中は ぜんぶ その ゲームの いきもので、ぜんぶ きんいろ
+    var kind = moBonusOn ? MO_KINDS[0] : moPickKind();
     moValue = kind.value;
     // きんいろに なるのは その ゲームの いきものだけ。4回に1回くらい
-    moGold = kind.key === "main" && Math.random() < 0.25;
+    moGold = kind.key === "main" && (moBonusOn || Math.random() < 0.25);
     var face = kind.key === "main" ? moTheme.face : (kind.key === "low" ? moTheme.low : MO_SNAKE);
     moUpClass = "hole up" + (kind.key === "main" ? "" : " " + kind.key) + (moGold ? " gold" : "");
 
@@ -1006,6 +1042,10 @@
     for (var i = 0; i < moHoles.length; i++) moHoles[i].className = "hole";
     moPoints = 0;
     moStage = 0;
+    moBonusUntil = 0;
+    moBonusOn = false;
+    moBonusNextOk = new Date().getTime() + MO_BONUS_LEAD;
+    moBoard.className = "board";
     moPaintBest();
     moPaintStage();
     moStartClock();
@@ -1020,6 +1060,9 @@
     if (moPopTimer !== null) { clearTimeout(moPopTimer); moPopTimer = null; }
     if (moGrewTimer !== null) { clearTimeout(moGrewTimer); moGrewTimer = null; }
     moTimeEl.className = "";
+    moBonusUntil = 0;
+    moBonusOn = false;
+    moBoard.className = "board";
     moHideCurrent();
     moLeft = MO_TIME;
     moPaintClock();
