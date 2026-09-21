@@ -273,6 +273,9 @@
 
   /* ---- どうぶつゲーム ---- */
   .best { font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px; min-height: 22px; }
+  .stage { font-size: 18px; font-weight: 700; color: #c2410c; margin: 0 0 4px; }
+  /* タイムが ふえた ときだけ 時計を 光らせる */
+  .score b.grew { color: #2f8f4e; }
   .nextface { font-size: 32px; vertical-align: middle; }
   .rank { font-size: 19px; font-weight: 700; color: #c2691f; vertical-align: middle; }
   .dex { margin: 0 auto 2px; max-width: 620px; line-height: 1.4; }
@@ -315,12 +318,14 @@
 <!-- もぐらたたき -->
 <div id="game-mogura">
   <p class="score">たたいた かず　<b id="mogura-score">0</b>　　のこり ⏱ <b id="mogura-time">30</b> びょう</p>
+  <p class="stage" id="mogura-stage" style="display:none"></p>
   <p class="best" id="mogura-best"></p>
+  <p class="dex" id="mogura-medals" style="display:none"></p>
   <div class="ctrl"><span class="label">なにを たたく</span><span id="mogura-themes"></span></div>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -568,9 +573,55 @@
     { key: "same",   name: "サメ",     icon: "🦈", face: "🦈", up: 1200, gap: 420,
       ranks: [120, 260, 460, 700, 1300] },
     { key: "ryu",    name: "ドラゴン", icon: "🐉", face: "🐉", up: 1000, gap: 300,
-      ranks: [140, 300, 540, 820, 1500] }
+      ranks: [140, 300, 540, 820, 1500] },
+    // さいごの ひとつだけ しくみが ちがう。下の「真・ドラゴン」を 見てください
+    { key: "shin",   name: "真・ドラゴン", icon: "🔥", face: "🐲", up: 1000, gap: 300,
+      ranks: [500, 1000, 1800, 3000, 6000], endless: true, openAt: 4 }
   ];
   var MO_OPEN_AT = 3;            // 🏅 たつじん まで いくと つぎが あく
+  function moOpenAt(t) { return typeof t.openAt === "number" ? t.openAt : MO_OPEN_AT; }
+
+  // ---- 真・ドラゴン ----
+  // たたくと 時間が のびる。うまく いけば いつまでも つづく かわりに、
+  // 20びょう ごとに ドラゴンが はやくなり、てんすうの ばいりつも 上がる。
+  // のびる 時間は「どれだけ はやく たたけたか」で きまる。
+  // 出ている あいだの はじめの 4わりで たたけば 時間は ふえ、それより おそいと へる。
+  // (1ぴきぶんの まちじかん × 1.67 × のこりの わりあい。1.67 = 1 ÷ 0.6)
+  // だんかいが 上がると 出ている 時間が みじかく なるので、おなじ 反応の はやさでも
+  // だんだん まにあわなく なって いつかは おわる。どこまで もつかを きそう モード。
+  var MO_STEP_SEC = 20;          // なんびょうで つぎの だんかいに 上がるか
+  var MO_RAMP = 0.88;            // だんかいごとに はやくなる わりあい
+  var MO_UP_FLOOR = 450, MO_GAP_FLOOR = 140;
+  var MO_BONUS = 1.67;           // 1ぴき たたくと もらえる 時間 (1ぴきぶんの まちじかん の ばい)
+  var MO_GOLD_TIME = 2;          // きんいろは 時間も 2ばい
+  var MO_CAP_SEC = 45;           // ためられる 時間の うわげん
+  var MO_MULT_STEP = 0.5;        // だんかいごとに ふえる てんすうの ばいりつ
+
+  // ちょうこうとくてん の メダル。ふつうの しょうごう(👑)の さらに 上。
+  // さかいめは 真・ドラゴンを 反応の はやさを かえて 実測した ところから きめた:
+  //   0.6びょう  62びょう もって   2,490てん
+  //   0.45びょう 102びょう もって  9,675てん
+  //   0.35びょう 146びょう もって 22,335てん
+  //   0.25びょう 296びょう もって 94,845てん (れんだ しても おなじ くらい)
+  // 🐲 は いちばん 上の あたりに おいて、ずっと さきの 目あてに してある
+  var MO_SUPER = [
+    { min: 12000,  mark: "💎", name: "ちょうじん",  msg: "ドラゴンが たじろいでいます" },
+    { min: 25000,  mark: "🌟", name: "でんせつ",    msg: "むらじゅうに はなしが ひろまりました" },
+    { min: 45000,  mark: "🏆", name: "むそう",      msg: "もう かなう ものが いません" },
+    { min: 70000,  mark: "⚡", name: "らいじん",    msg: "そらが ゴロゴロ なっています" },
+    { min: 100000, mark: "🐲", name: "りゅうおう",  msg: "ドラゴンが あなたに おじぎを しました" }
+  ];
+  // 12000 のような 大きい かずは よみにくいので 3けたごとに くぎる
+  function moComma(n) {
+    var t = String(n), out = "";
+    while (t.length > 3) { out = "," + t.slice(-3) + out; t = t.slice(0, -3); }
+    return t + out;
+  }
+  function moSuperIndex(score) {
+    var r = -1;
+    for (var i = 0; i < MO_SUPER.length; i++) if (score >= MO_SUPER[i].min) r = i;
+    return r;
+  }
 
   var moBoard = $("mogura-board"), moBody = $("mogura-body");
   var moScoreEl = $("mogura-score"), moMsgEl = $("mogura-msg");
@@ -586,8 +637,10 @@
 
   var moHoles = [], moScore = 0, moCurrent = -1, moLast = -1, moGold = false;
   var moPoints = 0, moUpAt = 0, moEndsAt = 0, moLeft = MO_TIME, moClockTimer = null;
+  var moBeganAt = 0, moStage = 0, moGrewTimer = null;
   var moCounted = false, moExtra = 0;   // いまの もぐらを もう かぞえたか / れんだの かいすう
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
+  var moStageEl = $("mogura-stage"), moMedalEl = $("mogura-medals");
 
   // むかしの きろくは もぐらの ものとして ひきつぐ
   (function () {
@@ -609,34 +662,90 @@
     var i = moThemeIndex(t);
     if (i === 0) return true;
     var prev = MO_THEMES[i - 1];
-    return rankIndexOf(moBestOf(prev), prev.ranks) >= MO_OPEN_AT;
+    return rankIndexOf(moBestOf(prev), prev.ranks) >= moOpenAt(t);
   }
   function moBestOf(t) { return Number(load("mo-" + t.key + "-best", "0")) || 0; }
   function moLoadTheme() { moBest = moBestOf(moTheme); }
+
+  // 真・ドラゴンでは だんかいが 上がるたび はやくなり、てんすうの ばいりつも 上がる
+  function moUpNow() {
+    if (!moTheme.endless) return moTheme.up;
+    var v = Math.round(moTheme.up * Math.pow(MO_RAMP, moStage));
+    return v < MO_UP_FLOOR ? MO_UP_FLOOR : v;
+  }
+  function moGapNow() {
+    if (!moTheme.endless) return moTheme.gap;
+    var v = Math.round(moTheme.gap * Math.pow(MO_RAMP, moStage));
+    return v < MO_GAP_FLOOR ? MO_GAP_FLOOR : v;
+  }
+  function moStageMult() { return moTheme.endless ? 1 + moStage * MO_MULT_STEP : 1; }
+
+  function moPaintStage() {
+    if (!moTheme.endless) { moStageEl.style.display = "none"; return; }
+    moStageEl.style.display = "";
+    moStageEl.innerHTML = "🔥 だんかい " + (moStage + 1) + "　てんすう " + moStageMult() + "ばい";
+  }
+
+  // ためられる 時間には うわげんが ある。ためこんで あんぜんに なりすぎない ように
+  function moAddTime(sec) {
+    var now = new Date().getTime();
+    moEndsAt += sec * 1000;
+    if (moEndsAt - now > MO_CAP_SEC * 1000) moEndsAt = now + MO_CAP_SEC * 1000;
+    moTimeEl.className = "grew";
+    if (moGrewTimer !== null) clearTimeout(moGrewTimer);
+    moGrewTimer = setTimeout(function () { moTimeEl.className = ""; }, 320);
+  }
+
+  function moPaintMedals() {
+    if (!moTheme.endless) { moMedalEl.style.display = "none"; return; }
+    var got = Number(load("mo-super", "-1"));
+    var out = "";
+    for (var i = 0; i < MO_SUPER.length; i++) {
+      var m = MO_SUPER[i];
+      out += '<b' + (i <= got ? '' : ' class="yet"') + '><span>' + (i <= got ? m.mark : "❓") +
+        "</span><i>" + (i <= got ? m.name : moComma(m.min) + "てん") + "</i></b> ";
+    }
+    moMedalEl.style.display = "";
+    moMedalEl.innerHTML = out;
+  }
 
   function moPointFor(ms) {
     for (var i = 0; i < MO_POINTS.length; i++) if (ms <= MO_POINTS[i].within) return MO_POINTS[i].point;
     return MO_SLOW;
   }
 
+  // ちょうこうとくてん では 👑 の かわりに とくべつな メダルを 出す
+  function moLabelOf(score) {
+    var i = moSuperIndex(score);
+    if (i >= 0) return MO_SUPER[i].mark + " " + MO_SUPER[i].name;
+    return rankLabelOf(score, moTheme.ranks);
+  }
+
   function moPaintBest() {
-    var mins = moTheme.ranks;
-    var now = moPoints > 0 ? "てんすう " + moPoints + " " + rankLabelOf(moPoints, mins) : "";
-    var best = moBest > 0 ? "（さいこう " + moBest + "てん " + rankLabelOf(moBest, mins) + "）" : "";
+    var now = moPoints > 0 ? "てんすう " + moPoints + " " + moLabelOf(moPoints) : "";
+    var best = moBest > 0 ? "（さいこう " + moBest + "てん " + moLabelOf(moBest) + "）" : "";
     moBestEl.innerHTML = now + (now && best ? "　" : "") + best;
   }
 
   function moPaintClock() { moTimeEl.innerHTML = String(moLeft); }
 
   function moStartClock() {
-    moEndsAt = new Date().getTime() + MO_TIME * 1000;
+    moBeganAt = new Date().getTime();
+    moEndsAt = moBeganAt + MO_TIME * 1000;
     moLeft = MO_TIME;
+    moStage = 0;
     moPaintClock();
+    moPaintStage();
     if (moClockTimer !== null) clearInterval(moClockTimer);
     moClockTimer = setInterval(function () {
-      var left = Math.ceil((moEndsAt - new Date().getTime()) / 1000);
+      var now = new Date().getTime();
+      var left = Math.ceil((moEndsAt - now) / 1000);
       if (left < 0) left = 0;
       if (left !== moLeft) { moLeft = left; moPaintClock(); }
+      if (moTheme.endless) {
+        var stage = Math.floor((now - moBeganAt) / 1000 / MO_STEP_SEC);
+        if (stage !== moStage) { moStage = stage; moPaintStage(); }
+      }
       if (left <= 0) moFinish();
     }, 100);
   }
@@ -668,9 +777,10 @@
           if (!open) {
             // まだ あいていない。なにを すれば いいか だけ 教える
             var prev = MO_THEMES[moThemeIndex(t) - 1];
+            var need = moOpenAt(t);
             moMsgEl.className = "msg again";
-            moMsgEl.innerHTML = prev.icon + " で " + RANK_MARKS[MO_OPEN_AT].mark + " " +
-              RANK_MARKS[MO_OPEN_AT].name + "（" + prev.ranks[MO_OPEN_AT] + "てん）を とると あそべます";
+            moMsgEl.innerHTML = prev.icon + " で " + RANK_MARKS[need].mark + " " +
+              RANK_MARKS[need].name + "（" + prev.ranks[need] + "てん）を とると あそべます";
             soundAgain();
             return;
           }
@@ -678,6 +788,7 @@
           save("mo-theme", t.key);
           moLoadTheme();
           moBuildThemeButtons();
+          moPaintMedals();
           moStart();
         });
         host.appendChild(b);
@@ -687,6 +798,7 @@
 
   function moBuild() {
     moBuildThemeButtons();
+    moPaintMedals();
 
     while (moBody.firstChild) moBody.removeChild(moBody.firstChild);
     moHoles = [];
@@ -751,8 +863,8 @@
     // たたかなくても しばらくすると ひっこむ (失敗にはならない)
     moUpTimer = setTimeout(function () {
       moHideCurrent();
-      moNextTimer = setTimeout(moSpawn, moTheme.gap);
-    }, moTheme.up);
+      moNextTimer = setTimeout(moSpawn, moGapNow());
+    }, moUpNow());
   }
 
   function moHit(el) {
@@ -765,12 +877,20 @@
     if (!moCounted) {
       // 1かいめ。たたくまでの はやさで てんすうが きまる
       moCounted = true;
-      got = moPointFor(new Date().getTime() - moUpAt) * mult;
+      got = Math.round(moPointFor(new Date().getTime() - moUpAt) * mult * moStageMult());
+      // 真・ドラゴン: 1ぴきめの ひとたたきで 時間が のびる。れんだでは のびない。
+      // おそいほど もらえる 時間は すくない
+      if (moTheme.endless) {
+        var span = moUpNow();
+        var used = (new Date().getTime() - moUpAt) / span;
+        var frac = used > 1 ? 0 : 1 - used;
+        moAddTime((span + moGapNow()) / 1000 * MO_BONUS * frac * (moGold ? MO_GOLD_TIME : 1));
+      }
       if (moGold) soundGold(); else soundHit();
     } else if (moExtra < MO_EXTRA_MAX) {
       // 2かいめ いこう。でている あいだは なんども たたける
       moExtra++;
-      got = MO_EXTRA * mult;
+      got = Math.round(MO_EXTRA * mult * moStageMult());
       soundHit();
     } else {
       return;   // たたきすぎ。ここから さきは つかない
@@ -802,21 +922,36 @@
     moLeft = 0;
     moPaintClock();
 
-    var wasOpen = rankIndexOf(moBest, moTheme.ranks) >= MO_OPEN_AT;
+    var next = MO_THEMES[moThemeIndex(moTheme) + 1];
+    var needForNext = next ? moOpenAt(next) : MO_OPEN_AT;
+    var wasOpen = rankIndexOf(moBest, moTheme.ranks) >= needForNext;
     var best = moPoints > moBest;
     if (best) { moBest = moPoints; save("mo-" + moTheme.key + "-best", moBest); }
     moPaintBest();
 
-    // 🏅 たつじん まで いったら つぎの いきものが あく
-    var next = MO_THEMES[moThemeIndex(moTheme) + 1];
-    var opened = !wasOpen && rankIndexOf(moBest, moTheme.ranks) >= MO_OPEN_AT;
+    // しきいちまで いったら つぎの いきものが あく
+    var opened = !wasOpen && rankIndexOf(moBest, moTheme.ranks) >= needForNext;
     if (opened) moBuildThemeButtons();
 
-    var text = MO_TIME + "びょうで " + moScore + "かい・" + moPoints + "てん！";
-    var label = rankLabelOf(moPoints, moTheme.ranks);
+    var lasted = Math.round((new Date().getTime() - moBeganAt) / 1000);
+    var text = (moTheme.endless ? lasted : MO_TIME) + "びょうで " + moScore + "かい・" + moPoints + "てん！";
+    var label = moLabelOf(moPoints);
     if (label) text += " " + label;
     if (best) text += " さいこう きろく！";
     if (opened && next) text += " " + next.icon + " " + next.name + " が あきました！";
+
+    // ちょうこうとくてん の メダル。はじめて とった ときは とくべつな ことばを そえる
+    var sup = moSuperIndex(moPoints);
+    if (sup >= 0) {
+      var had = Number(load("mo-super", "-1"));
+      if (sup > had) {
+        save("mo-super", sup);
+        text += " " + MO_SUPER[sup].mark + " " + MO_SUPER[sup].msg + "！";
+      } else {
+        text += " " + MO_SUPER[sup].msg + "。";
+      }
+      moPaintMedals();
+    }
     // はなまるは しょうごうが ついた ラウンドだけ。さわらずに おわった ぶんは かぞえない
     if (label) {
       celebrate(moMsgEl, text);
@@ -836,10 +971,12 @@
     moMsgEl.className = "msg";
     for (var i = 0; i < moHoles.length; i++) moHoles[i].className = "hole";
     moPoints = 0;
+    moStage = 0;
     moPaintBest();
+    moPaintStage();
     moStartClock();
     moRunning = true;
-    moNextTimer = setTimeout(moSpawn, moTheme.gap);
+    moNextTimer = setTimeout(moSpawn, moGapNow());
   }
 
   function moStop() {
@@ -847,6 +984,8 @@
     moStopClock();
     moClearTimers();
     if (moPopTimer !== null) { clearTimeout(moPopTimer); moPopTimer = null; }
+    if (moGrewTimer !== null) { clearTimeout(moGrewTimer); moGrewTimer = null; }
+    moTimeEl.className = "";
     moHideCurrent();
     moLeft = MO_TIME;
     moPaintClock();
