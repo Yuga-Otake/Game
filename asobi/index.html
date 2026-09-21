@@ -123,7 +123,13 @@
   .stamps .marks { font-size: 22px; letter-spacing: .06em; }
 
   /* ---- 共通パーツ ---- */
-  .score { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
+  .score {
+    font-size: 24px; font-weight: 700; margin: 0 0 8px;
+    /* ばんの 上の 行は おりかえさない。おりかえると ばんが 下に ずれて
+       さっきまで 穴が あった ところを たたいて しまう。
+       1行と きまって いれば 高さは かってに そろう */
+    white-space: nowrap; overflow: hidden;
+  }
   .score b { color: #e07a2f; color: var(--accent); font-size: 30px; }
   .msg {
     font-size: 26px;
@@ -184,6 +190,8 @@
   table.board.bonus { background: #fff3cf; }
 
   /* ---- もぐらたたき ---- */
+  /* 2どたたきの 拡大や、たたいた ときの 画面の うごきを とめる */
+  .hole, .card { touch-action: manipulation; }
   .hole {
     background: #cbbb95;
     overflow: hidden;         /* 中身がはみ出しても まるの大きさを変えない */
@@ -277,8 +285,28 @@
   .swatch.on { border-color: #2f2a24; border-color: var(--text); }
 
   /* ---- どうぶつゲーム ---- */
-  .best { font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px; min-height: 22px; }
-  .stage { font-size: 18px; font-weight: 700; color: #c2410c; margin: 0 0 4px; }
+  .best {
+    font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px;
+    white-space: nowrap; overflow: hidden; min-height: 24px;
+  }
+  .stage {
+    font-size: 18px; font-weight: 700; color: #c2410c; margin: 0 0 4px;
+    white-space: nowrap; overflow: hidden; min-height: 26px;
+  }
+  /* せまい 画面では 1行に おさまらない。字を けずるより、はじめから
+     2行ぶんの 高さを とっておく。1行でも 2行でも 高さが かわらないので
+     ばんは うごかない */
+  @media (max-width: 700px) {
+    .score { font-size: 19px; white-space: normal; height: 56px; line-height: 26px; }
+    .score b { font-size: 24px; }
+    .best { font-size: 14px; white-space: normal; height: 40px; line-height: 19px; }
+    .stage { font-size: 15px; white-space: normal; height: 44px; line-height: 21px; }
+  }
+  @media (max-width: 380px) {
+    .score { font-size: 17px; }
+    .best { font-size: 13px; height: 60px; }
+    .stage { font-size: 14px; }
+  }
   /* タイムが ふえた ときだけ 時計を 光らせる */
   .score b.grew { color: #2f8f4e; }
   .nextface { font-size: 32px; vertical-align: middle; }
@@ -386,6 +414,17 @@
 
   function $(id) { return document.getElementById(id); }
   function onTap(el, fn) { el.onclick = fn; }
+
+  // ばんの 上で 指が すこし うごいても 画面を スクロールさせない。
+  // スクロールすると 穴の 場所が ずれて、さっきまで 穴が あった ところを
+  // たたいて しまう。touchstart は そのままなので、たたく こと 自体は かわらない。
+  function holdStill(el) {
+    if (!el) return;
+    el.ontouchmove = function (e) {
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    };
+  }
 
   // 古い環境やプライベートブラウズでも落ちないように、保存は必ず try で包む
   function load(key, dflt) {
@@ -906,6 +945,7 @@
       }
       moBody.appendChild(tr);
     }
+    holdStill(moBoard);
     moResize();
   }
 
@@ -1301,6 +1341,7 @@
       }
       meBody.appendChild(tr);
     }
+    holdStill(meBoard);
     meResize();
   }
 
