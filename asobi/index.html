@@ -53,6 +53,10 @@
 
   /* 右上の音ボタンに文字がかぶらないよう、左右に同じ余白をとる */
   h1 { font-size: 24px; margin: 2px 0 12px; padding: 0 70px; font-weight: 700; letter-spacing: .04em; }
+  /* せまい 画面では おびの ことばを けずる。きれて しまうので */
+  @media (max-width: 399px) {
+    .stage .wide { display: none; }
+  }
   @media (max-width: 380px) {
     h1 { font-size: 20px; padding: 0 64px; }
     #sound { width: 56px; height: 52px; font-size: 21px; }
@@ -290,6 +294,7 @@
     white-space: nowrap; overflow: hidden; min-height: 24px;
   }
   /* ばんの すぐ 上の おび。たたきながら よこ目で 読む ところ */
+  .stage b { font-size: 24px; }
   .stage {
     font-size: 20px; font-weight: 700; color: #9a3412; margin: 0 auto 6px;
     white-space: nowrap; overflow: hidden; min-height: 30px; line-height: 30px;
@@ -304,6 +309,7 @@
     .score b { font-size: 24px; }
     .best { font-size: 14px; white-space: normal; height: 40px; line-height: 19px; }
     .stage { font-size: 16px; min-height: 26px; line-height: 26px; padding: 0 10px; }
+    .stage b { font-size: 19px; }
   }
   @media (max-width: 380px) {
     .score { font-size: 17px; }
@@ -311,7 +317,7 @@
     .stage { font-size: 14px; padding: 0 8px; }
   }
   /* タイムが ふえた ときだけ 時計を 光らせる */
-  .score b.grew { color: #2f8f4e; }
+  b.grew { color: #2f8f4e; }
   .nextface { font-size: 32px; vertical-align: middle; }
   .rank { font-size: 19px; font-weight: 700; color: #c2691f; vertical-align: middle; }
   .dex { margin: 0 auto 2px; max-width: 620px; line-height: 1.4; }
@@ -353,13 +359,14 @@
 
 <!-- もぐらたたき -->
 <div id="game-mogura">
-  <p class="score">たたいた かず　<b id="mogura-score">0</b>　　のこり ⏱ <b id="mogura-time">30</b> びょう</p>
+  <p class="score">たたいた かず　<b id="mogura-score">0</b></p>
   <p class="best" id="mogura-best"></p>
   <p class="dex" id="mogura-medals" style="display:none"></p>
   <div class="ctrl"><span class="label">なにを たたく</span><span id="mogura-themes"></span></div>
-  <!-- だんかい・れんさ・ばいりつは たたいて いる あいだ ずっと 見るので、
-       ばんの すぐ 上に おく。目を はなさずに よこ目で 読める -->
-  <p class="stage" id="mogura-stage" style="display:none"></p>
+  <!-- のこり時間・だんかい・れんさ・ばいりつは たたいて いる あいだ ずっと
+       見るので、ばんの すぐ 上に おく。目を はなさずに よこ目で 読める。
+       せまい 画面では .wide の ことばを けして みじかくする -->
+  <p class="stage" id="mogura-stage">⏱<span class="wide"> のこり</span> <b id="mogura-time">30</b><span class="wide"> びょう</span><span id="mogura-extra"></span></p>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
@@ -770,6 +777,7 @@
   var moCounted = false, moExtra = 0;   // いまの いきものを もう かぞえたか / れんだの かいすう
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
   var moStageEl = $("mogura-stage"), moMedalEl = $("mogura-medals");
+  var moExtraEl = $("mogura-extra");
 
   // むかしの きろくは もぐらの ものとして ひきつぐ
   (function () {
@@ -814,15 +822,15 @@
     return m > MO_COMBO_MAX ? MO_COMBO_MAX : m;
   }
 
+  // おびの うしろ半分。真・ドラゴンの ときだけ だんかい・れんさ・ばいりつを 足す
   function moPaintStage() {
-    if (!moTheme.endless) { moStageEl.style.display = "none"; return; }
+    if (!moTheme.endless) { moExtraEl.innerHTML = ""; return; }
     var total = Math.round(moStageMult() * moComboMult() * 10) / 10;
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
-    moStageEl.style.display = "";
     // せまい 画面では ことばを けずる。おびから はみ出して 切れて しまうので
-    moStageEl.innerHTML = vw < 400
-      ? "🔥" + (moStage + 1) + "　れんさ " + moCombo + "　×" + total
-      : "🔥 だんかい " + (moStage + 1) + "　れんさ " + moCombo + "　てんすう ×" + total;
+    moExtraEl.innerHTML = vw < 400
+      ? "　🔥" + (moStage + 1) + "　れんさ " + moCombo + "　×" + total
+      : "　🔥 だんかい " + (moStage + 1) + "　れんさ " + moCombo + "　てんすう ×" + total;
   }
 
   // のがした ときに よぶ。れんさが きれる
