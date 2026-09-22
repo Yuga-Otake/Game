@@ -370,7 +370,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。1ぴきでも のがすと 0に もどります。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -724,7 +724,11 @@
   var MO_CAP_SEC = 45;           // ためられる 時間の うわげん
   var MO_MULT_STEP = 0.5;        // だんかいごとに ふえる てんすうの ばいりつ
   // れんさ: たたきそこねる まで、たたけた いきものの かず。
-  // のがすと 0に もどる。いまは 真・ドラゴンだけ てんすうに ひびく。
+  // いまは 真・ドラゴンだけ てんすうに ひびく。
+  // 3びき 同時に 出ると、どうしても ぜんぶには 手が まわらない。
+  // そこを かぞえて しまうと、うでとは かんけいなく れんさが きれる。
+  // なので きれるのは 「その 1ぴきが 出ている あいだ、なにも たたかなかった」
+  // ときだけ。ほかの 1ぴきを たたいて いた なら きれない。
   var MO_COMBO_STEP = 0.05;      // れんさ 1つ ごとに ふえる ばいりつ
   var MO_COMBO_MAX = 2.5;        // れんさの ばいりつの うわげん (れんさ 30で いっぱい)
 
@@ -773,7 +777,7 @@
   var moHoles = [], moScore = 0, moLast = -1;
   var moPoints = 0, moUpAt = 0, moEndsAt = 0, moLeft = MO_TIME, moClockTimer = null;
   var moBeganAt = 0, moStage = 0, moGrewTimer = null;
-  var moCombo = 0, moComboBest = 0;
+  var moCombo = 0, moComboBest = 0, moLastHitAt = 0;
   var moCounted = false, moExtra = 0;   // いまの いきものを もう かぞえたか / れんだの かいすう
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
   var moStageEl = $("mogura-stage"), moMedalEl = $("mogura-medals");
@@ -1065,9 +1069,10 @@
     for (var i = 0; i < moHoles.length; i++) {
       var st = moState[i];
       if (!st) continue;
-      // たたかなくても しばらくすると ひっこむ (てんすうは へらないが れんさは きれる)
+      // たたかなくても しばらくすると ひっこむ (てんすうは へらない)
       if (now >= st.until) {
-        if (!st.counted) moComboBreak();
+        // 出ている あいだ ずっと 手が とまって いた ときだけ れんさが きれる
+        if (!st.counted && moLastHitAt < st.upAt) moComboBreak();
         moHideHole(i);
         continue;
       }
@@ -1123,6 +1128,7 @@
       return;   // たたきすぎ。ここから さきは つかない
     }
 
+    moLastHitAt = new Date().getTime();
     moScore++;                     // 30びょうで たたけた かいすう
     moScoreEl.innerHTML = String(moScore);
     moPoints += got;
@@ -1197,6 +1203,7 @@
     moStage = 0;
     moCombo = 0;
     moComboBest = 0;
+    moLastHitAt = new Date().getTime();
     moBonusUntil = 0;
     moBonusOn = false;
     moBonusNextOk = new Date().getTime() + MO_BONUS_LEAD;
