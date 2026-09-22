@@ -289,9 +289,12 @@
     font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px;
     white-space: nowrap; overflow: hidden; min-height: 24px;
   }
+  /* ばんの すぐ 上の おび。たたきながら よこ目で 読む ところ */
   .stage {
-    font-size: 18px; font-weight: 700; color: #c2410c; margin: 0 0 4px;
-    white-space: nowrap; overflow: hidden; min-height: 26px;
+    font-size: 20px; font-weight: 700; color: #9a3412; margin: 0 auto 6px;
+    white-space: nowrap; overflow: hidden; min-height: 30px; line-height: 30px;
+    background: #fdeccd; border-radius: 15px; padding: 0 14px;
+    display: inline-block; max-width: 92%;
   }
   /* せまい 画面では 1行に おさまらない。字を けずるより、はじめから
      2行ぶんの 高さを とっておく。1行でも 2行でも 高さが かわらないので
@@ -300,12 +303,12 @@
     .score { font-size: 19px; white-space: normal; height: 56px; line-height: 26px; }
     .score b { font-size: 24px; }
     .best { font-size: 14px; white-space: normal; height: 40px; line-height: 19px; }
-    .stage { font-size: 15px; white-space: normal; height: 44px; line-height: 21px; }
+    .stage { font-size: 16px; min-height: 26px; line-height: 26px; padding: 0 10px; }
   }
   @media (max-width: 380px) {
     .score { font-size: 17px; }
     .best { font-size: 13px; height: 60px; }
-    .stage { font-size: 14px; }
+    .stage { font-size: 14px; padding: 0 8px; }
   }
   /* タイムが ふえた ときだけ 時計を 光らせる */
   .score b.grew { color: #2f8f4e; }
@@ -351,10 +354,12 @@
 <!-- もぐらたたき -->
 <div id="game-mogura">
   <p class="score">たたいた かず　<b id="mogura-score">0</b>　　のこり ⏱ <b id="mogura-time">30</b> びょう</p>
-  <p class="stage" id="mogura-stage" style="display:none"></p>
   <p class="best" id="mogura-best"></p>
   <p class="dex" id="mogura-medals" style="display:none"></p>
   <div class="ctrl"><span class="label">なにを たたく</span><span id="mogura-themes"></span></div>
+  <!-- だんかい・れんさ・ばいりつは たたいて いる あいだ ずっと 見るので、
+       ばんの すぐ 上に おく。目を はなさずに よこ目で 読める -->
+  <p class="stage" id="mogura-stage" style="display:none"></p>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
@@ -802,10 +807,13 @@
 
   function moPaintStage() {
     if (!moTheme.endless) { moStageEl.style.display = "none"; return; }
-    var total = moStageMult() * moComboMult();
+    var total = Math.round(moStageMult() * moComboMult() * 10) / 10;
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     moStageEl.style.display = "";
-    moStageEl.innerHTML = "🔥 だんかい " + (moStage + 1) +
-      "　れんさ " + moCombo + "　てんすう ×" + (Math.round(total * 10) / 10);
+    // せまい 画面では ことばを けずる。おびから はみ出して 切れて しまうので
+    moStageEl.innerHTML = vw < 400
+      ? "🔥" + (moStage + 1) + "　れんさ " + moCombo + "　×" + total
+      : "🔥 だんかい " + (moStage + 1) + "　れんさ " + moCombo + "　てんすう ×" + total;
   }
 
   // のがした ときに よぶ。れんさが きれる
