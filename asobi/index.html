@@ -370,7 +370,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。<br>同時に 出ている ものを <b>まとめて しとめる</b> と <b>🐲 ドラゴンフィーバー</b>。2ひきで ＋1びょう、3びきで ＋2.5びょうと 3びょうの きんいろ です。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -676,17 +676,28 @@
     if (moBonusOn) {                                // たったいま おわった
       moBonusOn = false;
       moBoard.className = "board";
-      if (moMsgEl.innerHTML.indexOf("ボーナス") >= 0) moMsgEl.innerHTML = "";
     }
     if (now < moBonusNextOk) return;
     if (Math.random() >= since / MO_BONUS_EVERY) return;
-    moBonusUntil = now + MO_BONUS_MS;
+    moBonusStart(MO_BONUS_MS, "✨ ボーナスタイム！ いまの あいだは ぜんぶ きんいろ");
+  }
+
+  function moBonusStart(ms, text) {
+    var now = new Date().getTime();
+    moBonusUntil = now + ms;
     moBonusNextOk = moBonusUntil + MO_BONUS_REST;
     moBonusOn = true;
     moBoard.className = "board bonus";
-    moMsgEl.className = "msg";
-    moMsgEl.innerHTML = "✨ ボーナスタイム！ いまの あいだは ぜんぶ きんいろ";
+    moSay(text, ms);
     soundGold();
+  }
+
+  // ばんの 下の ことば。しばらく たつと 自分で きえる
+  var moSayUntil = 0;
+  function moSay(text, ms) {
+    moMsgEl.className = "msg";
+    moMsgEl.innerHTML = text;
+    moSayUntil = new Date().getTime() + ms;
   }
 
   function moPickKind() {
@@ -731,6 +742,15 @@
   // ときだけ。ほかの 1ぴきを たたいて いた なら きれない。
   var MO_COMBO_STEP = 0.05;      // れんさ 1つ ごとに ふえる ばいりつ
   var MO_COMBO_MAX = 2.5;        // れんさの ばいりつの うわげん (れんさ 30で いっぱい)
+
+  // ドラゴンフィーバー: 同時に 出ている ものを まとめて しとめると タイムが のびる。
+  // 2ひき まとめて → +1びょう、3びき まとめて → +2.5びょう と 3びょうの きんいろ。
+  // 「まとめて」は、いま 出ている ものが ぜんぶ たたかれて いて、そのうち
+  // 2ひき (3びき) が まだ フィーバーに つかわれて いない こと。
+  // 1ぴきずつ かたづけて いる だけでは 出ない。つづけて 出ないように 間も あける。
+  var MO_FEVER2_SEC = 1.0, MO_FEVER3_SEC = 2.5, MO_FEVER3_GOLD = 3000;
+  var MO_FEVER_REST = 4000;      // 2ひきの ほうは つづけて 出ないように 間を あける
+  var moFeverNextOk = 0;
 
   // ちょうこうとくてん の メダル。ふつうの しょうごう(👑)の さらに 上。
   // さかいめは 真・ドラゴンを 反応の はやさを かえて 実測した ところから きめた:
@@ -837,6 +857,33 @@
       : "　🔥 だんかい " + (moStage + 1) + "　れんさ " + moCombo + "　てんすう ×" + total;
   }
 
+  // たたいた あとに よぶ。同時に 出ている ものを まとめて しとめたか みる
+  function moFeverCheck() {
+    if (!moTheme.endless) return;
+    var now = new Date().getTime();
+    var ups = [], fresh = 0, i, st;
+    for (i = 0; i < moHoles.length; i++) {
+      st = moState[i];
+      if (!st) continue;
+      if (!st.counted) return;          // まだ たたいて いない ものが ある
+      ups.push(st);
+      if (!st.swept) fresh++;
+    }
+    if (fresh < 2) return;              // 1ぴきずつ かたづけた だけ
+    // 3びき まとめては めったに ないので、間を あけずに 出す。2ひきの ほうは あける
+    if (fresh < 3 && now < moFeverNextOk) return;
+    for (i = 0; i < ups.length; i++) ups[i].swept = true;
+    moFeverNextOk = now + MO_FEVER_REST;
+    if (fresh >= 3) {
+      moAddTime(MO_FEVER3_SEC);
+      moBonusStart(MO_FEVER3_GOLD, "✨🐲 きんの ドラゴンフィーバー！　＋" + MO_FEVER3_SEC + "びょう");
+    } else {
+      moAddTime(MO_FEVER2_SEC);
+      moSay("🐲 ドラゴンフィーバー！　＋" + MO_FEVER2_SEC + "びょう", 1600);
+      soundGold();
+    }
+  }
+
   // のがした ときに よぶ。れんさが きれる
   function moComboBreak() {
     if (moCombo === 0) return;
@@ -902,6 +949,7 @@
       if (left !== moLeft) { moLeft = left; moPaintClock(); }
       // ボーナスの おわりは、つぎの いきものを またずに 見た目を もどす
       if (moBonusOn && now >= moBonusUntil) moBonusCheck();
+      if (moSayUntil && now >= moSayUntil) { moSayUntil = 0; moMsgEl.innerHTML = ""; }
       if (moTheme.endless) {
         var stage = Math.floor((now - moBeganAt) / 1000 / MO_STEP_SEC);
         if (stage !== moStage) { moStage = stage; moPaintStage(); }
@@ -1050,7 +1098,7 @@
     var now = new Date().getTime();
 
     moState[i] = { value: kind.value, gold: gold, upAt: now, until: now + moUpNow(),
-                   counted: false, extra: 0, cls: cls, popUntil: 0 };
+                   counted: false, extra: 0, cls: cls, popUntil: 0, swept: false };
 
     var hole = moHoles[i];
     // いきものの絵は かならず 1 文字。2 文字にすると おりかえして まるが たてに のびる
@@ -1119,6 +1167,7 @@
         moAddTime((span + moGapNow()) / 1000 * MO_BONUS * frac * (st.gold ? MO_GOLD_TIME : 1));
       }
       if (st.gold) soundGold(); else soundHit();
+      moFeverCheck();
     } else if (st.extra < MO_EXTRA_MAX) {
       // 2かいめ いこう。でている あいだは なんども たたける
       st.extra++;
@@ -1129,6 +1178,8 @@
     }
 
     moLastHitAt = new Date().getTime();
+    moFeverNextOk = 0;
+    moSayUntil = 0;
     moScore++;                     // 30びょうで たたけた かいすう
     moScoreEl.innerHTML = String(moScore);
     moPoints += got;
@@ -1204,6 +1255,8 @@
     moCombo = 0;
     moComboBest = 0;
     moLastHitAt = new Date().getTime();
+    moFeverNextOk = 0;
+    moSayUntil = 0;
     moBonusUntil = 0;
     moBonusOn = false;
     moBonusNextOk = new Date().getTime() + MO_BONUS_LEAD;
