@@ -370,7 +370,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。<br>同時に 出ている ものを <b>まとめて しとめる</b> と <b>🐲 ドラゴンフィーバー</b>。2ひきで ＋1びょう、3びきで ＋2.5びょうと 3びょうの きんいろ です。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。<br>同時に 出ている ものを <b>まとめて しとめる</b> と <b>🐲 ドラゴンフィーバー</b>。2ひきで ＋1びょう、3びきで ＋2.5びょうと 3びょうの きんいろ です。<br>出てすぐ しとめるのを 5かい つづけると <b>⚡ はやうち</b>。＋2びょう もらえます。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -748,6 +748,16 @@
   // 2ひき (3びき) が まだ フィーバーに つかわれて いない こと。
   // 1ぴきずつ かたづけて いる だけでは 出ない。つづけて 出ないように 間も あける。
   var MO_FEVER2_SEC = 1.0, MO_FEVER3_SEC = 2.5, MO_FEVER3_GOLD = 3000;
+
+  // はやうち: 出てすぐ (タイムが まるまる のびる 4わりの うち) に しとめた のが
+  // つづくと ごほうび。フィーバーが 「同時に 出た ものを まとめて」なのに たいして、
+  // こちらは 「1ぴきずつ でも とにかく はやく」。出かたが ちがうので 両方 いきる。
+  // 3びき 同時の ときは 2ひきめ 3びきめが どうしても おそく なるので つづかない。
+  // だんかいが 上がると 4わりの 線が きびしく なって、やがて 出なく なる。
+  var MO_FAST_FRAC = 0.45;       // 出ている 時間の どこまでを 「はやうち」と するか
+  var MO_FAST_NEED = 5;          // なんれんぱつで ごほうび
+  var MO_FAST_SEC = 1.2;         // もらえる びょうすう
+  var moFast = 0;
   var MO_FEVER_REST = 4000;      // 2ひきの ほうは つづけて 出ないように 間を あける
   var moFeverNextOk = 0;
 
@@ -851,9 +861,20 @@
     var total = Math.round(moStageMult() * moComboMult() * 10) / 10;
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     // せまい 画面では ことばを けずる。おびから はみ出して 切れて しまうので
+    var fast = moFast >= 3 ? "　⚡" + moFast : "";
     moExtraEl.innerHTML = vw < 400
-      ? "　🔥" + (moStage + 1) + "　れんさ " + moCombo + "　×" + total
-      : "　🔥 だんかい " + (moStage + 1) + "　れんさ " + moCombo + "　てんすう ×" + total;
+      ? "　🔥" + (moStage + 1) + "　れんさ " + moCombo + "　×" + total + fast
+      : "　🔥 だんかい " + (moStage + 1) + "　れんさ " + moCombo + "　てんすう ×" + total + fast;
+  }
+
+  // はやうちが つづいたか みる。おそい のが 1ぴきでも 入ると 0に もどる
+  function moFastCheck(quick) {
+    if (!quick) { moFast = 0; return; }
+    moFast++;
+    if (moFast % MO_FAST_NEED !== 0) return;
+    moAddTime(MO_FAST_SEC);
+    moSay("⚡ はやうち " + moFast + "れんぱつ！　＋" + MO_FAST_SEC + "びょう", 1600);
+    soundGold();
   }
 
   // たたいた あとに よぶ。同時に 出ている ものを まとめて しとめたか みる
@@ -1152,8 +1173,9 @@
       st.counted = true;
       moCombo++;
       if (moCombo > moComboBest) moComboBest = moCombo;
-      got = Math.round(moPointFor(new Date().getTime() - st.upAt) *
-                       mult * moStageMult() * moComboMult() * st.value);
+      var took = new Date().getTime() - st.upAt;
+      got = Math.round(moPointFor(took) * mult * moStageMult() * moComboMult() * st.value);
+      if (moTheme.endless) moFastCheck(took <= moUpNow() * MO_FAST_FRAC);
       moPaintStage();
       // 真・ドラゴン: 1ぴきめの ひとたたきで 時間が のびる。れんだでは のびない。
       // おそいほど もらえる 時間は すくない
@@ -1175,8 +1197,6 @@
     }
 
     moLastHitAt = new Date().getTime();
-    moFeverNextOk = 0;
-    moSayUntil = 0;
     moScore++;                     // 30びょうで たたけた かいすう
     moScoreEl.innerHTML = String(moScore);
     moPoints += got;
@@ -1254,6 +1274,7 @@
     moLastHitAt = new Date().getTime();
     moFeverNextOk = 0;
     moSayUntil = 0;
+    moFast = 0;
     moBonusUntil = 0;
     moBonusOn = false;
     moBonusNextOk = new Date().getTime() + MO_BONUS_LEAD;
