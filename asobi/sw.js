@@ -1,6 +1,6 @@
 // オフラインでも遊べるようにするための最小限の Service Worker。
 // 通信できるときはネットワークを優先し、失敗したときだけキャッシュを返す。
-var CACHE = "asobi-v40";
+var CACHE = "asobi-v41";
 var ASSETS = [
   "./",
   "./index.html",
