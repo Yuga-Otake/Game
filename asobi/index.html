@@ -732,7 +732,6 @@
   var MO_UP_FLOOR = 620, MO_GAP_FLOOR = 120;
   var MO_BONUS = 1.67;           // 1ぴき たたくと もらえる 時間 (1ぴきぶんの まちじかん の ばい)
   var MO_GOLD_TIME = 2;          // きんいろは 時間も 2ばい
-  var MO_CAP_SEC = 45;           // ためられる 時間の うわげん
   var MO_MULT_STEP = 0.5;        // だんかいごとに ふえる てんすうの ばいりつ
   // れんさ: たたきそこねる まで、たたけた いきものの かず。
   // いまは 真・ドラゴンだけ てんすうに ひびく。
@@ -891,11 +890,9 @@
     moPaintStage();
   }
 
-  // ためられる 時間には うわげんが ある。ためこんで あんぜんに なりすぎない ように
+  // ためられる 時間に うわげんは ない。のばした ぶんは そのまま のこる
   function moAddTime(sec) {
-    var now = new Date().getTime();
     moEndsAt += sec * 1000;
-    if (moEndsAt - now > MO_CAP_SEC * 1000) moEndsAt = now + MO_CAP_SEC * 1000;
     moTimeEl.className = "grew";
     if (moGrewTimer !== null) clearTimeout(moGrewTimer);
     moGrewTimer = setTimeout(function () { moTimeEl.className = ""; }, 320);
