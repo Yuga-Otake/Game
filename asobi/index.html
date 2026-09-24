@@ -53,8 +53,9 @@
 
   /* 右上の音ボタンに文字がかぶらないよう、左右に同じ余白をとる */
   h1 { font-size: 24px; margin: 2px 0 12px; padding: 0 70px; font-weight: 700; letter-spacing: .04em; }
-  /* せまい 画面では おびの ことばを けずる。きれて しまうので */
-  @media (max-width: 399px) {
+  /* せまい 画面では おびの ことばを けずる。きれて しまうので。
+     区切りや ことばを けずる JS の さかいめ (moNarrow) と 同じ 700px に そろえる */
+  @media (max-width: 699px) {
     .stage .wide { display: none; }
   }
   @media (max-width: 380px) {
@@ -294,7 +295,7 @@
     white-space: nowrap; overflow: hidden; min-height: 24px;
   }
   /* ばんの すぐ 上の おび。たたきながら よこ目で 読む ところ */
-  .stage b { font-size: 24px; }
+  .stage b { font-size: 1.2em; }   /* おびを 縮めた ときに 数字も いっしょに 縮む */
   .stage {
     font-size: 20px; font-weight: 700; color: #9a3412; margin: 0 auto 6px;
     white-space: nowrap; overflow: hidden; min-height: 30px; line-height: 30px;
@@ -309,7 +310,6 @@
     .score b { font-size: 24px; }
     .best { font-size: 14px; white-space: normal; height: 40px; line-height: 19px; }
     .stage { font-size: 16px; min-height: 26px; line-height: 26px; padding: 0 10px; }
-    .stage b { font-size: 19px; }
   }
   @media (max-width: 380px) {
     .score { font-size: 17px; }
@@ -366,7 +366,7 @@
   <!-- のこり時間・だんかい・れんさ・ばいりつは たたいて いる あいだ ずっと
        見るので、ばんの すぐ 上に おく。目を はなさずに よこ目で 読める。
        せまい 画面では .wide の ことばを けして みじかくする -->
-  <p class="stage" id="mogura-stage">⏱<span class="wide"> のこり</span> <b id="mogura-time">30</b><span class="wide"> びょう</span><span id="mogura-extra"></span></p>
+  <p class="stage" id="mogura-stage">⏱<span class="wide"> のこり</span> <b id="mogura-time">30</b><span class="wide"> びょう</span><span id="mogura-now"></span><span id="mogura-extra"></span></p>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
@@ -821,7 +821,7 @@
   var moCounted = false, moExtra = 0;   // いまの いきものを もう かぞえたか / れんだの かいすう
   var moTimeEl = $("mogura-time"), moBestEl = $("mogura-best");
   var moStageEl = $("mogura-stage"), moMedalEl = $("mogura-medals");
-  var moExtraEl = $("mogura-extra");
+  var moExtraEl = $("mogura-extra"), moNowEl = $("mogura-now");
 
   // むかしの きろくは もぐらの ものとして ひきつぐ
   (function () {
@@ -870,12 +870,15 @@
   function moPaintStage() {
     if (!moTheme.endless) { moExtraEl.innerHTML = ""; return; }
     var total = Math.round(moStageMult() * moComboMult() * 10) / 10;
-    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     // せまい 画面では ことばを けずる。おびから はみ出して 切れて しまうので
-    var fast = moFast >= 3 ? "　⚡" + moFast : "";
-    moExtraEl.innerHTML = vw < 400
-      ? "　🔥" + (moStage + 1) + "　れんさ " + moCombo + "　×" + total + fast
-      : "　🔥 だんかい " + (moStage + 1) + "　れんさ " + moCombo + "　てんすう ×" + total + fast;
+    var g = moGap();
+    // いちばん せまい 画面では ⚡ を 出さない。おびから はみ出して 切れるので。
+    // (はやうちは 出たときに ことばで 知らせるので、かずが 見えなくても こまらない)
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var fast = (moFast >= 3 && vw >= 380) ? g + "⚡" + moFast : "";
+    moExtraEl.innerHTML = g + "🔥" + (moStage + 1) + g + "れんさ " + moCombo +
+      g + "×" + total + fast;
+    moFitBand();
   }
 
   // はやうちが つづいたか みる。おそい のが 1ぴきでも 入ると 0に もどる
@@ -954,13 +957,45 @@
     return rankLabelOf(score, moTheme.ranks);
   }
 
+  // いまの てんすうは ばんの すぐ上の おびに 出す。上の 行は さいこう きろく だけ。
+  // 同じ かずを 2かしょに 出すと どちらを 見れば いいか わからなく なる。
   function moPaintBest() {
-    var now = moPoints > 0 ? "てんすう " + moPoints + " " + moLabelOf(moPoints) : "";
-    var best = moBest > 0 ? "（さいこう " + moBest + "てん " + moLabelOf(moBest) + "）" : "";
-    moBestEl.innerHTML = now + (now && best ? "　" : "") + best;
+    moBestEl.innerHTML = moBest > 0
+      ? "さいこう " + moComma(moBest) + "てん " + moLabelOf(moBest) : "";
+    moPaintNow();
   }
 
-  function moPaintClock() { moTimeEl.innerHTML = String(moLeft); }
+  // おびは 1行に おさめる。せまい 画面では ことばも 区切りも けずる
+  function moNarrow() {
+    return (window.innerWidth || document.documentElement.clientWidth || 768) < 700;
+  }
+  function moGap() { return moNarrow() ? " " : "\u3000"; }
+
+  // おびから はみ出したら、おさまるまで 字を 小さくする。
+  // line-height は 決めうちなので、字が 小さく なっても 高さは 変わらない
+  // (＝ばんは 動かない)。中身が 変わった ときだけ はかる。
+  var moBandKey = "";
+  function moFitBand() {
+    var key = moNowEl.innerHTML + "|" + moExtraEl.innerHTML + "|" + moLeft;
+    if (key === moBandKey) return;
+    moBandKey = key;
+    moStageEl.style.fontSize = "";
+    if (!moStageEl.clientWidth) return;
+    var size = parseFloat((moStageEl.currentStyle || window.getComputedStyle(moStageEl)).fontSize) || 20;
+    var floor = size * 0.7;
+    while (moStageEl.scrollWidth > moStageEl.clientWidth + 1 && size > floor) {
+      size -= 1;
+      moStageEl.style.fontSize = size + "px";
+    }
+  }
+
+  function moPaintNow() {
+    var mark = moPoints > 0 ? moLabelOf(moPoints).split(" ")[0] : "";
+    moNowEl.innerHTML = moGap() + moComma(moPoints) + "てん" + (mark ? " " + mark : "");
+    moFitBand();
+  }
+
+  function moPaintClock() { moTimeEl.innerHTML = String(moLeft); moFitBand(); }
 
   function moStartClock() {
     moBeganAt = new Date().getTime();
