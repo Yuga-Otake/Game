@@ -1089,10 +1089,27 @@
     moResize();
   }
 
+  // ばんの 大きさ。よこは 画面の はば、たては 「もういちど」まで 画面に 入る ことで きまる。
+  // まえは どちらも 140px で 止めて いたので、iPad では ばんが 画面の 45〜60% しか
+  // つかわず、95% つかう iPhone より 絵が 小さく 見えて いた (ます自体は 140 と 105)。
+  // ひろい 画面では たてに 入る かぎり 大きく する。せまい 画面では これまで どおり。
+  var MO_BELOW = 150;            // ばんの 下に のこす ぶん (ことばと ボタン)
+  var MO_CELL_MAX = 260;
+
   function moResize() {
     if (!moHoles.length) return;
-    var s = fitSize(MO_COLS, 140, 10);
-    moBoard.style.width = (MO_COLS * s + (MO_COLS + 1) * 10) + "px";
+    var sp = 10;
+    var s = fitSize(MO_COLS, 140, sp);       // これまでの 大きさ。ここより 小さくは しない
+    var top = moBoard.offsetTop;
+    if (top > 0) {                           // ほかの タブに いる ときは はかれない
+      var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+      var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+      var byW = Math.floor((Math.min(vw - 20, 1000) - (MO_COLS + 1) * sp) / MO_COLS);
+      var byH = Math.floor((vh - top - MO_BELOW - (MO_ROWS + 1) * sp) / MO_ROWS);
+      var big = Math.min(byW, byH, MO_CELL_MAX);
+      if (big > s) s = big;
+    }
+    moBoard.style.width = (MO_COLS * s + (MO_COLS + 1) * sp) + "px";
     for (var i = 0; i < moHoles.length; i++) {
       moHoles[i].style.height = s + "px";
       moHoles[i].style.fontSize = Math.round(s * 0.5) + "px";
