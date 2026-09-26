@@ -594,7 +594,27 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v46";
+  var APP_VER = "v47";
+
+  // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
+  // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
+  // そこで おきたびに ばんごう だけを 見に いき、ちがって いたら ばんごう つきの
+  // URL で 読みなおす。URL が ちがえば 新しく とりに いく ので、かならず 入れかわる。
+  function checkVersion() {
+    var x;
+    try { x = new XMLHttpRequest(); } catch (e) { return; }
+    try { x.open("GET", "ver.txt?t=" + new Date().getTime(), true); } catch (e2) { return; }
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      if (x.status !== 200 && x.status !== 0) return;
+      var v = (x.responseText || "").replace(/[^0-9a-zA-Z.]/g, "");
+      if (!v || v === APP_VER) return;
+      // おなじ ばんごうで もう 来て いる なら、これ いじょう 読みなおさない
+      if (String(location.search).indexOf("v=" + v) >= 0) return;
+      location.replace(location.pathname + "?v=" + v);
+    };
+    try { x.send(); } catch (e3) {}
+  }
 
   function paintStamps() {
     var tail = ' <i class="ver">' + APP_VER + "</i>";
@@ -2604,6 +2624,8 @@
   window.onresize = function () { moResize(); meResize(); odResize(); paResize(); anResize(); };
 
   // ---- 起動 ----
+  checkVersion();
+
   moBuild();
   meBuild();
   odBuild();

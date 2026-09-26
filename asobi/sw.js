@@ -1,6 +1,6 @@
 // オフラインでも遊べるようにするための最小限の Service Worker。
 // 通信できるときはネットワークを優先し、失敗したときだけキャッシュを返す。
-var CACHE = "asobi-v46";
+var CACHE = "asobi-v47";
 var ASSETS = [
   "./",
   "./index.html",
@@ -29,6 +29,8 @@ self.addEventListener("activate", function (e) {
 
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
+  // 版しらべは まいかい ちがう URL に なるので、ためこまない
+  if (e.request.url.indexOf("ver.txt") >= 0) return;
   e.respondWith(
     fetch(e.request).then(function (res) {
       var copy = res.clone();
