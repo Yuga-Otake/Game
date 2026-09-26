@@ -29,6 +29,10 @@
     --good: #3f8f4f;
   }
   * { box-sizing: border-box; }
+  html {
+    -webkit-text-size-adjust: 100%;   /* iOS が かってに 字の 大きさを 変えないように */
+    text-size-adjust: 100%;
+  }
   html, body {
     margin: 0;
     padding: 0;
@@ -1095,6 +1099,7 @@
   // ひろい 画面では たてに 入る かぎり 大きく する。せまい 画面では これまで どおり。
   var MO_BELOW = 150;            // ばんの 下に のこす ぶん (ことばと ボタン)
   var MO_CELL_MAX = 260;
+  var MO_FACE = 0.62;            // 穴の 大きさに たいする 絵の 大きさ
 
   function moResize() {
     if (!moHoles.length) return;
@@ -1111,9 +1116,16 @@
     }
     moBoard.style.width = (MO_COLS * s + (MO_COLS + 1) * sp) + "px";
     for (var i = 0; i < moHoles.length; i++) {
+      var spans = moHoles[i].getElementsByTagName("span");
       moHoles[i].style.height = s + "px";
-      moHoles[i].style.fontSize = Math.round(s * 0.5) + "px";
-      moHoles[i].getElementsByTagName("span")[1].style.fontSize = Math.round(s * 0.2) + "px";
+      moHoles[i].style.fontSize = Math.round(s * MO_FACE) + "px";
+      // 絵の 大きさは 穴から 受けつぐ のでは なく、絵そのものに つける。
+      // 受けつぎ だと、あいだに 字の 大きさを きめる きまりが 1つでも あると
+      // そちらが 勝って しまう (iPad で 絵だけ 小さい ままに なって いた)。
+      // line-height も 穴の 高さに あわせて、まん中に くる ように する。
+      spans[0].style.fontSize = Math.round(s * MO_FACE) + "px";
+      spans[0].style.lineHeight = s + "px";
+      spans[1].style.fontSize = Math.round(s * 0.2) + "px";
     }
   }
 
