@@ -122,6 +122,7 @@
   }
 
   /* ---- はなまるの記録 ---- */
+  .stamps .ver { font-size: 12px; font-style: normal; opacity: .45; }
   .stamps {
     font-size: 17px;
     color: #6d6355;
@@ -213,7 +214,9 @@
     border: 5px solid #b5a279;
   }
   /* 絵は 字では なく 絵として 描く。下の moFaceSprite を 見てください */
-  .hole .mole { visibility: hidden; position: absolute; left: 0; top: 0; }
+  .hole .mole, .hole .face { visibility: hidden; position: absolute; left: 0; top: 0; }
+  .hole .face { right: 0; text-align: center; }
+  .hole.up .face { visibility: visible; }
   .hole.up .mole { visibility: visible; }
   .hole.up { background: #d9c8a0; }
   .hole.gold { background: #ffdf7a; border-color: #d99a12; }
@@ -588,15 +591,21 @@
   var stampsEl = $("stamps");
   var stamps = Number(load("clears", "0")) || 0;
 
+  // 画面の はしに 版の ばんごうを 出す。
+  // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
+  // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
+  var APP_VER = "v46";
+
   function paintStamps() {
+    var tail = ' <i class="ver">' + APP_VER + "</i>";
     if (stamps <= 0) {
-      stampsEl.innerHTML = "クリアすると はなまるが たまります";
+      stampsEl.innerHTML = "クリアすると はなまるが たまります" + tail;
       return;
     }
     var shown = stamps > 10 ? 10 : stamps;
     var marks = "";
     for (var i = 0; i < shown; i++) marks += "💮";
-    stampsEl.innerHTML = '<span class="marks">' + marks + "</span>　" + stamps + "かい クリア";
+    stampsEl.innerHTML = '<span class="marks">' + marks + "</span>　" + stamps + "かい クリア" + tail;
   }
 
   function celebrate(el, text) {
@@ -820,6 +829,7 @@
   var MO_EXTRA_MAX = 10;         // 1ぴきあたり の れんだの うけつけ かいすう
 
   var moHoles = [], moScore = 0, moLast = -1;
+  var moCanvas = [], moFaceEl = [], moPopEl = [];
   var moPoints = 0, moUpAt = 0, moEndsAt = 0, moLeft = MO_TIME, moClockTimer = null;
   var moBeganAt = 0, moStage = 0, moGrewTimer = null;
   var moCombo = 0, moComboBest = 0, moLastHitAt = 0;
@@ -1078,14 +1088,20 @@
 
     while (moBody.firstChild) moBody.removeChild(moBody.firstChild);
     moHoles = [];
+    moCanvas = [];
+    moFaceEl = [];
+    moPopEl = [];
     for (var r = 0; r < MO_ROWS; r++) {
       var tr = document.createElement("tr");
       for (var c = 0; c < MO_COLS; c++) {
         var td = document.createElement("td");
         td.className = "hole";
-        td.innerHTML = '<canvas class="mole"></canvas><span class="pop">＋1</span>';
+        td.innerHTML = '<canvas class="mole"></canvas><span class="face"></span><span class="pop">＋1</span>';
         (function (el) { onTap(el, function () { moHit(el); }); })(td);
         moHoles.push(td);
+        moCanvas.push(td.getElementsByTagName("canvas")[0]);
+        moFaceEl.push(td.getElementsByTagName("span")[0]);
+        moPopEl.push(td.getElementsByTagName("span")[1]);
         tr.appendChild(td);
       }
       moBody.appendChild(tr);
@@ -1128,14 +1144,16 @@
     return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
   }
 
+  // しっぱいは おぼえない。絵の 用意が まだの ときに 1かい しっぱいした だけで
+  // ずっと 出なく なって しまうので、つぎに よばれたら もういちど ためす
   function moFaceSprite(face) {
-    if (moFaceCache.hasOwnProperty(face)) return moFaceCache[face];
+    if (moFaceCache[face]) return moFaceCache[face];
     var n = 256;
     var off = document.createElement("canvas");
     off.width = n;
     off.height = n;
     var g = off.getContext ? off.getContext("2d") : null;
-    if (!g) { moFaceCache[face] = null; return null; }
+    if (!g) return null;
     g.textAlign = "center";
     g.textBaseline = "middle";
     // 0.6ばい に とどめる。おおきく 描きすぎると 絵が canvas から はみ出して
@@ -1143,7 +1161,7 @@
     g.font = Math.floor(n * 0.6) + "px sans-serif";
     g.fillText(face, n / 2, n / 2);
     var box = moInkBox(g, n, n);
-    if (!box) { moFaceCache[face] = null; return null; }
+    if (!box) return null;
     var cut = document.createElement("canvas");
     cut.width = box.w;
     cut.height = box.h;
@@ -1153,14 +1171,17 @@
   }
 
   function moDrawFace(i, face) {
-    var cv = moHoles[i].getElementsByTagName("canvas")[0];
-    if (!cv || !cv.getContext) return;
-    var g = cv.getContext("2d");
-    if (!g) return;
-    g.clearRect(0, 0, cv.width, cv.height);
+    var cv = moCanvas[i], fe = moFaceEl[i];
+    var g = (cv && cv.getContext) ? cv.getContext("2d") : null;
+    if (g) g.clearRect(0, 0, cv.width, cv.height);
+    fe.innerHTML = "";
     if (!face) return;
-    var sp = moFaceSprite(face);
-    if (!sp) return;
+    var sp = g ? moFaceSprite(face) : null;
+    if (!sp) {
+      // canvas が つかえない とき。字で 出す (小さくても 出ない よりは よい)
+      fe.innerHTML = face;
+      return;
+    }
     // たて よこ どちらも 穴の MO_FACE ばい に おさまる ように のばす
     var k = MO_FACE * Math.min(cv.width / sp.width, cv.height / sp.height);
     var w = Math.round(sp.width * k), h = Math.round(sp.height * k);
@@ -1186,7 +1207,9 @@
     for (var i = 0; i < moHoles.length; i++) {
       var cv = moHoles[i].getElementsByTagName("canvas")[0];
       moHoles[i].style.height = s + "px";
-      moHoles[i].getElementsByTagName("span")[0].style.fontSize = Math.round(s * 0.2) + "px";
+      moPopEl[i].style.fontSize = Math.round(s * 0.2) + "px";
+      moFaceEl[i].style.fontSize = Math.round(s * MO_FACE) + "px";
+      moFaceEl[i].style.lineHeight = inner + "px";
       cv.style.width = inner + "px";
       cv.style.height = inner + "px";
       cv.width = Math.round(inner * dpr);
@@ -1261,7 +1284,7 @@
     moState[i].face = face;
     var hole = moHoles[i];
     moDrawFace(i, face);
-    hole.getElementsByTagName("span")[0].innerHTML = gold ? "✨＋3" : "＋1";
+    moPopEl[i].innerHTML = gold ? "✨＋3" : "＋1";
     hole.className = cls;
   }
 
@@ -1343,7 +1366,7 @@
     moPaintBest();
 
     // いきものは ひっこまない。たたけたことが わかるよう 一しゅん 光らせる
-    el.getElementsByTagName("span")[0].innerHTML = "＋" + got;
+    moPopEl[i].innerHTML = "＋" + got;
     el.className = st.cls + " hit";
     st.popUntil = new Date().getTime() + 160;
   }
