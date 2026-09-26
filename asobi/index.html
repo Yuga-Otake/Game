@@ -212,7 +212,8 @@
     position: relative;
     border: 5px solid #b5a279;
   }
-  .hole .mole { visibility: hidden; white-space: nowrap; }
+  /* 絵は 字では なく 絵として 描く。下の moFaceSprite を 見てください */
+  .hole .mole { visibility: hidden; position: absolute; left: 0; top: 0; }
   .hole.up .mole { visibility: visible; }
   .hole.up { background: #d9c8a0; }
   .hole.gold { background: #ffdf7a; border-color: #d99a12; }
@@ -1082,7 +1083,7 @@
       for (var c = 0; c < MO_COLS; c++) {
         var td = document.createElement("td");
         td.className = "hole";
-        td.innerHTML = '<span class="mole">🐹</span><span class="pop">＋1</span>';
+        td.innerHTML = '<canvas class="mole"></canvas><span class="pop">＋1</span>';
         (function (el) { onTap(el, function () { moHit(el); }); })(td);
         moHoles.push(td);
         tr.appendChild(td);
@@ -1101,6 +1102,71 @@
   var MO_CELL_MAX = 260;
   var MO_FACE = 0.62;            // 穴の 大きさに たいする 絵の 大きさ
 
+  // ---- 絵の 描きかた ----
+  // 字として 大きく 出そうと すると、ふるい iPad では 字の 大きさを 上げても
+  // 絵が 大きく ならない (タブの ボタンの 絵と 同じ 大きさの まま だった)。
+  // そこで、いちど おおきめの canvas に 描いて、じっさいに 色が ついた ところだけを
+  // 切り出し、穴の 大きさに あわせて 引きのばす。字が どんな 大きさで 出ても
+  // 見える 大きさは こちらで きめられる。
+  var moFaceCache = {};
+
+  function moInkBox(g, w, h) {
+    var d;
+    try { d = g.getImageData(0, 0, w, h).data; } catch (e) { return null; }
+    var x0 = w, y0 = h, x1 = -1, y1 = -1, x, y;
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) {
+        if (d[(y * w + x) * 4 + 3] > 24) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+    }
+    if (x1 < 0) return null;
+    return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+
+  function moFaceSprite(face) {
+    if (moFaceCache.hasOwnProperty(face)) return moFaceCache[face];
+    var n = 256;
+    var off = document.createElement("canvas");
+    off.width = n;
+    off.height = n;
+    var g = off.getContext ? off.getContext("2d") : null;
+    if (!g) { moFaceCache[face] = null; return null; }
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    // 0.6ばい に とどめる。おおきく 描きすぎると 絵が canvas から はみ出して
+    // 切れ、切り出した かたちが 横に つぶれて しまう
+    g.font = Math.floor(n * 0.6) + "px sans-serif";
+    g.fillText(face, n / 2, n / 2);
+    var box = moInkBox(g, n, n);
+    if (!box) { moFaceCache[face] = null; return null; }
+    var cut = document.createElement("canvas");
+    cut.width = box.w;
+    cut.height = box.h;
+    cut.getContext("2d").drawImage(off, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+    moFaceCache[face] = cut;
+    return cut;
+  }
+
+  function moDrawFace(i, face) {
+    var cv = moHoles[i].getElementsByTagName("canvas")[0];
+    if (!cv || !cv.getContext) return;
+    var g = cv.getContext("2d");
+    if (!g) return;
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (!face) return;
+    var sp = moFaceSprite(face);
+    if (!sp) return;
+    // たて よこ どちらも 穴の MO_FACE ばい に おさまる ように のばす
+    var k = MO_FACE * Math.min(cv.width / sp.width, cv.height / sp.height);
+    var w = Math.round(sp.width * k), h = Math.round(sp.height * k);
+    g.drawImage(sp, Math.round((cv.width - w) / 2), Math.round((cv.height - h) / 2), w, h);
+  }
+
   function moResize() {
     if (!moHoles.length) return;
     var sp = 10;
@@ -1115,17 +1181,17 @@
       if (big > s) s = big;
     }
     moBoard.style.width = (MO_COLS * s + (MO_COLS + 1) * sp) + "px";
+    var inner = s - 10;                      // ふちの 5px ぶんを のぞいた 中身
+    var dpr = window.devicePixelRatio > 1 ? 2 : 1;
     for (var i = 0; i < moHoles.length; i++) {
-      var spans = moHoles[i].getElementsByTagName("span");
+      var cv = moHoles[i].getElementsByTagName("canvas")[0];
       moHoles[i].style.height = s + "px";
-      moHoles[i].style.fontSize = Math.round(s * MO_FACE) + "px";
-      // 絵の 大きさは 穴から 受けつぐ のでは なく、絵そのものに つける。
-      // 受けつぎ だと、あいだに 字の 大きさを きめる きまりが 1つでも あると
-      // そちらが 勝って しまう (iPad で 絵だけ 小さい ままに なって いた)。
-      // line-height も 穴の 高さに あわせて、まん中に くる ように する。
-      spans[0].style.fontSize = Math.round(s * MO_FACE) + "px";
-      spans[0].style.lineHeight = s + "px";
-      spans[1].style.fontSize = Math.round(s * 0.2) + "px";
+      moHoles[i].getElementsByTagName("span")[0].style.fontSize = Math.round(s * 0.2) + "px";
+      cv.style.width = inner + "px";
+      cv.style.height = inner + "px";
+      cv.width = Math.round(inner * dpr);
+      cv.height = Math.round(inner * dpr);
+      moDrawFace(i, moState[i] ? moState[i].face : "");
     }
   }
 
@@ -1192,10 +1258,10 @@
     moState[i] = { value: kind.value, gold: gold, upAt: now, until: now + moUpNow(),
                    counted: false, extra: 0, cls: cls, popUntil: 0, swept: false };
 
+    moState[i].face = face;
     var hole = moHoles[i];
-    // いきものの絵は かならず 1 文字。2 文字にすると おりかえして まるが たてに のびる
-    hole.getElementsByTagName("span")[0].innerHTML = face;
-    hole.getElementsByTagName("span")[1].innerHTML = gold ? "✨＋3" : "＋1";
+    moDrawFace(i, face);
+    hole.getElementsByTagName("span")[0].innerHTML = gold ? "✨＋3" : "＋1";
     hole.className = cls;
   }
 
@@ -1277,7 +1343,7 @@
     moPaintBest();
 
     // いきものは ひっこまない。たたけたことが わかるよう 一しゅん 光らせる
-    el.getElementsByTagName("span")[1].innerHTML = "＋" + got;
+    el.getElementsByTagName("span")[0].innerHTML = "＋" + got;
     el.className = st.cls + " hit";
     st.popUntil = new Date().getTime() + 160;
   }
