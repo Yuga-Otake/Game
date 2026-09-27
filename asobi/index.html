@@ -201,7 +201,11 @@
 
   /* ---- もぐらたたき ---- */
   /* 2どたたきの 拡大や、たたいた ときの 画面の うごきを とめる */
-  .hole, .card { touch-action: manipulation; }
+  .hole, .card, .pick { touch-action: manipulation; }
+  /* 絵は 字では なく 絵として 描く。faceSprite を 見てください */
+  .facecv { position: absolute; left: 0; top: 0; }
+  .card, .pick { position: relative; }
+  .card .face, .pick .face { position: absolute; left: 0; right: 0; top: 0; text-align: center; }
   .hole {
     background: #cbbb95;
     overflow: hidden;         /* 中身がはみ出しても まるの大きさを変えない */
@@ -213,7 +217,7 @@
     position: relative;
     border: 5px solid #b5a279;
   }
-  /* 絵は 字では なく 絵として 描く。下の moFaceSprite を 見てください */
+  /* 絵は 字では なく 絵として 描く。faceSprite を 見てください */
   .hole .mole, .hole .face { visibility: hidden; position: absolute; left: 0; top: 0; }
   .hole .face { right: 0; text-align: center; }
   .hole.up .face { visibility: visible; }
@@ -245,14 +249,16 @@
     vertical-align: middle;
     cursor: pointer;
   }
-  .card .face { visibility: hidden; }
+  /* ふせて いる あいだは 絵も かくす。canvas にも かけないと 見えて しまう */
+  .card .face, .card .facecv { visibility: hidden; }
   .card.open, .card.done {
     background: #ffffff;
     background: var(--panel);
     border-color: #d9cdb2;
     border-color: var(--line);
   }
-  .card.open .face, .card.done .face { visibility: visible; }
+  .card.open .face, .card.done .face,
+  .card.open .facecv, .card.done .facecv { visibility: visible; }
   .card.done { background: #dff0dd; border-color: #8cc094; }
 
   /* ---- なかまはずれさがし ---- */
@@ -457,6 +463,95 @@
     try { window.localStorage.setItem("asobi-" + key, String(value)); } catch (e) {}
   }
 
+  // ---- 絵の 用意 (どの ゲームでも つかう) ----
+  // ふるい iPad では、字の 大きさを 上げても 絵文字が 大きく ならない。
+  // そこで いちど おおきめの canvas に 描き、じっさいに 色が ついた ところだけを
+  // 切り出して、使う ところの 大きさに あわせて 引きのばす。
+  // 字が どんな 大きさで 出ても、見える 大きさは こちらで きめられる。
+  var faceCache = {};
+
+  function inkBox(g, w, h) {
+    var d;
+    try { d = g.getImageData(0, 0, w, h).data; } catch (e) { return null; }
+    var x0 = w, y0 = h, x1 = -1, y1 = -1, x, y;
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) {
+        if (d[(y * w + x) * 4 + 3] > 24) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+    }
+    if (x1 < 0) return null;
+    return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+
+  // しっぱいは おぼえない。絵の 用意が まだの ときに 1かい しっぱいした だけで
+  // ずっと 出なく なって しまうので、つぎに よばれたら もういちど ためす
+  function faceSprite(face) {
+    if (faceCache[face]) return faceCache[face];
+    var n = 256;
+    var off = document.createElement("canvas");
+    off.width = n;
+    off.height = n;
+    var g = off.getContext ? off.getContext("2d") : null;
+    if (!g) return null;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    // 0.6ばい に とどめる。おおきく 描きすぎると canvas から はみ出して 切れ、
+    // 切り出した かたちが つぶれて しまう
+    g.font = Math.floor(n * 0.6) + "px sans-serif";
+    g.fillText(face, n / 2, n / 2);
+    var box = inkBox(g, n, n);
+    if (!box) return null;
+    var cut = document.createElement("canvas");
+    cut.width = box.w;
+    cut.height = box.h;
+    cut.getContext("2d").drawImage(off, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+    faceCache[face] = cut;
+    return cut;
+  }
+
+  // canvas いっぱい (の ratio ばい) に 絵を 描く。かたちは くずさない。
+  // 絵が 用意できなかった ときは false を かえす (よんだ 側で 字に 切りかえる)
+  function drawFaceOn(cv, face, ratio) {
+    var g = (cv && cv.getContext) ? cv.getContext("2d") : null;
+    if (!g) return false;
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (!face) return true;
+    var sp = faceSprite(face);
+    if (!sp) return false;
+    var k = ratio * Math.min(cv.width / sp.width, cv.height / sp.height);
+    var w = Math.round(sp.width * k), h = Math.round(sp.height * k);
+    g.drawImage(sp, Math.round((cv.width - w) / 2), Math.round((cv.height - h) / 2), w, h);
+    return true;
+  }
+
+  // ますの 中に 絵の canvas を 1つ 置く。字で 出す ほけんの span も そえる
+  function faceCellHTML() {
+    return '<canvas class="facecv"></canvas><span class="face"></span>';
+  }
+
+  // ます (td) の 大きさに あわせて canvas を そろえ、絵を 描く
+  function faceCellDraw(td, face, inner, ratio) {
+    var cv = td.getElementsByTagName("canvas")[0];
+    var fe = td.getElementsByTagName("span")[0];
+    var dpr = window.devicePixelRatio > 1 ? 2 : 1;
+    cv.style.width = inner + "px";
+    cv.style.height = inner + "px";
+    if (cv.width !== Math.round(inner * dpr)) {
+      cv.width = Math.round(inner * dpr);
+      cv.height = Math.round(inner * dpr);
+    }
+    fe.style.fontSize = Math.round(inner * ratio) + "px";
+    fe.style.lineHeight = inner + "px";
+    fe.innerHTML = drawFaceOn(cv, face, ratio) ? "" : face;
+    // 絵は 画に なって いて 字では 読めないので、なにが いるかを ここに のこす
+    td.setAttribute("data-face", face);
+  }
+
   function fitSize(cols, max, spacing, min) {
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     var avail = Math.min(vw - 20, 620);
@@ -594,7 +689,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v47";
+  var APP_VER = "v48";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -1011,7 +1106,10 @@
   // (＝ばんは 動かない)。中身が 変わった ときだけ はかる。
   var moBandKey = "";
   function moFitBand() {
-    var key = moNowEl.innerHTML + "|" + moExtraEl.innerHTML + "|" + moLeft;
+    // 中身が 1文字でも ちがえば はかる のでは なく、字数が 変わった ときだけ はかる。
+    // はかりなおしは ページ全体の 版くみを させるので、ふるい 端末では 重い
+    var key = moNowEl.innerHTML.length + "|" + moExtraEl.innerHTML.length +
+      "|" + String(moLeft).length;
     if (key === moBandKey) return;
     moBandKey = key;
     moStageEl.style.fontSize = "";
@@ -1116,7 +1214,7 @@
       for (var c = 0; c < MO_COLS; c++) {
         var td = document.createElement("td");
         td.className = "hole";
-        td.innerHTML = '<canvas class="mole"></canvas><span class="face"></span><span class="pop">＋1</span>';
+        td.innerHTML = '<canvas class="mole facecv"></canvas><span class="face"></span><span class="pop">＋1</span>';
         (function (el) { onTap(el, function () { moHit(el); }); })(td);
         moHoles.push(td);
         moCanvas.push(td.getElementsByTagName("canvas")[0]);
@@ -1138,74 +1236,10 @@
   var MO_CELL_MAX = 260;
   var MO_FACE = 0.62;            // 穴の 大きさに たいする 絵の 大きさ
 
-  // ---- 絵の 描きかた ----
-  // 字として 大きく 出そうと すると、ふるい iPad では 字の 大きさを 上げても
-  // 絵が 大きく ならない (タブの ボタンの 絵と 同じ 大きさの まま だった)。
-  // そこで、いちど おおきめの canvas に 描いて、じっさいに 色が ついた ところだけを
-  // 切り出し、穴の 大きさに あわせて 引きのばす。字が どんな 大きさで 出ても
-  // 見える 大きさは こちらで きめられる。
-  var moFaceCache = {};
-
-  function moInkBox(g, w, h) {
-    var d;
-    try { d = g.getImageData(0, 0, w, h).data; } catch (e) { return null; }
-    var x0 = w, y0 = h, x1 = -1, y1 = -1, x, y;
-    for (y = 0; y < h; y++) {
-      for (x = 0; x < w; x++) {
-        if (d[(y * w + x) * 4 + 3] > 24) {
-          if (x < x0) x0 = x;
-          if (x > x1) x1 = x;
-          if (y < y0) y0 = y;
-          if (y > y1) y1 = y;
-        }
-      }
-    }
-    if (x1 < 0) return null;
-    return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
-  }
-
-  // しっぱいは おぼえない。絵の 用意が まだの ときに 1かい しっぱいした だけで
-  // ずっと 出なく なって しまうので、つぎに よばれたら もういちど ためす
-  function moFaceSprite(face) {
-    if (moFaceCache[face]) return moFaceCache[face];
-    var n = 256;
-    var off = document.createElement("canvas");
-    off.width = n;
-    off.height = n;
-    var g = off.getContext ? off.getContext("2d") : null;
-    if (!g) return null;
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    // 0.6ばい に とどめる。おおきく 描きすぎると 絵が canvas から はみ出して
-    // 切れ、切り出した かたちが 横に つぶれて しまう
-    g.font = Math.floor(n * 0.6) + "px sans-serif";
-    g.fillText(face, n / 2, n / 2);
-    var box = moInkBox(g, n, n);
-    if (!box) return null;
-    var cut = document.createElement("canvas");
-    cut.width = box.w;
-    cut.height = box.h;
-    cut.getContext("2d").drawImage(off, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
-    moFaceCache[face] = cut;
-    return cut;
-  }
-
+  // 穴に 絵を 描く。絵が 用意できない ときだけ 字で 出す
   function moDrawFace(i, face) {
-    var cv = moCanvas[i], fe = moFaceEl[i];
-    var g = (cv && cv.getContext) ? cv.getContext("2d") : null;
-    if (g) g.clearRect(0, 0, cv.width, cv.height);
-    fe.innerHTML = "";
-    if (!face) return;
-    var sp = g ? moFaceSprite(face) : null;
-    if (!sp) {
-      // canvas が つかえない とき。字で 出す (小さくても 出ない よりは よい)
-      fe.innerHTML = face;
-      return;
-    }
-    // たて よこ どちらも 穴の MO_FACE ばい に おさまる ように のばす
-    var k = MO_FACE * Math.min(cv.width / sp.width, cv.height / sp.height);
-    var w = Math.round(sp.width * k), h = Math.round(sp.height * k);
-    g.drawImage(sp, Math.round((cv.width - w) / 2), Math.round((cv.height - h) / 2), w, h);
+    moFaceEl[i].innerHTML = drawFaceOn(moCanvas[i], face, MO_FACE) ? "" : face;
+    moHoles[i].setAttribute("data-face", face || "");
   }
 
   function moResize() {
@@ -1620,7 +1654,7 @@
         if (idx >= meFaces.length) break;
         var td = document.createElement("td");
         td.className = "card";
-        td.innerHTML = '<span class="face">' + meFaces[idx] + "</span>";
+        td.innerHTML = faceCellHTML();
         (function (i2) { onTap(td, function () { meFlip(i2); }); })(idx);
         meCells.push(td);
         tr.appendChild(td);
@@ -1635,9 +1669,10 @@
     if (!meCells.length) return;
     var s = fitSize(meCols, 130, 10);
     meBoard.style.width = (meCols * s + (meCols + 1) * 10) + "px";
+    var inner = s - 10;                      // ふちの ぶんを のぞく
     for (var i = 0; i < meCells.length; i++) {
       meCells[i].style.height = s + "px";
-      meCells[i].style.fontSize = Math.round(s * 0.52) + "px";
+      faceCellDraw(meCells[i], meFaces[i], inner, 0.62);
     }
   }
 
@@ -1714,7 +1749,7 @@
   ];
   var ODD_GOAL = 10;
 
-  var odBoard = $("odd-board"), odBody = $("odd-body");
+  var odBoard = $("odd-board"), odBody = $("odd-body"), odFaces = [];
   var odScoreEl = $("odd-score"), odMsgEl = $("odd-msg");
   var odCells = [], odScore = 0, odTarget = -1, odBusy = false, odNextTimer = null;
   var odSize = ODD_SIZES[1], odCols = 3;
@@ -1754,6 +1789,7 @@
 
     while (odBody.firstChild) odBody.removeChild(odBody.firstChild);
     odCells = [];
+    odFaces = [];
     var rows = Math.ceil(n / odCols);
     for (var r = 0; r < rows; r++) {
       var tr = document.createElement("tr");
@@ -1762,7 +1798,8 @@
         if (i >= n) break;
         var td = document.createElement("td");
         td.className = "pick";
-        td.innerHTML = (i === odTarget ? odd : same);
+        td.innerHTML = faceCellHTML();
+        odFaces.push(i === odTarget ? odd : same);
         (function (i2) { onTap(td, function () { odPick(i2); }); })(i);
         odCells.push(td);
         tr.appendChild(td);
@@ -1776,9 +1813,10 @@
     if (!odCells.length) return;
     var s = fitSize(odCols, 150, 10);
     odBoard.style.width = (odCols * s + (odCols + 1) * 10) + "px";
+    var inner = s - 10;
     for (var i = 0; i < odCells.length; i++) {
       odCells[i].style.height = s + "px";
-      odCells[i].style.fontSize = Math.round(s * 0.55) + "px";
+      faceCellDraw(odCells[i], odFaces[i], inner, 0.66);
     }
   }
 
@@ -2236,12 +2274,16 @@
       var size = Math.ceil(r * 2 * anDpr);
       c.width = size;
       c.height = size;
-      var g = c.getContext("2d");
-      if (g) {
-        g.textAlign = "center";
-        g.textBaseline = "middle";
-        g.font = Math.floor(r * 1.85 * anDpr) + "px sans-serif";
-        g.fillText(anFaces()[i], size / 2, size / 2 + r * 0.06 * anDpr);
+      // 字として 描くと、ふるい iPad では 大きく ならない。
+      // 切り出した 絵を まるの 大きさに あわせて 引きのばす
+      if (!drawFaceOn(c, anFaces()[i], 0.95)) {
+        var g = c.getContext ? c.getContext("2d") : null;
+        if (g) {
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.font = Math.floor(r * 1.85 * anDpr) + "px sans-serif";
+          g.fillText(anFaces()[i], size / 2, size / 2 + r * 0.06 * anDpr);
+        }
       }
       anSprites.push(c);
     }
