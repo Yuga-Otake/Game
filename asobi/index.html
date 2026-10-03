@@ -279,13 +279,21 @@
 
   /* ---- ビーズ ---- */
   #beads-board { border-spacing: 6px; background: #efe6cf; border-radius: 12px; }
+  /* マスは 「したじ」。ずあんの いろを うすく しいて、どこに なにを おくかを 見せる。
+     ビーズは その 上に すこし 小さく のるので、まわりに したじの わが のこる */
+  .bcell { border-radius: 7px; padding: 0; vertical-align: middle; text-align: center; }
+  .bcell.none { background: transparent; }
   /* ビーズ。まるくて、ふちと かげで すこし もりあがって 見える */
-  .bcell {
+  .bd {
+    display: block;
+    margin: 0 auto;
     border-radius: 50%;
     border: 2px solid rgba(0, 0, 0, .13);
     box-shadow: inset 0 -4px 6px rgba(0, 0, 0, .13), inset 0 4px 6px rgba(255, 255, 255, .45);
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
   }
-  .bcell.none { border-color: transparent; box-shadow: none; }
+  .bd.off { display: none; }
   /* ビーズ入れ。ばんの すぐ上に おく */
   .tray { margin: 0 0 8px; min-height: 58px; }
   .cup {
@@ -429,7 +437,7 @@
   <button type="button" class="big" id="beads-reset">もういちど</button>
   <div class="ctrl"><span class="label">ずあん</span><span id="beads-pics"></span></div>
   <div class="ctrl"><span class="label">むずかしさ</span><span id="beads-levels"></span></div>
-  <p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>下の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」です。<br>あって いる ところは さわっても かわりません。</p>
+  <p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。</p>
 </div>
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
@@ -701,7 +709,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v49";
+  var APP_VER = "v50";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -1884,6 +1892,25 @@
   // 入れかえて いく。ぜんぶ 直すと 絵が できあがる。
   var BE_COLORS = ["", "#e4584f", "#ef9d3a", "#f2d047", "#5aa95f",
                    "#5ab4d6", "#4a6fd0", "#ef93b8", "#9a6bc9", "#3b3530"];
+  // したじの 色。ずあんの 色を ばんの 色に まぜて うすく する。
+  // これを マスに しいて、その 上に すこし 小さい ビーズを のせるので、
+  // まわりに ついて いる その 色の わで、どこに なにを おくかが 分かる。
+  var BE_BOARD_RGB = [0xef, 0xe6, 0xcf], BE_SOFT_MIX = 0.42;
+  var BE_SOFT = (function () {
+    var out = [""], i, k, v, ch, mixed;
+    for (i = 1; i < BE_COLORS.length; i++) {
+      v = "#";
+      for (k = 0; k < 3; k++) {
+        ch = parseInt(BE_COLORS[i].substr(1 + k * 2, 2), 16);
+        mixed = Math.round(ch * BE_SOFT_MIX + BE_BOARD_RGB[k] * (1 - BE_SOFT_MIX));
+        v += (mixed < 16 ? "0" : "") + mixed.toString(16);
+      }
+      out.push(v);
+    }
+    return out;
+  })();
+  var BE_BEAD = 0.78;            // マスに たいする ビーズの 大きさ。
+                                 // これより 大きいと したじが 見えなく なる
   var BE_N = 9;                  // 9 × 9 マス。これ いじょう ふやすと ビーズが
                                  // 指で おしにくい 大きさに なる (iPad で 36px を 切る)
 
@@ -1944,8 +1971,9 @@
   var beBoard = $("beads-board"), beBody = $("beads-body"), beMsgEl = $("beads-msg");
   var beLeftEl = $("beads-left"), beTimeEl = $("beads-time"), beBestEl = $("beads-best");
   var beTrayEl = $("beads-tray");
-  var beCells = [], beGoal = [], beNow = [], beCups = [];
+  var beCells = [], beBeads = [], beGoal = [], beNow = [], beCups = [];
   var beColor = 0, beLeft = 0, beSeconds = 0, beTimer = null, beBuilt = false;
+  var beDown = false, beStrokeN = 0, beSeen = {};
   var bePic = BE_PICS[0], beLevel = BE_LEVELS[1];
 
   (function () {
@@ -1976,14 +2004,17 @@
   }
 
   function bePaintCell(i) {
-    var td = beCells[i];
-    if (beGoal[i] === 0) {
+    var td = beCells[i], bd = beBeads[i];
+    if (beGoal[i] === 0) {                       // ビーズの ない ところ
       td.className = "bcell none";
       td.style.background = "transparent";
+      bd.className = "bd off";
       return;
     }
     td.className = "bcell";
-    td.style.background = BE_COLORS[beNow[i]] || "#ffffff";
+    td.style.background = BE_SOFT[beGoal[i]];    // したじ = ずあんの 色
+    bd.className = "bd";
+    bd.style.background = BE_COLORS[beNow[i]] || "#ffffff";
   }
 
   function bePaintTray() {
@@ -2097,19 +2128,87 @@
 
     while (beBody.firstChild) beBody.removeChild(beBody.firstChild);
     beCells = [];
+    beBeads = [];
     for (var r = 0; r < BE_N; r++) {
       var tr = document.createElement("tr");
       for (var c = 0; c < BE_N; c++) {
         var td = document.createElement("td");
         td.className = "bcell";
-        (function (i2) { onTap(td, function () { beTap(i2); }); })(r * BE_N + c);
+        td.setAttribute("data-i", String(r * BE_N + c));
+        var bd = document.createElement("i");    // マス (したじ) の 上に のる ビーズ
+        bd.className = "bd";
+        td.appendChild(bd);
         beCells.push(td);
+        beBeads.push(bd);
         tr.appendChild(td);
       }
       beBody.appendChild(tr);
     }
-    holdStill(beBoard);
+    beDrag();                                    // なぞって まとめて ならべる
     beBuilt = true;
+  }
+
+  // 指を すべらせて いくつも まとめて ならべる。
+  // マスごとに おすのでは なく、ばん 全体で 指の 場所を みる。
+  // さわって いる のが ビーズ (i) でも マス (td) でも よいように 上へ たどる
+  function beCellAt(x, y) {
+    if (!document.elementFromPoint) return -1;
+    var el = document.elementFromPoint(x, y), k, a;
+    for (k = 0; el && k < 4; k++) {
+      a = el.getAttribute ? el.getAttribute("data-i") : null;
+      if (a !== null && a !== undefined && a !== "") return Number(a);
+      el = el.parentNode;
+    }
+    return -1;
+  }
+
+  function beStrokeAt(x, y) {
+    var i = beCellAt(x, y);
+    if (i < 0 || beSeen[i]) return;              // ひとつの なぞりで 同じ マスは 一度 だけ
+    beSeen[i] = 1;
+    beTap(i, beStrokeN > 0);
+    beStrokeN++;
+  }
+
+  function beStrokeStart(x, y) {
+    beDown = true;
+    beStrokeN = 0;
+    beSeen = {};
+    beStrokeAt(x, y);
+  }
+
+  function beDrag() {
+    beBoard.ontouchstart = function (e) {
+      var t = e.touches && e.touches[0];
+      if (t) beStrokeStart(t.clientX, t.clientY);
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    };
+    // ここで preventDefault するので、なぞって いる あいだに
+    // 画面が スクロールして 狙いが ずれる ことも ない
+    beBoard.ontouchmove = function (e) {
+      var t = e.touches && e.touches[0];
+      if (t && beDown) beStrokeAt(t.clientX, t.clientY);
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    };
+    beBoard.ontouchend = function () { beDown = false; beNextColor(); };
+    beBoard.ontouchcancel = function () { beDown = false; };
+    beBoard.onmousedown = function (e) {
+      e = e || window.event;
+      beStrokeStart(e.clientX, e.clientY);
+      return false;
+    };
+    beBoard.onmousemove = function (e) {
+      if (!beDown) return;
+      e = e || window.event;
+      beStrokeAt(e.clientX, e.clientY);
+    };
+    if (document.addEventListener) {
+      document.addEventListener("mouseup", function () { beDown = false; beNextColor(); }, false);
+    } else {
+      beBoard.onmouseup = function () { beDown = false; beNextColor(); };
+    }
   }
 
   // ばんの 大きさ。もぐらたたきと おなじ かんがえで、ひろい 画面では 大きく する
@@ -2131,31 +2230,56 @@
       if (big > s) s = big;
     }
     beBoard.style.width = (BE_N * s + (BE_N + 1) * sp) + "px";
-    for (var i = 0; i < beCells.length; i++) beCells[i].style.height = s + "px";
+    var bs = Math.max(8, Math.round(s * BE_BEAD));
+    for (var i = 0; i < beCells.length; i++) {
+      beCells[i].style.height = s + "px";
+      beBeads[i].style.width = bs + "px";
+      beBeads[i].style.height = bs + "px";
+    }
   }
 
-  function beTap(i) {
+  // したじが ついたので、まちがった ところに おけてしまう と しんどいだけ。
+  // したじが その 色を もとめて いる ところに しか おけないので、
+  // なぞって も ひどく なる ことは なく、つまる ことも ない。
+  // quiet = なぞりの 途中。通りみちの マスまで いちいち 言われると うるさい
+  function beTap(i, quiet) {
     if (beGoal[i] === 0) return;                 // ビーズの ない ところ
     if (beNow[i] === beGoal[i]) {                // すでに あって いる
+      if (quiet) return;
       beMsgEl.className = "msg again";
       beMsgEl.innerHTML = "そこは あって います";
       soundAgain();
       return;
     }
     if (!beColor) return;
-    beNow[i] = beColor;
+    if (beGoal[i] !== beColor) {                 // したじは べつの 色を もとめて いる
+      if (quiet) return;
+      beMsgEl.className = "msg again";
+      beMsgEl.innerHTML = "ここは ちがう いろ です";
+      soundAgain();
+      return;
+    }
+    beNow[i] = beColor;                          // ここまで 来たら かならず あたり
     bePaintCell(i);
     beMsgEl.innerHTML = "";
     beMsgEl.className = "msg";
-    if (beNow[i] === beGoal[i]) {
-      beLeft--;
-      bePaintLeft();
-      soundHit();
-      if (beLeft <= 0) beFinish();
-    } else {
-      soundFlip();
-    }
+    beLeft--;
+    bePaintLeft();
+    soundHit();
     bePaintTray();
+    beNextColor();
+    if (beLeft <= 0) beFinish();
+  }
+
+  // その 色を おきおわったら、つぎに いる 色に 自分で かわる。
+  // ビーズ入れを えらびなおす 手間を なくす ため
+  function beNextColor() {
+    if (beDown) return;                          // なぞって いる とちゅうで 色が かわると おどろくので、指を はなしてから
+    if (beLeft <= 0 || beNeed(beColor) > 0) return;
+    for (var k = 0; k < beCups.length; k++) {
+      var c = Number(beCups[k].getAttribute("data-color"));
+      if (beNeed(c) > 0) { beColor = c; bePaintTray(); return; }
+    }
   }
 
   function beFinish() {
