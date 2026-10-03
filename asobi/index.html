@@ -7,7 +7,7 @@
 
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f6efdd">
-<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ぬりえ・どうぶつゲーム が あそべます">
+<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ビーズ・どうぶつゲーム が あそべます">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -277,32 +277,40 @@
   .pick.right { background: #dff0dd; border-color: #8cc094; }
   .pick.wrong { background: #f3e2d2; border-color: #d9a77a; }
 
-  /* ---- ぬりえ ---- */
-  .pcell {
-    border: 2px solid #e2d9c2;
-    border-radius: 6px;
-    cursor: pointer;
-    padding: 0;
+  /* ---- ビーズ ---- */
+  #beads-board { border-spacing: 6px; background: #efe6cf; border-radius: 12px; }
+  /* ビーズ。まるくて、ふちと かげで すこし もりあがって 見える */
+  .bcell {
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, .13);
+    box-shadow: inset 0 -4px 6px rgba(0, 0, 0, .13), inset 0 4px 6px rgba(255, 255, 255, .45);
   }
-  #paint-board { border-spacing: 8px; background: #efe6cf; border-radius: 12px; }
-  .swatch {
-    display: inline-block;
+  .bcell.none { border-color: transparent; box-shadow: none; }
+  /* ビーズ入れ。ばんの すぐ上に おく */
+  .tray { margin: 0 0 8px; min-height: 58px; }
+  .cup {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 3px solid #cbbb95;
+    margin: 0 5px 4px;
+    padding: 0;
     vertical-align: middle;
-    width: 54px;
-    height: 52px;
-    padding: 0;
-    margin: 0 3px 6px;
-    border: 4px solid #d9cdb2;
-    border: 4px solid var(--line);
-    border-radius: 12px;
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 700;
-    color: #2f2a24;
     cursor: pointer;
+    box-shadow: inset 0 -5px 7px rgba(0, 0, 0, .16), inset 0 5px 7px rgba(255, 255, 255, .4);
   }
-  .swatch.on { border-color: #2f2a24; border-color: var(--text); }
-
+  .cup b {
+    font-size: 19px;
+    color: #fff;
+    text-shadow: 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000;
+  }
+  .cup.on { border-color: #e07a2f; border-color: var(--accent); border-width: 5px; }
+  .cup.empty { opacity: .35; }
+  @media (max-width: 480px) {
+    .cup { width: 42px; height: 42px; margin: 0 3px 4px; }
+    .cup b { font-size: 16px; }
+  }
   /* ---- どうぶつゲーム ---- */
   .best {
     font-size: 17px; color: #6d6355; color: var(--sub); font-weight: 700; margin: 0 0 6px;
@@ -365,7 +373,7 @@
   <button type="button" class="tab active" id="tab-mogura">🐹 もぐらたたき</button>
   <button type="button" class="tab" id="tab-memory">🎴 しんけいすいじゃく</button>
   <button type="button" class="tab" id="tab-odd">🔍 なかまはずれ</button>
-  <button type="button" class="tab" id="tab-paint">🎨 ぬりえ</button>
+  <button type="button" class="tab" id="tab-beads">🔵 ビーズ</button>
   <button type="button" class="tab" id="tab-animal">🐻 くっつけゲーム</button>
 </div>
 
@@ -409,15 +417,19 @@
   <p class="note">ひとつだけ ちがう えが あります。<br>それを さわってください。<br>まちがえても なんども えらべます。</p>
 </div>
 
-<!-- ぬりえ -->
-<div id="game-paint" style="display:none">
-  <div class="ctrl"><span class="label">したえ</span><span id="paint-guides"></span></div>
-  <p id="paint-palette" style="margin:0 0 10px"></p>
-  <table class="board" id="paint-board"><tbody id="paint-body"></tbody></table>
-  <p class="msg" id="paint-msg"></p>
-  <button type="button" class="big" id="paint-done">できた！</button>
-  <button type="button" class="big" id="paint-clear">ぜんぶ けす</button>
-  <p class="note">いろを えらんで、マスを さわると ぬれます。<br>うすい いろは したえです。すきに ぬって いいですよ。<br>ぬった えは つぎに ひらいた ときも のこります。</p>
+<!-- ビーズ -->
+<div id="game-beads" style="display:none">
+  <p class="score">のこり　<b id="beads-left">0</b> こ　　⏱ <b id="beads-time">0</b> びょう</p>
+  <p class="best" id="beads-best"></p>
+  <!-- ずあんと むずかしさは あそぶ まえに えらぶ もの。
+       ばんの 上に おくと ビーズを 大きく できないので、下に おく -->
+  <p class="tray" id="beads-tray"></p>
+  <table class="board" id="beads-board"><tbody id="beads-body"></tbody></table>
+  <p class="msg" id="beads-msg"></p>
+  <button type="button" class="big" id="beads-reset">もういちど</button>
+  <div class="ctrl"><span class="label">ずあん</span><span id="beads-pics"></span></div>
+  <div class="ctrl"><span class="label">むずかしさ</span><span id="beads-levels"></span></div>
+  <p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>下の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」です。<br>あって いる ところは さわっても かわりません。</p>
 </div>
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
@@ -689,7 +701,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v48";
+  var APP_VER = "v49";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -1865,176 +1877,313 @@
   onTap($("odd-reset"), odStart);
 
   // ============================================================
-  // ぬりえ
+  // ビーズ
   // ============================================================
-  var PA_COLORS = ["#ffffff", "#e4584f", "#ef9d3a", "#f2d047", "#5aa95f", "#5ab4d6", "#4a6fd0", "#9a6bc9", "#ef93b8", "#a1734a"];
-  var PA_LABELS = ["けす", "", "", "", "", "", "", "", "", ""];
-  var PA_N = 7;   // 7 × 7 マス
+  // ばんの ビーズの いくつかが まちがった 色に なって いる。
+  // 手もとの ビーズ入れから 色を えらんで、まちがって いる ところを
+  // 入れかえて いく。ぜんぶ 直すと 絵が できあがる。
+  var BE_COLORS = ["", "#e4584f", "#ef9d3a", "#f2d047", "#5aa95f",
+                   "#5ab4d6", "#4a6fd0", "#ef93b8", "#9a6bc9", "#3b3530"];
+  var BE_N = 9;                  // 9 × 9 マス。これ いじょう ふやすと ビーズが
+                                 // 指で おしにくい 大きさに なる (iPad で 36px を 切る)
 
-  // したえ。'.' は なにも なし、数字は PA_COLORS の ばんごう
-  var PA_GUIDES = [
-    { key: "free", label: "じゆう", rows: null },
+  var BE_PICS = [
     { key: "hana", label: "はな", rows: [
-      "..888..",
-      ".88388.",
-      ".83338.",
-      ".88388.",
-      "..888..",
-      "...4...",
-      "..444.."
+      "..77777..",
+      ".7777777.",
+      ".7733377.",
+      ".7733377.",
+      ".7733377.",
+      ".7777777.",
+      "..77777..",
+      "..4.4.4..",
+      "...444..."
     ] },
     { key: "chou", label: "ちょう", rows: [
-      "77.9.77",
-      "7779777",
-      ".779777",
-      "...9...",
-      ".779777",
-      "7779777",
-      "77.9.77"
+      "..9...9..",
+      "...9.9...",
+      ".8889888.",
+      "818898818",
+      "888898888",
+      ".8889888.",
+      "..88988..",
+      "...898...",
+      "....9...."
     ] },
     { key: "sakana", label: "さかな", rows: [
-      ".......",
-      "..555.9",
-      ".555559",
-      "5551559",
-      ".555559",
-      "..555.9",
-      "......."
+      ".........",
+      "..2222...",
+      ".2222225.",
+      ".29222255",
+      ".22222255",
+      ".22222255",
+      ".2222225.",
+      "..2222...",
+      "........."
+    ] },
+    { key: "heart", label: "ハート", rows: [
+      ".........",
+      ".11...11.",
+      "111111111",
+      "111111111",
+      ".1111111.",
+      "..11111..",
+      "...111...",
+      "....1....",
+      "........."
     ] }
   ];
 
-  var paBoard = $("paint-board"), paBody = $("paint-body"), paMsgEl = $("paint-msg");
-  var paCells = [], paData = [], paColor = 1, paGuide = PA_GUIDES[0], paBuilt = false;
+  // ビーズは 38〜51こ なので、まちがいの かずは その 1〜4わり くらい
+  var BE_LEVELS = [
+    { key: "easy",   label: "やさしい",   n: 5 },
+    { key: "normal", label: "ふつう",     n: 11 },
+    { key: "hard",   label: "むずかしい", n: 20 }
+  ];
+
+  var beBoard = $("beads-board"), beBody = $("beads-body"), beMsgEl = $("beads-msg");
+  var beLeftEl = $("beads-left"), beTimeEl = $("beads-time"), beBestEl = $("beads-best");
+  var beTrayEl = $("beads-tray");
+  var beCells = [], beGoal = [], beNow = [], beCups = [];
+  var beColor = 0, beLeft = 0, beSeconds = 0, beTimer = null, beBuilt = false;
+  var bePic = BE_PICS[0], beLevel = BE_LEVELS[1];
 
   (function () {
-    var key = load("guide", "free");
-    for (var i = 0; i < PA_GUIDES.length; i++) if (PA_GUIDES[i].key === key) paGuide = PA_GUIDES[i];
-    var c = Number(load("color", "1"));
-    if (c >= 0 && c < PA_COLORS.length) paColor = c;
+    var k = load("be-pic", "hana");
+    for (var i = 0; i < BE_PICS.length; i++) if (BE_PICS[i].key === k) bePic = BE_PICS[i];
+    var l = load("be-level", "normal");
+    for (var j = 0; j < BE_LEVELS.length; j++) if (BE_LEVELS[j].key === l) beLevel = BE_LEVELS[j];
   })();
 
-  // したえは うすい いろで みせる (白と混ぜて明るくする)
-  function pale(hex) {
-    var r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex.substr(3, 2), 16), b = parseInt(hex.substr(5, 2), 16);
-    function mix(v) { return Math.round(v + (255 - v) * 0.78); }
-    return "rgb(" + mix(r) + "," + mix(g) + "," + mix(b) + ")";
+  function beKey() { return "be-" + bePic.key + "-" + beLevel.key; }
+
+  // この ずあんで つかって いる 色
+  function beUsedColors() {
+    var seen = {}, out = [], i, v;
+    for (i = 0; i < beGoal.length; i++) {
+      v = beGoal[i];
+      if (v > 0 && !seen[v]) { seen[v] = 1; out.push(v); }
+    }
+    out.sort(function (a, b) { return a - b; });
+    return out;
   }
 
-  function paGuideColor(i) {
-    if (!paGuide.rows) return "";
-    var ch = paGuide.rows[(i / PA_N) | 0].charAt(i % PA_N);
-    return ch === "." ? "" : pale(PA_COLORS[Number(ch)]);
+  // 色ごとの 「まだ 足りない かず」
+  function beNeed(c) {
+    var n = 0;
+    for (var i = 0; i < beGoal.length; i++) if (beGoal[i] === c && beNow[i] !== c) n++;
+    return n;
   }
 
-  function paPaintCell(i) {
-    var v = paData[i];
-    if (v > 0) paCells[i].style.background = PA_COLORS[v];
-    else paCells[i].style.background = paGuideColor(i) || "#ffffff";
+  function bePaintCell(i) {
+    var td = beCells[i];
+    if (beGoal[i] === 0) {
+      td.className = "bcell none";
+      td.style.background = "transparent";
+      return;
+    }
+    td.className = "bcell";
+    td.style.background = BE_COLORS[beNow[i]] || "#ffffff";
   }
 
-  function paLoadData() {
-    var saved = load("canvas-" + paGuide.key, "");
-    paData = [];
-    for (var i = 0; i < PA_N * PA_N; i++) {
-      var ch = saved.charAt(i);
-      paData.push(ch >= "0" && ch <= "9" ? Number(ch) : 0);
+  function bePaintTray() {
+    for (var k = 0; k < beCups.length; k++) {
+      var cup = beCups[k];
+      var c = Number(cup.getAttribute("data-color"));
+      var n = beNeed(c);
+      cup.getElementsByTagName("b")[0].innerHTML = String(n);
+      cup.className = "cup" + (c === beColor ? " on" : "") + (n === 0 ? " empty" : "");
     }
   }
 
-  function paSaveData() { save("canvas-" + paGuide.key, paData.join("")); }
+  function bePaintLeft() {
+    beLeftEl.innerHTML = String(beLeft);
+  }
 
-  function paBuild() {
-    buildPicker($("paint-guides"), PA_GUIDES, function (g) { return g === paGuide; }, "big", function (g) {
-      paGuide = g;
-      save("guide", g.key);
-      paStart();
-    });
+  function bePaintBest() {
+    var best = Number(load(beKey(), "0")) || 0;
+    beBestEl.innerHTML = best > 0 ? "さいこう " + best + "びょう" : "";
+  }
 
-    // いろのボタン
-    var pal = $("paint-palette");
-    for (var i = 0; i < PA_COLORS.length; i++) {
-      (function (idx) {
+  function beStartClock() {
+    beSeconds = 0;
+    beTimeEl.innerHTML = "0";
+    if (beTimer !== null) clearInterval(beTimer);
+    var began = new Date().getTime();
+    beTimer = setInterval(function () {
+      var s = Math.floor((new Date().getTime() - began) / 1000);
+      if (s > 999) s = 999;
+      if (s !== beSeconds) { beSeconds = s; beTimeEl.innerHTML = String(s); }
+    }, 250);
+  }
+  function beStopClock() {
+    if (beTimer !== null) { clearInterval(beTimer); beTimer = null; }
+  }
+
+  // まちがいを ばらまく。もとの 色とは ちがう、この 絵で つかって いる 色に する
+  function beScramble() {
+    var i;
+    beGoal = [];
+    for (var r = 0; r < BE_N; r++) {
+      for (var c = 0; c < BE_N; c++) {
+        var ch = bePic.rows[r].charAt(c);
+        beGoal.push(ch === "." ? 0 : Number(ch));
+      }
+    }
+    beNow = beGoal.slice(0);
+
+    var spots = [];
+    for (i = 0; i < beGoal.length; i++) if (beGoal[i] > 0) spots.push(i);
+    // まぜる
+    for (i = spots.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = spots[i]; spots[i] = spots[j]; spots[j] = t;
+    }
+    var used = beUsedColors();
+    var want = Math.min(beLevel.n, spots.length);
+    for (i = 0; i < want; i++) {
+      var at = spots[i];
+      // その 絵で つかって いる ほかの 色を まず さがす。
+      // ハートの ように 1色しか ない 絵では それが ないので、ぜんぶの 色から えらぶ。
+      // (ここを 見おとすと、まちがいを 0こ しか 置けないのに
+      //  「のこり 11こ」と 出て、ずっと 終わらない ゲームに なる)
+      var pool = [], k;
+      for (k = 0; k < used.length; k++) if (used[k] !== beGoal[at]) pool.push(used[k]);
+      if (!pool.length) {
+        for (k = 1; k < BE_COLORS.length; k++) if (k !== beGoal[at]) pool.push(k);
+      }
+      beNow[at] = pool[Math.floor(Math.random() * pool.length)];
+    }
+    // じっさいに まちがって いる かずを かぞえる
+    beLeft = 0;
+    for (i = 0; i < beGoal.length; i++) if (beGoal[i] > 0 && beNow[i] !== beGoal[i]) beLeft++;
+  }
+
+  function beBuildTray() {
+    while (beTrayEl.firstChild) beTrayEl.removeChild(beTrayEl.firstChild);
+    beCups = [];
+    var used = beUsedColors();
+    for (var i = 0; i < used.length; i++) {
+      (function (c) {
         var b = document.createElement("button");
         b.type = "button";
-        b.className = "swatch" + (idx === paColor ? " on" : "");
-        b.style.background = PA_COLORS[idx];
-        b.innerHTML = PA_LABELS[idx];
-        b.setAttribute("data-color", idx);
+        b.className = "cup";
+        b.style.background = BE_COLORS[c];
+        b.setAttribute("data-color", c);
+        b.innerHTML = "<b>0</b>";
         onTap(b, function () {
-          paColor = idx;
-          save("color", idx);
-          var bs = pal.getElementsByTagName("button");
-          for (var k = 0; k < bs.length; k++) {
-            bs[k].className = "swatch" + (Number(bs[k].getAttribute("data-color")) === idx ? " on" : "");
-          }
+          beColor = c;
+          bePaintTray();
           soundFlip();
         });
-        pal.appendChild(b);
-      })(i);
+        beTrayEl.appendChild(b);
+        beCups.push(b);
+      })(used[i]);
     }
+    if (!beColor || used.indexOf(beColor) < 0) beColor = used[0] || 0;
+  }
 
-    while (paBody.firstChild) paBody.removeChild(paBody.firstChild);
-    paCells = [];
-    for (var r = 0; r < PA_N; r++) {
+  function beBuild() {
+    buildPicker($("beads-pics"), BE_PICS, function (g) { return g === bePic; }, "big", function (g) {
+      bePic = g;
+      save("be-pic", g.key);
+      beStart();
+    });
+    buildPicker($("beads-levels"), BE_LEVELS, function (g) { return g === beLevel; }, "big", function (g) {
+      beLevel = g;
+      save("be-level", g.key);
+      beStart();
+    });
+
+    while (beBody.firstChild) beBody.removeChild(beBody.firstChild);
+    beCells = [];
+    for (var r = 0; r < BE_N; r++) {
       var tr = document.createElement("tr");
-      for (var c = 0; c < PA_N; c++) {
+      for (var c = 0; c < BE_N; c++) {
         var td = document.createElement("td");
-        td.className = "pcell";
-        (function (i2) { onTap(td, function () { paTap(i2); }); })(r * PA_N + c);
-        paCells.push(td);
+        td.className = "bcell";
+        (function (i2) { onTap(td, function () { beTap(i2); }); })(r * BE_N + c);
+        beCells.push(td);
         tr.appendChild(td);
       }
-      paBody.appendChild(tr);
+      beBody.appendChild(tr);
     }
-    paBuilt = true;
-    paResize();
+    holdStill(beBoard);
+    beBuilt = true;
   }
 
-  function paResize() {
-    if (!paCells.length) return;
-    var s = fitSize(PA_N, 64, 8, 30);
-    paBoard.style.width = (PA_N * s + (PA_N + 1) * 8) + "px";
-    for (var i = 0; i < paCells.length; i++) paCells[i].style.height = s + "px";
+  // ばんの 大きさ。もぐらたたきと おなじ かんがえで、ひろい 画面では 大きく する
+  // ばんの 下に のこす ぶん。ことばと 「もういちど」まで。
+  // その 下の えらぶ ボタンは あそぶ 前に つかう ものなので、見えて いなくて よい
+  var BE_BELOW = 125, BE_CELL_MAX = 62;
+
+  function beResize() {
+    if (!beCells.length) return;
+    var sp = 6;
+    var s = fitSize(BE_N, 40, sp, 24);
+    var top = beBoard.offsetTop;
+    if (top > 0) {
+      var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+      var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+      var byW = Math.floor((Math.min(vw - 20, 1000) - (BE_N + 1) * sp) / BE_N);
+      var byH = Math.floor((vh - top - BE_BELOW - (BE_N + 1) * sp) / BE_N);
+      var big = Math.min(byW, byH, BE_CELL_MAX);
+      if (big > s) s = big;
+    }
+    beBoard.style.width = (BE_N * s + (BE_N + 1) * sp) + "px";
+    for (var i = 0; i < beCells.length; i++) beCells[i].style.height = s + "px";
   }
 
-  function paTap(i) {
-    paData[i] = paColor;
-    paPaintCell(i);
-    paSaveData();
-    paMsgEl.innerHTML = "";
-    paMsgEl.className = "msg";
-    soundFlip();
-  }
-
-  function paStart() {
-    if (!paBuilt) paBuild();
-    paLoadData();
-    paMsgEl.innerHTML = "";
-    paMsgEl.className = "msg";
-    for (var i = 0; i < paCells.length; i++) paPaintCell(i);
-    paResize();
-  }
-
-  onTap($("paint-clear"), function () {
-    for (var i = 0; i < paData.length; i++) paData[i] = 0;
-    paSaveData();
-    for (var j = 0; j < paCells.length; j++) paPaintCell(j);
-    paMsgEl.innerHTML = "";
-    paMsgEl.className = "msg";
-    soundFlip();
-  });
-
-  onTap($("paint-done"), function () {
-    var painted = 0;
-    for (var i = 0; i < paData.length; i++) if (paData[i] > 0) painted++;
-    if (painted < 10) {
-      paMsgEl.className = "msg again";
-      paMsgEl.innerHTML = "もう すこし ぬってみましょう";
+  function beTap(i) {
+    if (beGoal[i] === 0) return;                 // ビーズの ない ところ
+    if (beNow[i] === beGoal[i]) {                // すでに あって いる
+      beMsgEl.className = "msg again";
+      beMsgEl.innerHTML = "そこは あって います";
       soundAgain();
       return;
     }
-    celebrate(paMsgEl, "すてきな えが できました！");
-  });
+    if (!beColor) return;
+    beNow[i] = beColor;
+    bePaintCell(i);
+    beMsgEl.innerHTML = "";
+    beMsgEl.className = "msg";
+    if (beNow[i] === beGoal[i]) {
+      beLeft--;
+      bePaintLeft();
+      soundHit();
+      if (beLeft <= 0) beFinish();
+    } else {
+      soundFlip();
+    }
+    bePaintTray();
+  }
+
+  function beFinish() {
+    beStopClock();
+    var best = Number(load(beKey(), "0")) || 0;
+    var isBest = best === 0 || beSeconds < best;
+    if (isBest) save(beKey(), beSeconds);
+    bePaintBest();
+    celebrate(beMsgEl, "できました！ " + beSeconds + "びょう" + (isBest ? " さいこう きろく！" : ""));
+  }
+
+  function beStart() {
+    if (!beBuilt) beBuild();
+    beScramble();
+    beBuildTray();
+    for (var i = 0; i < beCells.length; i++) bePaintCell(i);
+    bePaintTray();
+    bePaintLeft();
+    bePaintBest();
+    beMsgEl.innerHTML = "";
+    beMsgEl.className = "msg";
+    beResize();
+    beStartClock();
+  }
+
+  function beStop() { beStopClock(); }
+
+  onTap($("beads-reset"), beStart);
 
   // ============================================================
   // どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる)
@@ -2641,7 +2790,7 @@
     { key: "mogura", tab: "tab-mogura", pane: "game-mogura", show: moStart, hide: moStop },
     { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: meStop },
     { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop },
-    { key: "paint",  tab: "tab-paint",  pane: "game-paint",  show: paStart, hide: null },
+    { key: "beads",  tab: "tab-beads",  pane: "game-beads",  show: beStart, hide: beStop },
     { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop }
   ];
 
@@ -2663,7 +2812,7 @@
     (function (cfg) { onTap($(cfg.tab), function () { showTab(cfg.key); }); })(TABS[t]);
   }
 
-  window.onresize = function () { moResize(); meResize(); odResize(); paResize(); anResize(); };
+  window.onresize = function () { moResize(); meResize(); odResize(); beResize(); anResize(); };
 
   // ---- 起動 ----
   checkVersion();
@@ -2671,7 +2820,7 @@
   moBuild();
   meBuild();
   odBuild();
-  paBuild();
+  beBuild();
 
   var startTab = load("tab", "mogura");
   var known = false;
