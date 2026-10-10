@@ -7,7 +7,7 @@
 
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f6efdd">
-<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ビーズ・どうぶつゲーム が あそべます">
+<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ビーズ・くっつけゲーム・ジェンガ が あそべます">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -366,6 +366,18 @@
     cursor: pointer;
   }
 
+  /* ---- ジェンガ ---- */
+  #jenga-wrap { margin: 0 auto; }
+  #jenga-canvas {
+    display: block;
+    margin: 0 auto;
+    background: #e8f0f6;
+    border: 4px solid #d9cdb2;
+    border: 4px solid var(--line);
+    border-radius: 14px;
+    cursor: pointer;
+  }
+
   /* ---- おいわいの紙ふぶき ---- */
   #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; }
   #confetti span { position: fixed; }
@@ -383,6 +395,7 @@
   <button type="button" class="tab" id="tab-odd">🔍 なかまはずれ</button>
   <button type="button" class="tab" id="tab-beads">🔵 ビーズ</button>
   <button type="button" class="tab" id="tab-animal">🐻 くっつけゲーム</button>
+  <button type="button" class="tab" id="tab-jenga">🧱 ジェンガ</button>
 </div>
 
 <p class="stamps" id="stamps"></p>
@@ -452,6 +465,19 @@
   <p class="note">おとしたい ところを さわると、おちてきます。<br>おなじ もの どうしが くっつくと、大きく なります。<br>いちばん 大きいものを つくると 100てん。それが クリアで、<br>つぎの ゲームが あそべるように なります。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
 </div>
 
+<!-- ジェンガ (よこに うごく いたを つみ上げる) -->
+<div id="game-jenga" style="display:none">
+  <p class="score">さいこう　<b id="jenga-score">0</b> だん　<span id="jenga-rank" class="rank"></span></p>
+  <!-- いま なんだんかは バンの すぐ上に 出す。
+       さかさまに 目を やる ひまは ない ゲームなので -->
+  <p class="stage" id="jenga-stage"><b>0</b> だん</p>
+  <div id="jenga-wrap"><canvas id="jenga-canvas"></canvas></div>
+  <p class="msg" id="jenga-msg"></p>
+  <button type="button" class="big" id="jenga-reset">もういちど</button>
+  <div class="ctrl"><span class="label">はやさ</span><span id="jenga-speeds"></span></div>
+  <p class="note">いたが よこに うごいて います。<br>さわると そこで とまって、つみ上がります。<br>はみ出した ぶんは おちて、いたが ほそく なります。<br>たての せんに あうと いたが 光ります。そこで さわると <b>ぴったり</b>で、ほそく なりません。<br>3かい つづけて ぴったりだと、いたが すこし ふとります。</p>
+</div>
+
 <div id="confetti"></div>
 
 <script>
@@ -460,6 +486,21 @@
 
   function $(id) { return document.getElementById(id); }
   function onTap(el, fn) { el.onclick = fn; }
+
+  // さわった しゅんかんに はんのう する。ふるい iPad の onclick は
+  // 指を はなしてから 300ミリびょう ほど おくれるので、
+  // とめる タイミングを きそう ゲームでは そのまま 使えない
+  function onPress(el, fn) {
+    if (!el) return;
+    var touched = false;
+    el.ontouchstart = function (e) {
+      touched = true;                            // このあと 来る click は 無視する
+      fn();
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    };
+    el.onmousedown = function () { if (!touched) fn(); return false; };
+  }
 
   // ばんの 上で 指が すこし うごいても 画面を スクロールさせない。
   // スクロールすると 穴の 場所が ずれて、さっきまで 穴が あった ところを
@@ -709,7 +750,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v50";
+  var APP_VER = "v51";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -2907,6 +2948,364 @@
 
   onTap($("animal-reset"), anStart);
 
+
+  // ============================================================
+  // ジェンガ (つみ上げ)
+  // ============================================================
+  // よこに うごく いたを さわって とめる。下の いたと かさなった ぶんだけが
+  // のこり、はみ出した ぶんは おちて いく。だんだん ほそく なるので、
+  // どこまで 高く つめるかを きそう。
+  //
+  // よこの いちと はばは、ぜんぶ 画面の はばに たいする わりあい (0〜1) で
+  // もって いる。こうして おくと、iPad の むきを かえても つみ上げた ものが
+  // そのまま のこる (ピクセルで もつと むきを かえた とたんに くずれる)。
+  // しょうごうの さかいめは、さわる タイミングの こまかさを かえて
+  // 2000回ずつ しらべて きめた。かっこは まんなかの だんすう。
+  //                 0.16びょう  0.11  0.07  0.045  0.03  (さわる ときの ずれ)
+  //   ゆっくり         11     16    30     57   196
+  //   ふつう            7     10    17     30    57
+  //   はやい            5      7    11     19    32
+  // 🏅 たつじん が はなまるの さかいめ。「ふつうに あそべる 人の よい ラウンド」に おいて ある。
+  // 🌱 しんじん は、いちばん のんびりした 人でも ほぼ とどく ところ
+  var JG_SPEEDS = [
+    { key: "slow",   label: "ゆっくり", v: 0.0062, ranks: [9, 14, 25, 40, 70] },
+    { key: "normal", label: "ふつう",   v: 0.0094, ranks: [6,  9, 14, 22, 40] },
+    { key: "fast",   label: "はやい",   v: 0.0135, ranks: [4,  6, 10, 15, 26] }
+  ];
+  var JG_BW = 0.60;              // はじめの いたの はば
+  var JG_SNAP = 0.022;           // これ いないの ずれは「ぴったり」にする
+  var JG_DEAD = 0.035;           // これより ほそく なったら たおれる
+  var JG_GROW = 0.07;            // ぴったりを つづけた ごほうびに ふとる ぶん
+  var JG_GROW_AT = 3;            // なんかい つづけたら ふとるか
+  var JG_ROWS = 10;              // 画面に 見える だんの かず
+  var JG_RAMP = 0.02;            // 1だんごとに はやく なる わりあい
+  var JG_RAMP_MAX = 2.0;         // はやさの 上げどまり (はじめの なんばいまでか)
+  var JG_TONES = ["#cfa066", "#bd8947"];
+  var JG_MOV_TONE = "#dfb075";
+  var JG_SNAP_TONE = "#f3d08a";  // ぴったりの いちに 来た ときの 色
+
+  var jgCanvas = $("jenga-canvas");
+  var jgCtx = (jgCanvas && jgCanvas.getContext) ? jgCanvas.getContext("2d") : null;
+  var jgScoreEl = $("jenga-score"), jgRankEl = $("jenga-rank");
+  var jgStageEl = $("jenga-stage"), jgMsgEl = $("jenga-msg");
+  var jgW = 0, jgH = 0, jgBh = 40, jgDpr = 1;
+  var jgStack = [], jgFalls = [], jgMov = null, jgCam = 0;
+  var jgRows = 0, jgCombo = 0, jgBestCombo = 0, jgBest = 0, jgWas = 0;
+  var jgOver = false, jgRunning = false, jgRaf = null, jgLast = 0;
+  var jgSpeed = JG_SPEEDS[1], jgBuilt = false;
+
+  function jgKey() { return "jg-" + jgSpeed.key; }
+
+  // せかいの たかさ (じめんから 上むきに ミリ…ではなく px) を 画面の y に なおす
+  function jgSY(worldY) { return jgH - (worldY - jgCam); }
+
+  // うごいて いる いたを、画面の どのへんに 見せるか。
+  // 上に よせすぎると これから おく ところが 見えず、下に よせすぎると
+  // つみ上げた ものが 見えない。0.72 で 下に 7だんぶん のこる
+  function jgCamAim() {
+    var aim = (jgRows + 1) * jgBh - jgH * 0.72;
+    return aim < 0 ? 0 : aim;
+  }
+
+  // いた 1まいを 描く。上を あかるく、下を くらく するだけで 木に 見える
+  function jgPlank(g, x, y, w, h, tone, glow) {
+    var lip = Math.max(2, Math.round(h * 0.2));
+    g.fillStyle = tone;
+    g.fillRect(x, y, w, h);
+    g.fillStyle = "rgba(255,255,255,.22)";
+    g.fillRect(x, y, w, lip);
+    g.fillStyle = "rgba(0,0,0,.15)";
+    g.fillRect(x, y + h - lip, w, lip);
+    g.strokeStyle = glow ? "#8a5a12" : "rgba(92,62,26,.5)";
+    g.lineWidth = glow ? 4 : 2;
+    g.strokeRect(x + 1, y + 1, w - 2 > 0 ? w - 2 : 1, h - 2);
+  }
+
+  // きりおとされた かけら。まわりながら おちて いく
+  function jgPlankSpin(g, f) {
+    var x = f.x * jgW, w = f.w * jgW, y = jgSY(f.y + jgBh);
+    if (y > jgH + 80 || y + jgBh < -80) return;
+    if (g.save) {
+      g.save();
+      g.translate(x + w / 2, y + jgBh / 2);
+      g.rotate(f.a);
+      jgPlank(g, -w / 2, -jgBh / 2, w, jgBh, JG_TONES[f.row % 2]);
+      g.restore();
+    } else {
+      jgPlank(g, x, y, w, jgBh, JG_TONES[f.row % 2]);
+    }
+  }
+
+  // そらに くもを おいて おく。これが 下に ながれて いくので、
+  // つみ上げた ものが 画面の そとに 出ても 上がって いる ことが 分かる
+  function jgCloud(g, x, y, r) {
+    if (!g.beginPath) return;
+    g.beginPath();
+    g.arc(x, y, r * 0.62, 0, Math.PI * 2, false);
+    g.arc(x + r * 0.78, y - r * 0.2, r * 0.48, 0, Math.PI * 2, false);
+    g.arc(x - r * 0.72, y + r * 0.08, r * 0.42, 0, Math.PI * 2, false);
+    g.fill();
+  }
+
+  function jgClouds(g) {
+    var span = jgBh * 6, i, sy, cx;
+    var first = Math.floor((jgCam - jgBh) / span);
+    g.fillStyle = "rgba(255,255,255,.8)";
+    for (i = first; i < first + 6; i++) {
+      if (i < 1) continue;                       // じめんの あたりには 出さない
+      sy = jgSY(i * span);
+      if (sy < -60 || sy > jgH + 60) continue;
+      cx = (((i * 37) % 100) / 100) * (jgW - 110) + 55;
+      jgCloud(g, cx, sy, jgBh * 0.8);
+    }
+  }
+
+  function jgDraw() {
+    if (!jgCtx || !jgW) return;
+    var g = jgCtx, i, b, sy, t, off, glow;
+    g.setTransform(jgDpr, 0, 0, jgDpr, 0, 0);
+    g.clearRect(0, 0, jgW, jgH);
+    jgClouds(g);
+
+    var gy = jgSY(0);                            // じめん
+    if (gy < jgH) {
+      g.fillStyle = "#cdbb96";
+      g.fillRect(0, gy, jgW, jgH - gy);
+    }
+
+    for (i = 0; i < jgStack.length; i++) {
+      b = jgStack[i];
+      sy = jgSY((i + 1) * jgBh);
+      if (sy > jgH || sy + jgBh < 0) continue;   // 画面の そとは 描かない
+      jgPlank(g, b.x * jgW, sy, b.w * jgW, jgBh, JG_TONES[i % 2]);
+    }
+
+    for (i = 0; i < jgFalls.length; i++) jgPlankSpin(g, jgFalls[i]);
+
+    if (jgMov) {
+      t = jgStack[jgStack.length - 1];
+      off = Math.abs(jgMov.x - t.x);
+      glow = off <= JG_SNAP;                     // ぴったりの いちに 来て いる
+      sy = jgSY((jgRows + 1) * jgBh);
+      // 下の いたの はしを たてせんで 見せる。これが あうと ぴったり
+      g.strokeStyle = glow ? "rgba(180,120,20,.85)" : "rgba(70,55,30,.25)";
+      g.lineWidth = 2;
+      jgGuide(g, t.x * jgW, sy);
+      jgGuide(g, (t.x + t.w) * jgW, sy);
+      jgPlank(g, jgMov.x * jgW, sy, jgMov.w * jgW, jgBh,
+              glow ? JG_SNAP_TONE : JG_MOV_TONE, glow);
+    }
+  }
+
+  function jgGuide(g, x, sy) {
+    if (!g.beginPath) return;
+    g.beginPath();
+    g.moveTo(x, sy - jgBh * 0.7);
+    g.lineTo(x, sy + jgBh * 1.7);
+    g.stroke();
+  }
+
+  function jgStep(dt) {
+    var i, f, grav = jgBh * 0.035;
+    if (!jgOver && jgMov) {
+      jgMov.x += jgMov.v * jgMov.dir * dt;
+      if (jgMov.x <= 0) { jgMov.x = 0; jgMov.dir = 1; }
+      if (jgMov.x + jgMov.w >= 1) { jgMov.x = 1 - jgMov.w; jgMov.dir = -1; }
+    }
+    for (i = jgFalls.length - 1; i >= 0; i--) {
+      f = jgFalls[i];
+      f.vy -= grav * dt;
+      f.y += f.vy * dt;
+      f.x += f.vx * dt;
+      f.a += f.va * dt;
+      if (f.y < jgCam - jgH) jgFalls.splice(i, 1);
+    }
+    var k = 0.14 * dt;
+    jgCam += (jgCamAim() - jgCam) * (k > 1 ? 1 : k);
+  }
+
+  function jgFallPiece(x, w, row, dir) {
+    jgFalls.push({ x: x, w: w, row: row, y: row * jgBh,
+                   vx: dir * 0.004, vy: jgBh * 0.06,
+                   a: 0, va: dir * 0.035 });
+  }
+
+  function jgNext() {
+    var top = jgStack[jgStack.length - 1];
+    var v = jgSpeed.v * (1 + jgRows * JG_RAMP);
+    var max = jgSpeed.v * JG_RAMP_MAX;
+    if (v > max) v = max;
+    // ひだりから 出るか みぎから 出るかは まいかい かえる。
+    // いつも おなじだと おぼえた リズムで おせて しまう
+    var fromLeft = Math.random() < 0.5;
+    jgMov = { x: fromLeft ? 0 : 1 - top.w, w: top.w, v: v, dir: fromLeft ? 1 : -1 };
+  }
+
+  function jgDrop() {
+    if (!jgRunning || jgOver || !jgMov) return;
+    var top = jgStack[jgStack.length - 1];
+    var l = Math.max(jgMov.x, top.x);
+    var r = Math.min(jgMov.x + jgMov.w, top.x + top.w);
+    var ov = r - l;
+    var off = Math.abs(jgMov.x - top.x);
+    var row = jgRows, rr = jgMov.x + jgMov.w, nw, b;
+
+    if (ov < JG_DEAD) {                          // のる ところが ない。たおれる
+      jgFallPiece(jgMov.x, jgMov.w, row, jgMov.x < top.x ? -1 : 1);
+      jgMov = null;
+      jgEnd();
+      return;
+    }
+
+    if (off <= JG_SNAP) {                        // ぴったり。ほそく ならない
+      jgStack.push({ x: top.x, w: top.w });
+      jgCombo++;
+      if (jgCombo > jgBestCombo) jgBestCombo = jgCombo;
+      if (jgCombo % JG_GROW_AT === 0 && top.w < JG_BW) {
+        // ごほうびに すこし ふとる。ずっと あそんで いても じり貧に ならない
+        nw = top.w + JG_GROW;
+        if (nw > JG_BW) nw = JG_BW;
+        b = jgStack[jgStack.length - 1];
+        b.x = top.x - (nw - top.w) / 2;
+        b.w = nw;
+        if (b.x < 0) b.x = 0;
+        if (b.x + b.w > 1) b.x = 1 - b.w;
+      }
+      soundGold();
+    } else {                                     // はみ出した ぶんを きりおとす
+      if (jgMov.x < l) jgFallPiece(jgMov.x, l - jgMov.x, row, -1);
+      if (rr > r) jgFallPiece(r, rr - r, row, 1);
+      jgStack.push({ x: l, w: ov });
+      jgCombo = 0;
+      soundHit();
+    }
+
+    jgRows++;
+    // きろくは つむ たびに のこす。とちゅうで iPad が ねむっても きえない
+    if (jgRows - 1 > jgBest) { jgBest = jgRows - 1; save(jgKey(), jgBest); }
+    jgNext();
+    jgPaint();
+  }
+
+  function jgPaint() {
+    var n = jgRows - 1;                          // いちばん下の だんは はじめから ある
+    jgStageEl.innerHTML = "<b>" + n + "</b> だん" +
+      (jgCombo > 1 ? "　ぴったり <b>" + jgCombo + "</b> れんぞく" : "");
+    jgScoreEl.innerHTML = String(jgBest);
+    jgRankEl.innerHTML = jgBest > 0 ? rankLabelOf(jgBest, jgSpeed.ranks) : "";
+  }
+
+  function jgEnd() {
+    jgOver = true;
+    var n = jgRows - 1;
+    var isBest = n > jgWas;                      // この ラウンドを はじめた ときの きろくと くらべる
+    var label = rankLabelOf(n, jgSpeed.ranks);
+    var text = n + " だん つめました！";
+    if (label) text += " " + label;
+    if (jgBestCombo > 1) text += " ぴったり " + jgBestCombo + "れんぞく！";
+    if (isBest) text += " さいこう きろく！";
+    jgPaint();
+    // はなまるは しょうごうが ついた ときだけ。すぐ たおれた ぶんは かぞえない
+    if (label) {
+      celebrate(jgMsgEl, text);
+    } else {
+      jgMsgEl.className = "msg";
+      jgMsgEl.innerHTML = text + " もういちど どうぞ";
+      soundAgain();
+    }
+  }
+
+  function jgResize() {
+    if (!jgCtx) return;
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+    var w = Math.min(vw - 30, 425);
+    if (w < 240) w = 240;
+    var h = Math.round(w * 1.2);
+    // ばんの 下に 「もういちど」の ボタンまで 見えるように する
+    var top = jgCanvas.parentNode.offsetTop;
+    if (top > 0) {
+      var room = vh - top - 150;
+      if (h > room) h = room;
+    }
+    if (h < 260) h = 260;
+
+    jgW = w;
+    jgH = h;
+    jgBh = jgH / JG_ROWS;
+    jgDpr = window.devicePixelRatio > 1 ? 2 : 1;
+    jgCanvas.style.width = jgW + "px";
+    jgCanvas.style.height = jgH + "px";
+    jgCanvas.width = Math.round(jgW * jgDpr);
+    jgCanvas.height = Math.round(jgH * jgDpr);
+    jgDraw();
+  }
+
+  function jgFrame() {
+    if (!jgRunning) { jgRaf = null; return; }
+    var now = new Date().getTime();
+    // 1こま ぶんを 1 と する。ふるい iPad は 30こま/びょう しか 出ない ことが
+    // あるので、こま数では なく すぎた 時間で うごかす
+    var dt = jgLast ? (now - jgLast) / 16.7 : 1;
+    jgLast = now;
+    if (dt < 0.2) dt = 0.2;
+    if (dt > 3) dt = 3;
+    jgStep(dt);
+    jgDraw();
+    jgRaf = anRequest(jgFrame);
+  }
+
+  function jgBuildSpeeds() {
+    var key = load("jg-speed", "normal");
+    for (var i = 0; i < JG_SPEEDS.length; i++) if (JG_SPEEDS[i].key === key) jgSpeed = JG_SPEEDS[i];
+    buildPicker($("jenga-speeds"), JG_SPEEDS, function (sp) { return sp === jgSpeed; }, "big",
+      function (sp) {
+        jgSpeed = sp;
+        save("jg-speed", sp.key);
+        jgStart();
+      });
+    jgBuilt = true;
+  }
+
+  function jgStart() {
+    jgStop();
+    if (!jgBuilt) jgBuildSpeeds();
+    jgStack = [{ x: (1 - JG_BW) / 2, w: JG_BW }];
+    jgFalls = [];
+    jgRows = 1;
+    jgCombo = 0;
+    jgBestCombo = 0;
+    jgOver = false;
+    jgBest = Number(load(jgKey(), "0")) || 0;
+    jgWas = jgBest;
+    jgCam = 0;
+    jgNext();
+    jgMsgEl.innerHTML = "";
+    jgMsgEl.className = "msg";
+    jgPaint();
+    jgResize();
+    jgCam = jgCamAim();
+    jgRunning = true;
+    jgLast = 0;
+    jgFrame();
+  }
+
+  function jgStop() {
+    jgRunning = false;
+    if (jgRaf !== null) { anCancel(jgRaf); jgRaf = null; }
+  }
+
+  onPress(jgCanvas, jgDrop);
+  onTap($("jenga-reset"), jgStart);
+
+  // しらべる ための 窓。よむ だけで、ここから さわる ことは できない
+  window.jgState = function () {
+    var t = jgStack.length ? jgStack[jgStack.length - 1] : null;
+    return { rows: jgRows - 1, over: jgOver, running: jgRunning,
+             x: jgMov ? jgMov.x : -1, w: jgMov ? jgMov.w : 0,
+             tx: t ? t.x : -1, tw: t ? t.w : 0, snap: JG_SNAP };
+  };
+
   // ============================================================
   // タブの切り替え
   // ============================================================
@@ -2915,7 +3314,8 @@
     { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: meStop },
     { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop },
     { key: "beads",  tab: "tab-beads",  pane: "game-beads",  show: beStart, hide: beStop },
-    { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop }
+    { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop },
+    { key: "jenga",  tab: "tab-jenga",  pane: "game-jenga",  show: jgStart, hide: jgStop }
   ];
 
   function showTab(key) {
@@ -2936,7 +3336,7 @@
     (function (cfg) { onTap($(cfg.tab), function () { showTab(cfg.key); }); })(TABS[t]);
   }
 
-  window.onresize = function () { moResize(); meResize(); odResize(); beResize(); anResize(); };
+  window.onresize = function () { moResize(); meResize(); odResize(); beResize(); anResize(); jgResize(); };
 
   // ---- 起動 ----
   checkVersion();
