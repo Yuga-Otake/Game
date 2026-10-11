@@ -501,7 +501,7 @@
   <p class="msg" id="zombie-msg"></p>
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>もんが 2つ ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>そのあと おばけの むれが 来ます。やられる のは <b>おばけの かず ÷ ぶき</b> の 人数です。<br>なかまが いなく なったら おしまい。まけでは ありません。</p>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>もんが 2つ ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>そのあと おばけの むれが 来ます。近づくと なかまが <b>てっぽうで うちはじめます</b>。<br>なかま 1人で <b>ぶきの かず だけ</b> おばけを たおせます。たおした ぶんだけ なかまが へります。<br>なかまが いなく なったら おしまい。まけでは ありません。</p>
 </div>
 
 <div id="confetti"></div>
@@ -776,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v52";
+  var APP_VER = "v53";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3359,6 +3359,11 @@
   var ZB_MOVE = 0.05;            // よこに うごく はやさ (1こま あたり)
   var ZB_EDGE = 0.19;            // かたまりごと 画面に おさまる ように、はしに よらない
   var ZB_BAND = 0.11;            // もんの たかさ (画面に たいする わりあい)
+  var ZB_FIGHT_AT = 0.34;        // おばけが これくらい 近づいたら うちはじめる
+  var ZB_FIGHT_F = 55;           // たたかいに かける こま数 (だいたい 1びょう)
+  var ZB_FIGHT_SLOW = 0.25;      // たたかって いる あいだ すすむ はやさ
+  var ZB_SHOT_SPD = 0.075;       // たまの はやさ (1こまで どれだけ すすむか)
+  var ZB_SHOT_EVERY = 3.5;       // なんこまに 1ぱつ 出すか
 
   // なかまを ならべる いち。まんなかから うずまきに ふやして いく
   var ZB_SLOTS = (function () {
@@ -3381,6 +3386,7 @@
   var zbW = 0, zbH = 0, zbDpr = 1;
   var zbItems = [], zbPops = [], zbPos = 0, zbNextY = 0, zbSeq = 0, zbRound = 1;
   var zbProjN = ZB_N0, zbProjP = ZB_P0;
+  var zbFightOn = null, zbShots = [];
   var zbN = ZB_N0, zbP = ZB_P0, zbX = 0.5, zbAim = 0.5;
   var zbCleared = 0, zbBest = 0, zbWas = 0;
   var zbOver = false, zbRunning = false, zbRaf = null, zbLast = 0;
@@ -3505,19 +3511,63 @@
     zbPaint();
   }
 
-  function zbFight(item) {
-    var loss = Math.ceil(item.s / zbP);
-    zbN -= loss;
-    zbPop("−" + loss + "にん", "#c0392b", zbX);
-    if (zbN <= 0) {
-      zbN = 0;
-      zbEnd();
-      return;
+  // おばけが 近づくと うちはじめる。1ぴきずつ たおして いき、
+  // 「なかま 1人が ぶきの かず だけ たおす」ぶんだけ なかまが へる。
+  // へる かずは ぜんぶで おばけ ÷ ぶき で、まえと おなじ。
+  // ちがうのは、それが 目の 前で おきる ように なった こと
+  function zbStartFight(item) {
+    item.left = item.s;
+    zbFightOn = { item: item, total: item.s, lost: 0, acc: 0, gun: 0 };
+  }
+
+  function zbFightStep(dt) {
+    var f = zbFightOn, it = f.item, kill, want;
+    // どんなに 大きい むれでも たたかいは だいたい 1びょうで おわる ように する
+    f.acc += (f.total / ZB_FIGHT_F) * dt;
+    kill = Math.floor(f.acc);
+    if (kill > 0) {
+      f.acc -= kill;
+      if (kill > it.left) kill = it.left;
+      it.left -= kill;
+      soundFlip();
     }
-    zbCleared = item.r;
-    if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
-    soundMatch();
-    zbPaint();
+    // たまは たおした かずとは べつに、いってい の かんかくで 出す。
+    // そうしないと 小さい むれの とき 1はつも 見えずに おわって しまう
+    f.gun += dt;
+    while (f.gun >= ZB_SHOT_EVERY) { f.gun -= ZB_SHOT_EVERY; zbShoot(); }
+    want = Math.ceil((f.total - it.left) / zbP);
+    if (want > f.lost) {
+      zbN -= (want - f.lost);
+      f.lost = want;
+      zbPaint();
+      if (zbN <= 0) {                            // なかまが さきに いなく なった
+        zbN = 0;
+        zbFightOn = null;                        // のこった おばけは ばんに のこす
+        zbEnd();
+        return;
+      }
+    }
+    if (it.left <= 0) {
+      it.done = true;
+      zbCleared = it.r;
+      if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
+      zbPop("−" + f.lost + "にん", "#c0392b", zbX);
+      soundMatch();
+      zbFightOn = null;
+      zbPaint();
+    }
+  }
+
+  // たまは なかまの かたまりから おばけの かたまりへ とんで いく。
+  // まっすぐ 上に とばすと よこに ずれた ときに あたって 見えない
+  function zbShoot() {
+    if (!zbFightOn || zbShots.length > 14) return;
+    zbShots.push({
+      x0: zbX + (Math.random() - 0.5) * 0.12, y0: ZB_YOU,
+      x1: 0.5 + (Math.random() - 0.5) * 0.14,
+      y1: zbSY(zbFightOn.item.y) / zbH,
+      t: 0
+    });
   }
 
   // ---- 絵 ----
@@ -3551,15 +3601,23 @@
     g.fill();
   }
 
-  function zbCrowd(g, cx, cy, count, draw) {
-    var shown = count > ZB_SLOTS.length ? ZB_SLOTS.length : count;
-    // かずが ふえる ほど 1人を 小さく して、かたまりの 大きさを そろえる
-    var unit = zbW * (shown > 36 ? 0.030 : shown > 14 ? 0.038 : 0.052);
-    var i, s;
+  // かずが ふえる ほど 1つを 小さく して、かたまりの 大きさを そろえる
+  function zbUnit(count) {
+    var n = count > ZB_SLOTS.length ? ZB_SLOTS.length : count;
+    return zbW * (n > 36 ? 0.030 : n > 14 ? 0.038 : 0.052);
+  }
+
+  function zbPack(g, cx, cy, shown, unit, draw) {
+    var i, sl;
+    if (shown > ZB_SLOTS.length) shown = ZB_SLOTS.length;
     for (i = 0; i < shown; i++) {
-      s = ZB_SLOTS[i];
-      draw(g, cx + s.x * unit * 1.3, cy + s.y * unit * 1.3, unit * 0.62);
+      sl = ZB_SLOTS[i];
+      draw(g, cx + sl.x * unit * 1.3, cy + sl.y * unit * 1.3, unit * 0.62);
     }
+  }
+
+  function zbCrowd(g, cx, cy, count, draw) {
+    zbPack(g, cx, cy, count, zbUnit(count), draw);
   }
 
   function zbBigText(g, text, x, y, px, color) {
@@ -3587,21 +3645,22 @@
     g.fillRect(w - 2, y - h / 2, 4, h);
   }
 
+  // おばけも こちらと おなじ「かたまり＋上に かず」で 見せる。
+  // まえは うしろに あかい ふだを 出して いたが、たてのように 見えて
+  // 何の かずだか 分からなかった
   function zbDrawWave(g, item) {
-    var y = zbSY(item.y), i, n = 7, r = zbW * 0.052, x;
-    if (y + r * 3 < -10 || y - r * 3 > zbH + 10) return;
-    for (i = 0; i < n; i++) {
-      x = (i + 0.5) / n * zbW;
-      zbGhost(g, x, y + Math.sin(i * 1.7 + item.r) * r * 0.5, r);
-    }
-    g.fillStyle = "rgba(192,57,43,.92)";         // つよさの ふだ
-    g.fillRect(zbW * 0.3, y - r * 1.9, zbW * 0.4, r * 1.25);
-    zbBigText(g, String(item.s), zbW * 0.5, y - r * 1.28, r * 1.0, "#ffffff");
+    var left = (item.left === undefined) ? item.s : item.left;
+    if (left <= 0) return;
+    var y = zbSY(item.y), shown;
+    if (y < -zbH * 0.35 || y > zbH + zbH * 0.35) return;
+    shown = Math.ceil(Math.min(ZB_SLOTS.length, item.s) * left / item.s);
+    zbPack(g, zbW * 0.5, y, shown, zbUnit(item.s), zbGhost);
+    zbBigText(g, String(left), zbW * 0.5, y - zbH * 0.105, zbH * 0.062, "#8e2b22");
   }
 
   function zbDraw() {
     if (!zbCtx || !zbW) return;
-    var g = zbCtx, i, it, cy, step, off, p;
+    var g = zbCtx, i, it, cy, step, off, p, sh;
     g.setTransform(zbDpr, 0, 0, zbDpr, 0, 0);
     g.fillStyle = "#e7ecdf";                     // みち
     g.fillRect(0, 0, zbW, zbH);
@@ -3624,6 +3683,16 @@
     }
 
     cy = zbH * ZB_YOU;
+    g.fillStyle = "#f2c230";                     // たま
+    for (i = 0; i < zbShots.length; i++) {
+      sh = zbShots[i];
+      if (!g.beginPath) break;
+      g.beginPath();
+      g.arc((sh.x0 + (sh.x1 - sh.x0) * sh.t) * zbW,
+            (sh.y0 + (sh.y1 - sh.y0) * sh.t) * zbH, zbW * 0.013, 0, Math.PI * 2, false);
+      g.fill();
+    }
+
     if (zbN > 0) {
       zbCrowd(g, zbX * zbW, cy, zbN, zbPerson);
       zbBigText(g, String(zbN), zbX * zbW, cy - zbH * 0.11, zbH * 0.062, "#23324f");
@@ -3641,7 +3710,9 @@
   function zbStep(dt) {
     var i, it, d, lim;
     if (!zbOver) {
-      zbPos += zbSpeed.v * dt;
+      // たたかって いる あいだも すこしずつ すすむ。ぴたりと 止めるより
+      // うって いる あいだ ずっと 近づいて 見える ほうが それらしい
+      zbPos += zbSpeed.v * dt * (zbFightOn ? ZB_FIGHT_SLOW : 1);
       lim = ZB_MOVE * dt;
       d = zbAim - zbX;
       if (d > lim) d = lim;
@@ -3650,17 +3721,34 @@
       if (zbX < ZB_EDGE) zbX = ZB_EDGE;
       if (zbX > 1 - ZB_EDGE) zbX = 1 - ZB_EDGE;
 
-      for (i = 0; i < zbItems.length; i++) {
-        it = zbItems[i];
-        if (it.done || it.y > zbPos) continue;
-        it.done = true;
-        if (it.kind === "gate") zbHit(it); else zbFight(it);
-        if (zbOver) break;
+      if (zbFightOn) {
+        zbFightStep(dt);
+      } else {
+        for (i = 0; i < zbItems.length; i++) {
+          it = zbItems[i];
+          if (it.done) continue;
+          if (it.kind === "gate") {
+            if (it.y > zbPos) continue;
+            it.done = true;
+            zbHit(it);
+          } else {
+            // おばけには ぶつかる 前に 気づいて、てまえから うちはじめる
+            if (it.y - zbPos > ZB_FIGHT_AT) continue;
+            zbStartFight(it);
+          }
+          break;
+        }
+        zbGen();
+        // とおりすぎた ものは すてる
+        while (zbItems.length && zbItems[0].done && zbItems[0].y < zbPos - 0.9) zbItems.shift();
       }
-      zbGen();
-      // とおりすぎた ものは すてる
-      while (zbItems.length && zbItems[0].done && zbItems[0].y < zbPos - 0.9) zbItems.shift();
     }
+
+    for (i = zbShots.length - 1; i >= 0; i--) {
+      zbShots[i].t += ZB_SHOT_SPD * dt;
+      if (zbShots[i].t >= 1) zbShots.splice(i, 1);
+    }
+
     for (i = zbPops.length - 1; i >= 0; i--) {
       zbPops[i].life -= 0.016 * dt;
       if (zbPops[i].life <= 0) zbPops.splice(i, 1);
@@ -3755,6 +3843,8 @@
     zbX = 0.5;
     zbAim = 0.5;
     zbCleared = 0;
+    zbFightOn = null;
+    zbShots = [];
     zbOver = false;
     zbBest = Number(load(zbKey(), "0")) || 0;
     zbWas = zbBest;
@@ -3825,6 +3915,7 @@
       if (!zbItems[i].done && (next === null || zbItems[i].y < next.y)) next = zbItems[i];
     }
     return { n: zbN, p: zbP, cleared: zbCleared, over: zbOver, running: zbRunning,
+             fighting: !!zbFightOn,
              ws: zbStrength(zbCleared + 1),
              x: zbX, next: next ? { kind: next.kind, y: next.y,
                                     a: next.a ? next.a.label : "", b: next.b ? next.b.label : "",
