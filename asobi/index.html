@@ -501,7 +501,7 @@
   <p class="msg" id="zombie-msg"></p>
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは <b>みちを ふさぐ ように</b> ならんで、近づくと こちらへ 走って きます。<b>1ぴきでも とどいたら おしまい</b>です。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は たまが あたる ところに いれば こわせて、なかまか ぶきが もらえます。</p>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは <b>みちを ふさぐ ように</b> ならんで、近づくと こちらへ 走って きます。たおしきれず とどいた ぶんだけ <b>なかまが へります</b>。<br>なかまが いなく なったら おしまいです。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は たまが あたる ところに いれば こわせて、なかまか ぶきが もらえます。</p>
 </div>
 
 <div id="confetti"></div>
@@ -776,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v58";
+  var APP_VER = "v59";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3485,6 +3485,7 @@
   var zbPat = null, zbPatI = 0, zbGates = 0, zbWaveNo = 0;
   var zbN = ZB_N0, zbP = ZB_P0, zbX = 0.5, zbAim = 0.5;
   var zbCleared = 0, zbBest = 0, zbWas = 0, zbGun = 0;
+  var zbThrough = 0, zbLostTo = 0;      // とどかれた かいすうと、そこで へった 人数
   var zbOver = false, zbRunning = false, zbRaf = null, zbLast = 0;
   var zbSpeed = ZB_SPEEDS[1], zbBuilt = false, zbDown = false;
 
@@ -3654,6 +3655,14 @@
       if (zbN >= before) soundHit(); else soundAgain();
     }
     if (zbN <= 0) { zbEnd("なかまが いなく なりました。"); return; }
+    zbPaint();
+  }
+
+  // 1かい ぶんの おばけを やりすごした。ぜんぶ たおしても、
+  // すこし とどかれても、すすんだ かずは おなじ ように かぞえる
+  function zbPassed(item) {
+    zbCleared = item.r;
+    if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
     zbPaint();
   }
 
@@ -3956,7 +3965,7 @@
   }
 
   function zbStep(dt) {
-    var i, it, d, lim, gun = zbGunOf(), gv = zbGhostV(), dmg, sh, stop, sL, sR;
+    var i, it, d, lim, gun = zbGunOf(), gv = zbGhostV(), dmg, sh, stop, sL, sR, loss;
     if (!zbOver) {
       zbPos += zbSpeed.v * dt;
       lim = ZB_MOVE * dt;
@@ -3992,11 +4001,9 @@
             zbTarget.hp = 0;
             zbTarget.done = true;
             if (zbTarget.kind === "wave") {
-              zbCleared = zbTarget.r;
-              if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
               zbPop("やっつけた！", "#2f8f4e");
               soundMatch();
-              zbPaint();
+              zbPassed(zbTarget);
             } else {
               zbTakePrize(zbTarget);
             }
@@ -4004,11 +4011,29 @@
           }
         }
 
-        // とどかれたら おしまい
+        // たおしきれずに とどかれたら、のこって いる かず だけ なかまが へる。
+        // おしまいに なるのは なかまが いなく なった ときだけ
         for (i = 0; i < zbItems.length; i++) {
           it = zbItems[i];
           if (it.done || it.kind !== "wave" || it.hp <= 0) continue;
-          if (it.y <= zbPos) { zbEnd("おばけに とどかれました。"); break; }
+          if (it.y > zbPos) continue;
+          // やられる 人数は「のこった おばけ ÷ ぶき」。
+          // のこった かず そのままに すると、1かい およばなかった だけで
+          // なかまが ぜんめつ して しまう (おばけの かずは なかまの 何ばいも ある)
+          loss = Math.ceil(it.hp / (zbP < 1 ? 1 : zbP));
+          it.done = true;
+          it.hp = 0;
+          zbN -= loss;
+          zbThrough++;
+          zbLostTo += loss;
+          zbPop("−" + moComma(loss) + "にん", "#c0392b");
+          soundAgain();
+          if (zbN <= 0) {
+            zbN = 0;
+            zbEnd("なかまが いなく なりました。");
+            break;
+          }
+          zbPassed(it);
         }
       }
 
@@ -4081,7 +4106,7 @@
     zbOver = true;
     var isBest = zbCleared > zbWas;
     var label = rankLabelOf(zbCleared, ZB_RANKS);
-    var text = why + " おばけを " + zbCleared + " かい やっつけました！";
+    var text = why + " おばけを " + zbCleared + " かい のりこえました！";
     if (label) text += " " + label;
     if (isBest) text += " さいこう きろく！";
     zbPaint();
@@ -4163,6 +4188,8 @@
     zbX = 0.5;
     zbAim = 0.5;
     zbCleared = 0;
+    zbThrough = 0;
+    zbLostTo = 0;
     zbOver = false;
     zbBest = Number(load(zbKey(), "0")) || 0;
     zbWas = zbBest;
@@ -4247,6 +4274,7 @@
     return {
       n: zbN, p: zbP, power: zbPower(), cleared: zbCleared, over: zbOver, running: zbRunning,
       x: zbX, pos: zbPos, shots: zbShots.length, gates: zbGates,
+      through: zbThrough, lostTo: zbLostTo,
       target: zbTarget ? zbTarget.kind : null,
       next: next ? { kind: next.kind, y: next.y, s: next.s || 0, hp: next.hp || 0,
                      boss: !!next.boss, live: !!next.live,
