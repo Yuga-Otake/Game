@@ -776,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v56";
+  var APP_VER = "v57";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3386,13 +3386,15 @@
 
   // ぶきを つよく すると たまの 見た目と はやさが かわる。
   // けずる ちからは ぶきの かずで きまって いて、ここは 見た目だけ
+  // つよい ほど 大きく するが、上げすぎると たまで ばんが うまって
+  // おばけが 見えなく なる。つよさは おもに 色と れんしゃで 見せる
   var ZB_GUN = [
     null,
     { r: 0.0150, c: "#f0b81e", v: 0.075, every: 5.0 },
-    { r: 0.0180, c: "#f5a613", v: 0.085, every: 4.4 },
-    { r: 0.0210, c: "#f2820e", v: 0.095, every: 3.8 },
-    { r: 0.0245, c: "#ea5d17", v: 0.105, every: 3.2 },
-    { r: 0.0290, c: "#dc3626", v: 0.115, every: 2.6 }
+    { r: 0.0165, c: "#f5a613", v: 0.085, every: 4.4 },
+    { r: 0.0180, c: "#f2820e", v: 0.095, every: 3.8 },
+    { r: 0.0195, c: "#ea5d17", v: 0.105, every: 3.2 },
+    { r: 0.0210, c: "#dc3626", v: 0.115, every: 2.6 }
   ];
   // たまの かたち。ふとい しかくだと かたまりに 見えるので、
   // ほそく ながい すじに して、さきに まるい ひかりを つける
@@ -3402,18 +3404,26 @@
   var ZB_STAGGER = 0.05;         // 1かいの たまを すこしずつ ずらして 出す ぶん
   var ZB_SPREAD = 0.30;          // ねらう ところの ばらつき。かたまりの はばに あわせる
 
-  // なかまを ならべる いち。まんなかから うずまきに ふやして いく
+  // なかまを ならべる いち。まるい かたまりは だらしなく 見えるので、
+  // よこ 1れつ ずつ の「たいれつ」に する。
+  // 1れつは 9人。つぎの れつは 半分 ずらして つめる。
+  // 1れつの なかでは まんなかから 外へ うめるので、すくない ときも まんなかに そろう。
+  // れつは うしろへ のびる (おばけは ぎゃくむきに つかう)
+  var ZB_ROW = 9, ZB_ROW_PITCH = 0.62, ZB_SPACING = 1.18;
   var ZB_SLOTS = (function () {
-    var out = [{ x: 0, y: 0 }], ring, i, n, a, r;
-    for (ring = 1; ring <= 4; ring++) {
-      n = ring * 6;
-      r = ring * 0.95;
-      for (i = 0; i < n; i++) {
-        a = (i / n) * Math.PI * 2 + ring * 0.5;
-        out.push({ x: Math.cos(a) * r, y: Math.sin(a) * r * 0.55 });
+    var out = [], row, i, k, xs, half = (ZB_ROW - 1) / 2;
+    for (row = 0; row < 8; row++) {
+      xs = [];
+      for (i = 0; i < ZB_ROW; i++) xs.push(i - half);
+      xs.sort(function (a, b) {
+        var da = a < 0 ? -a : a, db = b < 0 ? -b : b;
+        return da === db ? a - b : da - db;
+      });
+      for (k = 0; k < ZB_ROW; k++) {
+        out.push({ x: xs[k] + (row % 2 ? 0.5 : 0), y: row * ZB_ROW_PITCH });
       }
     }
-    return out;                                  // 1+6+12+18+24 = 61 にん ぶん
+    return out;                                  // 9 × 8 = 72 にん ぶん
   })();
 
   var zbCanvas = $("zombie-canvas");
@@ -3650,13 +3660,21 @@
     return zbW * (n > 36 ? 0.030 : n > 14 ? 0.038 : 0.052);
   }
 
-  function zbPack(g, cx, cy, shown, unit, draw) {
-    var i, sl;
+  // dir = 1 なら れつが 下へ (なかま)、-1 なら 上へ (おばけ) のびる。
+  // どちらも「いちばん 前の れつ」が あいてに むく
+  function zbPack(g, cx, cy, shown, unit, draw, dir) {
+    var i, sl, sp = unit * ZB_SPACING;
     if (shown > ZB_SLOTS.length) shown = ZB_SLOTS.length;
     for (i = 0; i < shown; i++) {
       sl = ZB_SLOTS[i];
-      draw(g, cx + sl.x * unit * 1.3, cy + sl.y * unit * 1.3, unit * 0.62);
+      draw(g, cx + sl.x * sp, cy + sl.y * sp * dir, unit * 0.62);
     }
+  }
+
+  // かたまりが なんれつ ぶん あるか (かずを その 上や 下に おく ため)
+  function zbRows(shown) {
+    if (shown > ZB_SLOTS.length) shown = ZB_SLOTS.length;
+    return Math.ceil(shown / ZB_ROW);
   }
 
   // たまは まるい 点だと ちいさくて 見えない。とんで いる むきに のばした
@@ -3735,14 +3753,17 @@
 
   // おばけも こちらと おなじ「かたまり＋上に かず」で 見せる
   function zbDrawWave(g, item) {
-    var y = zbSY(item.y), shown;
+    var y = zbSY(item.y), shown, unit, top;
     if (item.hp <= 0) return;
     if (y < -zbH * 0.35 || y > zbH + zbH * 0.35) return;
     if (item.boss) { zbDrawBoss(g, item, y); return; }
     shown = Math.ceil(Math.min(ZB_SLOTS.length, item.s) * item.hp / item.s);
-    zbPack(g, zbW * 0.5, y, shown, zbUnit(item.s), zbGhost);
+    unit = zbUnit(item.s);
+    zbPack(g, zbW * 0.5, y, shown, unit, zbGhost, -1);
+    // かずは かたまりの 上。れつが 上へ のびる ぶん よけて おく
+    top = y - zbRows(shown) * ZB_ROW_PITCH * unit * ZB_SPACING - zbH * 0.045;
     zbBigText(g, moComma(Math.ceil(item.hp)), zbW * 0.5,
-              zbTopY(y - zbH * 0.105, y + zbH * 0.115, 0.04), zbH * 0.062, "#8e2b22", "#ffffff");
+              zbTopY(top, y + zbH * 0.09, 0.04), zbH * 0.062, "#8e2b22", "#ffffff");
   }
 
   // 大おばけ。ちからの おびは あたまの 上 (下に おくと なかまと かさなる)
@@ -3827,7 +3848,7 @@
     }
 
     if (zbN > 0) {
-      zbPack(g, zbX * zbW, cy, zbN, zbUnit(zbN), zbPerson);
+      zbPack(g, zbX * zbW, cy, zbN, zbUnit(zbN), zbPerson, 1);
       zbBigText(g, moComma(zbN), zbX * zbW, cy - zbH * 0.11, zbH * 0.062, "#23324f", "#ffffff");
     }
 
@@ -3863,8 +3884,8 @@
     for (i = 0; i < many; i++) {
       if (zbShots.length >= ZB_SHOTS_MAX) break;
       sl = ZB_SLOTS[i];
-      sx = zbX + (sl.x * unit * 1.3) / zbW;
-      sy = ZB_YOU + (sl.y * unit * 1.3) / zbH;
+      sx = zbX + (sl.x * unit * ZB_SPACING) / zbW;
+      sy = ZB_YOU + (sl.y * unit * ZB_SPACING) / zbH;
       ex = tx + (Math.random() - 0.5) * ZB_SPREAD;
       zbShots.push({
         x0: sx, y0: sy, x1: ex, y1: ty,
