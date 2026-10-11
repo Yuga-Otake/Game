@@ -7,7 +7,7 @@
 
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f6efdd">
-<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれさがし・ビーズ・くっつけゲーム・ジェンガ が あそべます">
+<meta name="description" content="もぐらたたき・しんけいすいじゃく・なかまはずれ・ビーズ・くっつけゲーム・ジェンガ・おばけたいじ が あそべます">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -102,11 +102,13 @@
     border: 3px solid #d9cdb2;
     border: 3px solid var(--line);
     border-radius: 14px;
-    padding: 12px 10px;
-    margin: 0 4px 8px;
+    /* ゲームが 7つに なって iPad で 3行に なったので、
+       1行あたり 8px つめて ある。それでも 58px あるので 指で おしやすい */
+    padding: 10px 10px;
+    margin: 0 4px 6px;
     width: 236px;
     max-width: 100%;
-    min-height: 64px;
+    min-height: 58px;
     vertical-align: middle;
     cursor: pointer;
   }
@@ -378,6 +380,18 @@
     cursor: pointer;
   }
 
+  /* ---- おばけたいじ ---- */
+  #zombie-wrap { margin: 0 auto; }
+  #zombie-canvas {
+    display: block;
+    margin: 0 auto;
+    background: #e7ecdf;
+    border: 4px solid #d9cdb2;
+    border: 4px solid var(--line);
+    border-radius: 14px;
+    cursor: pointer;
+  }
+
   /* ---- おいわいの紙ふぶき ---- */
   #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; }
   #confetti span { position: fixed; }
@@ -396,6 +410,7 @@
   <button type="button" class="tab" id="tab-beads">🔵 ビーズ</button>
   <button type="button" class="tab" id="tab-animal">🐻 くっつけゲーム</button>
   <button type="button" class="tab" id="tab-jenga">🧱 ジェンガ</button>
+  <button type="button" class="tab" id="tab-zombie">👻 おばけたいじ</button>
 </div>
 
 <p class="stamps" id="stamps"></p>
@@ -476,6 +491,17 @@
   <button type="button" class="big" id="jenga-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="jenga-speeds"></span></div>
   <p class="note">いたが よこに うごいて います。<br>さわると そこで とまって、つみ上がります。<br>はみ出した ぶんは おちて、いたが ほそく なります。<br>たての せんに あうと いたが 光ります。そこで さわると <b>ぴったり</b>で、ほそく なりません。<br>3かい つづけて ぴったりだと、いたが すこし ふとります。</p>
+</div>
+
+<!-- おばけたいじ (なかまを あつめて すすむ) -->
+<div id="game-zombie" style="display:none">
+  <p class="score">さいこう　<b id="zombie-score">0</b> かい　<span id="zombie-rank" class="rank"></span></p>
+  <p class="stage" id="zombie-stage">なかま <b>5</b>　ぶき <b>1</b>　おばけ <b>0</b> かい</p>
+  <div id="zombie-wrap"><canvas id="zombie-canvas"></canvas></div>
+  <p class="msg" id="zombie-msg"></p>
+  <button type="button" class="big" id="zombie-reset">もういちど</button>
+  <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>もんが 2つ ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>そのあと おばけの むれが 来ます。やられる のは <b>おばけの かず ÷ ぶき</b> の 人数です。<br>なかまが いなく なったら おしまい。まけでは ありません。</p>
 </div>
 
 <div id="confetti"></div>
@@ -750,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v51";
+  var APP_VER = "v52";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3306,6 +3332,510 @@
              tx: t ? t.x : -1, tw: t ? t.w : 0, snap: JG_SNAP };
   };
 
+
+  // ============================================================
+  // おばけたいじ (なかまを あつめて すすむ)
+  // ============================================================
+  // まっすぐ すすんで いく。とちゅうに もんが 2つ ならんで いて、
+  // とおった ほうの ことが おきる (なかまが ふえる・へる、ぶきが つよく なる)。
+  // そのあと おばけの むれが 来る。なかまが ぜんいん やられたら おしまい。
+  //
+  // やられる かずは おばけの つよさ ÷ ぶき。だから「なかまを ふやす」のと
+  // 「ぶきを つよく する」の どちらを とるかが この ゲームの かんがえどころ。
+  var ZB_SPEEDS = [
+    { key: "slow",   label: "ゆっくり", v: 0.0042 },
+    { key: "normal", label: "ふつう",   v: 0.0062 },
+    { key: "fast",   label: "はやい",   v: 0.0088 }
+  ];
+  // おばけの つよさ。r かいめ = S1 × G^(r-1) × K^((r-1)^2)。
+  // K が ある ので かいを かさねる ほど きつく なり、どんなに 上手でも いつか おわる。
+  // この 3つの かずは 2000回ずつ しらべて きめた (README を 見てください)
+  var ZB_S1 = 3, ZB_G = 2.2, ZB_K = 1.025;
+  var ZB_RANKS = [3, 5, 8, 12, 18];
+  var ZB_N0 = 5, ZB_P0 = 1;
+  var ZB_GATES = 2;              // おばけ 1かいに つき もんは 2つ
+  var ZB_GAP = 0.95;             // つぎの ものが 出てくるまで (画面 なんこぶん)
+  var ZB_YOU = 0.80;             // じぶんの いちは 画面の 上から どのへんか
+  var ZB_MOVE = 0.05;            // よこに うごく はやさ (1こま あたり)
+  var ZB_EDGE = 0.19;            // かたまりごと 画面に おさまる ように、はしに よらない
+  var ZB_BAND = 0.11;            // もんの たかさ (画面に たいする わりあい)
+
+  // なかまを ならべる いち。まんなかから うずまきに ふやして いく
+  var ZB_SLOTS = (function () {
+    var out = [{ x: 0, y: 0 }], ring, i, n, a, r;
+    for (ring = 1; ring <= 4; ring++) {
+      n = ring * 6;
+      r = ring * 0.95;
+      for (i = 0; i < n; i++) {
+        a = (i / n) * Math.PI * 2 + ring * 0.5;
+        out.push({ x: Math.cos(a) * r, y: Math.sin(a) * r * 0.55 });
+      }
+    }
+    return out;                                  // 1+6+12+18+24 = 61 にん ぶん
+  })();
+
+  var zbCanvas = $("zombie-canvas");
+  var zbCtx = (zbCanvas && zbCanvas.getContext) ? zbCanvas.getContext("2d") : null;
+  var zbScoreEl = $("zombie-score"), zbRankEl = $("zombie-rank");
+  var zbStageEl = $("zombie-stage"), zbMsgEl = $("zombie-msg");
+  var zbW = 0, zbH = 0, zbDpr = 1;
+  var zbItems = [], zbPops = [], zbPos = 0, zbNextY = 0, zbSeq = 0, zbRound = 1;
+  var zbProjN = ZB_N0, zbProjP = ZB_P0;
+  var zbN = ZB_N0, zbP = ZB_P0, zbX = 0.5, zbAim = 0.5;
+  var zbCleared = 0, zbBest = 0, zbWas = 0;
+  var zbOver = false, zbRunning = false, zbRaf = null, zbLast = 0;
+  var zbSpeed = ZB_SPEEDS[1], zbBuilt = false;
+
+  function zbKey() { return "zb-" + zbSpeed.key; }
+
+  function zbStrength(r) {
+    var e = r - 1;
+    return Math.round(ZB_S1 * Math.pow(ZB_G, e) * Math.pow(ZB_K, e * e));
+  }
+
+  // もんの なかみ。なかまの かずに あわせて ふえる かずも 大きく する。
+  // そうしないと さきに いくほど「+8」が どうでも よく なって しまう
+  function zbOption(kind, n) {
+    var a;
+    if (kind === "mul") return { kind: "mul", amount: 2, label: "×2", good: 1 };
+    if (kind === "add") {
+      a = Math.max(3, Math.round(n * (0.3 + Math.random() * 0.5)));
+      return { kind: "add", amount: a, label: "+" + a, good: 1 };
+    }
+    if (kind === "sub") {
+      a = Math.max(2, Math.round(n * (0.15 + Math.random() * 0.25)));
+      return { kind: "sub", amount: a, label: "−" + a, good: 0 };
+    }
+    return { kind: "pow", amount: 1, label: "ぶき+1", good: 2 };
+  }
+
+  // ふだに かいて ある ことを そのまま あてはめる。
+  // 「ついた ときの かず」を あとから かぞえるので、とちゅうで
+  // なかまが かわっても ふだの とおりに なる
+  function zbApplyN(o, n) {
+    if (o.kind === "mul") return n * o.amount;
+    if (o.kind === "add") return n + o.amount;
+    if (o.kind === "sub") return n - o.amount;
+    return n;
+  }
+  function zbApplyP(o, p) { return o.kind === "pow" ? p + o.amount : p; }
+
+  // これから 出す もんの かずは、そこに ついた ころの なかまの かずに
+  // あわせたい。すでに ならんで いる ものを 1つずつ たどって 見つもる。
+  // どちらの もんを とおるかは 分からないので 2つの まんなかを とる
+  function zbProject() {
+    var i, it, nn = zbN, pp = zbP;
+    for (i = 0; i < zbItems.length; i++) {
+      it = zbItems[i];
+      if (it.done) continue;
+      if (it.kind === "gate") {
+        nn = Math.round((zbApplyN(it.a, nn) + zbApplyN(it.b, nn)) / 2);
+        pp = (zbApplyP(it.a, pp) + zbApplyP(it.b, pp)) / 2;
+      } else {
+        nn -= Math.ceil(it.s / (pp < 1 ? 1 : pp));
+      }
+      if (nn < 1) nn = 1;
+    }
+    zbProjN = nn;
+    zbProjP = pp;
+  }
+
+  var ZB_KINDS = [["mul", 28], ["add", 34], ["sub", 20], ["pow", 18]];
+
+  function zbPickKind() {
+    var t = 0, i, r;
+    for (i = 0; i < ZB_KINDS.length; i++) t += ZB_KINDS[i][1];
+    r = Math.random() * t;
+    for (i = 0; i < ZB_KINDS.length; i++) {
+      r -= ZB_KINDS[i][1];
+      if (r <= 0) return ZB_KINDS[i][0];
+    }
+    return "add";
+  }
+
+  // さきの ものを いくつか 用意して おく。すすむ たびに つぎを たす
+  function zbGen() {
+    var a, b, guard, o1, o2, s;
+    zbProject();
+    // 画面の 外に 1つ ある くらいまで。さきまで 作って おくと
+    // その ころの なかまの かずが よめなく なる
+    while (zbNextY < zbPos + 1.9) {
+      zbNextY += ZB_GAP;
+      if (zbSeq < ZB_GATES) {
+        a = zbPickKind();
+        b = zbPickKind();
+        guard = 0;
+        while (b === a && guard++ < 8) b = zbPickKind();
+        o1 = zbOption(a, zbProjN);
+        o2 = zbOption(b, zbProjN);
+        zbItems.push({ kind: "gate", y: zbNextY, done: false, a: o1, b: o2 });
+        zbProjN = Math.round((zbApplyN(o1, zbProjN) + zbApplyN(o2, zbProjN)) / 2);
+        zbProjP = (zbApplyP(o1, zbProjP) + zbApplyP(o2, zbProjP)) / 2;
+        if (zbProjN < 1) zbProjN = 1;
+        zbSeq++;
+      } else {
+        s = zbStrength(zbRound);
+        zbItems.push({ kind: "wave", y: zbNextY, done: false, r: zbRound, s: s });
+        zbProjN -= Math.ceil(s / (zbProjP < 1 ? 1 : zbProjP));
+        if (zbProjN < 1) zbProjN = 1;
+        zbRound++;
+        zbSeq = 0;
+      }
+    }
+  }
+
+  function zbPop(text, color, x) {
+    zbPops.push({ text: text, color: color, x: x, life: 1 });
+  }
+
+  function zbHit(item) {
+    var o = (zbX < 0.5) ? item.a : item.b;
+    var before = zbN;
+    zbN = zbApplyN(o, zbN);
+    zbP = zbApplyP(o, zbP);
+    if (zbN < 0) zbN = 0;
+    if (o.kind === "pow") {
+      zbPop("ぶきが つよく なった！", "#c2691f", zbX);
+      soundGold();
+    } else {
+      zbPop((zbN >= before ? "+" : "") + (zbN - before) + "にん", zbN >= before ? "#2f8f4e" : "#c0392b", zbX);
+      if (zbN >= before) soundHit(); else soundAgain();
+    }
+    if (zbN <= 0) { zbEnd(); return; }
+    zbPaint();
+  }
+
+  function zbFight(item) {
+    var loss = Math.ceil(item.s / zbP);
+    zbN -= loss;
+    zbPop("−" + loss + "にん", "#c0392b", zbX);
+    if (zbN <= 0) {
+      zbN = 0;
+      zbEnd();
+      return;
+    }
+    zbCleared = item.r;
+    if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
+    soundMatch();
+    zbPaint();
+  }
+
+  // ---- 絵 ----
+  function zbPerson(g, x, y, r) {
+    if (!g.beginPath) return;
+    g.fillStyle = "#3f6fd0";
+    g.beginPath();
+    g.arc(x, y + r * 0.55, r * 0.78, 0, Math.PI * 2, false);
+    g.fill();
+    g.fillStyle = "#f0c9a0";
+    g.beginPath();
+    g.arc(x, y - r * 0.55, r * 0.6, 0, Math.PI * 2, false);
+    g.fill();
+  }
+
+  function zbGhost(g, x, y, r) {
+    if (!g.beginPath) return;
+    g.fillStyle = "#f4f4f8";
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2, false);
+    g.fill();
+    g.fillRect(x - r, y, r * 2, r * 0.85);
+    g.beginPath();                               // すその ぎざぎざ
+    g.arc(x - r * 0.6, y + r * 0.85, r * 0.4, 0, Math.PI * 2, false);
+    g.arc(x + r * 0.6, y + r * 0.85, r * 0.4, 0, Math.PI * 2, false);
+    g.fill();
+    g.fillStyle = "#3a3a46";
+    g.beginPath();
+    g.arc(x - r * 0.35, y - r * 0.1, r * 0.18, 0, Math.PI * 2, false);
+    g.arc(x + r * 0.35, y - r * 0.1, r * 0.18, 0, Math.PI * 2, false);
+    g.fill();
+  }
+
+  function zbCrowd(g, cx, cy, count, draw) {
+    var shown = count > ZB_SLOTS.length ? ZB_SLOTS.length : count;
+    // かずが ふえる ほど 1人を 小さく して、かたまりの 大きさを そろえる
+    var unit = zbW * (shown > 36 ? 0.030 : shown > 14 ? 0.038 : 0.052);
+    var i, s;
+    for (i = 0; i < shown; i++) {
+      s = ZB_SLOTS[i];
+      draw(g, cx + s.x * unit * 1.3, cy + s.y * unit * 1.3, unit * 0.62);
+    }
+  }
+
+  function zbBigText(g, text, x, y, px, color) {
+    g.fillStyle = color;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = "bold " + Math.round(px) + "px sans-serif";
+    g.fillText(text, x, y);
+  }
+
+  function zbSY(y) { return zbH * ZB_YOU - (y - zbPos) * zbH; }
+
+  function zbDrawGate(g, item) {
+    var y = zbSY(item.y), h = zbH * ZB_BAND, i, o, x0, w = zbW / 2;
+    if (y + h < -10 || y - h > zbH + 10) return;
+    for (i = 0; i < 2; i++) {
+      o = i === 0 ? item.a : item.b;
+      x0 = i * w;
+      g.fillStyle = o.good === 2 ? "rgba(224,138,47,.80)"
+                  : o.good ? "rgba(63,143,79,.80)" : "rgba(192,57,43,.78)";
+      g.fillRect(x0, y - h / 2, w, h);
+      zbBigText(g, o.label, x0 + w / 2, y, o.kind === "pow" ? h * 0.40 : h * 0.52, "#ffffff");
+    }
+    g.fillStyle = "rgba(255,255,255,.9)";        // まんなかの しきり
+    g.fillRect(w - 2, y - h / 2, 4, h);
+  }
+
+  function zbDrawWave(g, item) {
+    var y = zbSY(item.y), i, n = 7, r = zbW * 0.052, x;
+    if (y + r * 3 < -10 || y - r * 3 > zbH + 10) return;
+    for (i = 0; i < n; i++) {
+      x = (i + 0.5) / n * zbW;
+      zbGhost(g, x, y + Math.sin(i * 1.7 + item.r) * r * 0.5, r);
+    }
+    g.fillStyle = "rgba(192,57,43,.92)";         // つよさの ふだ
+    g.fillRect(zbW * 0.3, y - r * 1.9, zbW * 0.4, r * 1.25);
+    zbBigText(g, String(item.s), zbW * 0.5, y - r * 1.28, r * 1.0, "#ffffff");
+  }
+
+  function zbDraw() {
+    if (!zbCtx || !zbW) return;
+    var g = zbCtx, i, it, cy, step, off, p;
+    g.setTransform(zbDpr, 0, 0, zbDpr, 0, 0);
+    g.fillStyle = "#e7ecdf";                     // みち
+    g.fillRect(0, 0, zbW, zbH);
+    g.fillStyle = "#d6ddc8";                     // みちの はし
+    g.fillRect(0, 0, zbW * 0.06, zbH);
+    g.fillRect(zbW * 0.94, 0, zbW * 0.06, zbH);
+
+    // まんなかの てんせん。これが ながれるので すすんで いるのが 分かる
+    step = zbH * 0.16;
+    off = (zbPos * zbH) % step;
+    g.fillStyle = "rgba(255,255,255,.75)";
+    for (i = -1; i * step + off < zbH + step; i++) {
+      g.fillRect(zbW * 0.49, i * step + off, zbW * 0.02, step * 0.45);
+    }
+
+    for (i = 0; i < zbItems.length; i++) {
+      it = zbItems[i];
+      if (it.done) continue;
+      if (it.kind === "gate") zbDrawGate(g, it); else zbDrawWave(g, it);
+    }
+
+    cy = zbH * ZB_YOU;
+    if (zbN > 0) {
+      zbCrowd(g, zbX * zbW, cy, zbN, zbPerson);
+      zbBigText(g, String(zbN), zbX * zbW, cy - zbH * 0.11, zbH * 0.062, "#23324f");
+    }
+
+    for (i = 0; i < zbPops.length; i++) {
+      p = zbPops[i];
+      g.globalAlpha = p.life < 0.4 ? p.life / 0.4 : 1;
+      zbBigText(g, p.text, p.x * zbW, cy - zbH * 0.17 - (1 - p.life) * zbH * 0.1,
+                zbH * 0.05, p.color);
+      g.globalAlpha = 1;
+    }
+  }
+
+  function zbStep(dt) {
+    var i, it, d, lim;
+    if (!zbOver) {
+      zbPos += zbSpeed.v * dt;
+      lim = ZB_MOVE * dt;
+      d = zbAim - zbX;
+      if (d > lim) d = lim;
+      if (d < -lim) d = -lim;
+      zbX += d;
+      if (zbX < ZB_EDGE) zbX = ZB_EDGE;
+      if (zbX > 1 - ZB_EDGE) zbX = 1 - ZB_EDGE;
+
+      for (i = 0; i < zbItems.length; i++) {
+        it = zbItems[i];
+        if (it.done || it.y > zbPos) continue;
+        it.done = true;
+        if (it.kind === "gate") zbHit(it); else zbFight(it);
+        if (zbOver) break;
+      }
+      zbGen();
+      // とおりすぎた ものは すてる
+      while (zbItems.length && zbItems[0].done && zbItems[0].y < zbPos - 0.9) zbItems.shift();
+    }
+    for (i = zbPops.length - 1; i >= 0; i--) {
+      zbPops[i].life -= 0.016 * dt;
+      if (zbPops[i].life <= 0) zbPops.splice(i, 1);
+    }
+  }
+
+  function zbPaint() {
+    zbStageEl.innerHTML = "なかま <b>" + zbN + "</b>　ぶき <b>" + zbP + "</b>　おばけ <b>" +
+                          zbCleared + "</b> かい";
+    zbScoreEl.innerHTML = String(zbBest);
+    zbRankEl.innerHTML = zbBest > 0 ? rankLabelOf(zbBest, ZB_RANKS) : "";
+  }
+
+  function zbEnd() {
+    zbOver = true;
+    zbN = 0;
+    var isBest = zbCleared > zbWas;
+    var label = rankLabelOf(zbCleared, ZB_RANKS);
+    var text = "おばけを " + zbCleared + " かい やっつけました！";
+    if (label) text += " " + label;
+    if (isBest) text += " さいこう きろく！";
+    zbPaint();
+    if (label) {
+      celebrate(zbMsgEl, text);
+    } else {
+      zbMsgEl.className = "msg";
+      zbMsgEl.innerHTML = text + " もういちど どうぞ";
+      soundAgain();
+    }
+  }
+
+  function zbResize() {
+    if (!zbCtx) return;
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+    var w = Math.min(vw - 30, 425);
+    if (w < 240) w = 240;
+    var h = Math.round(w * 1.2);
+    var top = zbCanvas.parentNode.offsetTop;
+    if (top > 0) {
+      var room = vh - top - 150;                 // 下に 「もういちど」ぶん のこす
+      if (h > room) h = room;
+    }
+    if (h < 260) h = 260;
+    zbW = w;
+    zbH = h;
+    zbDpr = window.devicePixelRatio > 1 ? 2 : 1;
+    zbCanvas.style.width = zbW + "px";
+    zbCanvas.style.height = zbH + "px";
+    zbCanvas.width = Math.round(zbW * zbDpr);
+    zbCanvas.height = Math.round(zbH * zbDpr);
+    zbDraw();
+  }
+
+  function zbFrame() {
+    if (!zbRunning) { zbRaf = null; return; }
+    var now = new Date().getTime();
+    var dt = zbLast ? (now - zbLast) / 16.7 : 1;
+    zbLast = now;
+    if (dt < 0.2) dt = 0.2;
+    if (dt > 3) dt = 3;
+    zbStep(dt);
+    zbDraw();
+    zbRaf = anRequest(zbFrame);
+  }
+
+  function zbBuildSpeeds() {
+    var key = load("zb-speed", "normal"), i;
+    for (i = 0; i < ZB_SPEEDS.length; i++) if (ZB_SPEEDS[i].key === key) zbSpeed = ZB_SPEEDS[i];
+    buildPicker($("zombie-speeds"), ZB_SPEEDS, function (sp) { return sp === zbSpeed; }, "big",
+      function (sp) {
+        zbSpeed = sp;
+        save("zb-speed", sp.key);
+        zbStart();
+      });
+    zbBuilt = true;
+  }
+
+  function zbStart() {
+    zbStop();
+    if (!zbBuilt) zbBuildSpeeds();
+    zbItems = [];
+    zbPops = [];
+    zbPos = 0;
+    zbNextY = 0.35;                              // はじめの もんが すぐには 来ない ように
+    zbSeq = 0;
+    zbRound = 1;
+    zbN = ZB_N0;
+    zbP = ZB_P0;
+    zbProjN = ZB_N0;
+    zbProjP = ZB_P0;
+    zbX = 0.5;
+    zbAim = 0.5;
+    zbCleared = 0;
+    zbOver = false;
+    zbBest = Number(load(zbKey(), "0")) || 0;
+    zbWas = zbBest;
+    zbGen();
+    zbMsgEl.innerHTML = "";
+    zbMsgEl.className = "msg";
+    zbPaint();
+    zbResize();
+    zbRunning = true;
+    zbLast = 0;
+    zbFrame();
+  }
+
+  function zbStop() {
+    zbRunning = false;
+    if (zbRaf !== null) { anCancel(zbRaf); zbRaf = null; }
+  }
+
+  // さわった ところへ すすむ。おした まま 指を すべらせても ついて くるので、
+  // 「さわる」でも 「なぞる」でも おなじ ように あそべる
+  function zbAimAt(clientX) {
+    if (!zbW) return;
+    var rect = zbCanvas.getBoundingClientRect();
+    var x = (clientX - rect.left) / (rect.right - rect.left);
+    if (x < 0) x = 0;
+    if (x > 1) x = 1;
+    zbAim = x;
+  }
+
+  if (zbCanvas) {
+    zbCanvas.ontouchstart = function (e) {
+      var t = e.touches && e.touches[0];
+      if (t) zbAimAt(t.clientX);
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    };
+    zbCanvas.ontouchmove = function (e) {
+      var t = e.touches && e.touches[0];
+      if (t) zbAimAt(t.clientX);
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    };
+    zbCanvas.onmousedown = function (e) {
+      e = e || window.event;
+      zbDown = true;
+      zbAimAt(e.clientX);
+      return false;
+    };
+    zbCanvas.onmousemove = function (e) {
+      if (!zbDown) return;
+      e = e || window.event;
+      zbAimAt(e.clientX);
+    };
+    if (document.addEventListener) {
+      document.addEventListener("mouseup", function () { zbDown = false; }, false);
+    } else {
+      zbCanvas.onmouseup = function () { zbDown = false; };
+    }
+  }
+  var zbDown = false;
+
+  onTap($("zombie-reset"), zbStart);
+
+  // しらべる ための 窓。よむ だけ
+  window.zbState = function () {
+    var i, next = null;
+    for (i = 0; i < zbItems.length; i++) {
+      if (!zbItems[i].done && (next === null || zbItems[i].y < next.y)) next = zbItems[i];
+    }
+    return { n: zbN, p: zbP, cleared: zbCleared, over: zbOver, running: zbRunning,
+             ws: zbStrength(zbCleared + 1),
+             x: zbX, next: next ? { kind: next.kind, y: next.y,
+                                    a: next.a ? next.a.label : "", b: next.b ? next.b.label : "",
+                                    an: next.a ? zbApplyN(next.a, zbN) : 0,
+                                    bn: next.b ? zbApplyN(next.b, zbN) : 0,
+                                    ap: next.a ? zbApplyP(next.a, zbP) : 0,
+                                    bp: next.b ? zbApplyP(next.b, zbP) : 0,
+                                    s: next.s || 0 } : null,
+             pos: zbPos };
+  };
+
   // ============================================================
   // タブの切り替え
   // ============================================================
@@ -3315,7 +3845,8 @@
     { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop },
     { key: "beads",  tab: "tab-beads",  pane: "game-beads",  show: beStart, hide: beStop },
     { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop },
-    { key: "jenga",  tab: "tab-jenga",  pane: "game-jenga",  show: jgStart, hide: jgStop }
+    { key: "jenga",  tab: "tab-jenga",  pane: "game-jenga",  show: jgStart, hide: jgStop },
+    { key: "zombie", tab: "tab-zombie", pane: "game-zombie", show: zbStart, hide: zbStop }
   ];
 
   function showTab(key) {
@@ -3336,7 +3867,7 @@
     (function (cfg) { onTap($(cfg.tab), function () { showTab(cfg.key); }); })(TABS[t]);
   }
 
-  window.onresize = function () { moResize(); meResize(); odResize(); beResize(); anResize(); jgResize(); };
+  window.onresize = function () { moResize(); meResize(); odResize(); beResize(); anResize(); jgResize(); zbResize(); };
 
   // ---- 起動 ----
   checkVersion();
