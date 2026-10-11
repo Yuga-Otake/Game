@@ -496,12 +496,12 @@
 <!-- おばけたいじ (なかまを あつめて すすむ) -->
 <div id="game-zombie" style="display:none">
   <p class="score">さいこう　<b id="zombie-score">0</b> かい　<span id="zombie-rank" class="rank"></span></p>
-  <p class="stage" id="zombie-stage">なかま <b>5</b>　ぶき <b>1</b>　おばけ <b>0</b> かい</p>
+  <p class="stage" id="zombie-stage">ちから <b>5</b>　おばけ <b>0</b>　なかま <b>5</b>　ぶき <b>1</b>　<b>0</b>かい</p>
   <div id="zombie-wrap"><canvas id="zombie-canvas"></canvas></div>
   <p class="msg" id="zombie-msg"></p>
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>もんが ならんで います。とおった ほうの ことが おきます。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>そのあと おばけの むれが 来ます。と4かいに 1ど <b>大おばけ</b> が 来ます。近づくと なかまが <b>てっぽうで うちはじめます</b>。<br>なかま 1人で <b>ぶきの かず だけ</b> おばけを たおせます。たおした ぶんだけ なかまが へります。<br>なかまが いなく なったら おしまい。まけでは ありません。</p>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは 近づくと こちらへ 走って きます。<b>1ぴきでも とどいたら おしまい</b>です。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は たまが あたる ところに いれば こわせて、なかまか ぶきが もらえます。</p>
 </div>
 
 <div id="confetti"></div>
@@ -776,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v54";
+  var APP_VER = "v55";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3336,41 +3336,59 @@
   // ============================================================
   // おばけたいじ (なかまを あつめて すすむ)
   // ============================================================
-  // まっすぐ すすんで いく。とちゅうに もんが 2つ ならんで いて、
-  // とおった ほうの ことが おきる (なかまが ふえる・へる、ぶきが つよく なる)。
-  // そのあと おばけの むれが 来る。なかまが ぜんいん やられたら おしまい。
+  // まっすぐ すすみながら、なかまが ずっと てっぽうを うって いる。
+  // とちゅうに もんが ならんで いて、とおった ほうの ことが おきる。
+  // おばけの むれが 近づくと むこうも こちらへ 走って くるので、
+  // とどく 前に ぜんぶ たおす。1ぴきでも とどいたら そこで おしまい。
   //
-  // やられる かずは おばけの つよさ ÷ ぶき。だから「なかまを ふやす」のと
-  // 「ぶきを つよく する」の どちらを とるかが この ゲームの かんがえどころ。
+  // たおせるかは 「ちから = なかま × ぶき」が おばけの かず いじょうか で きまる。
+  // (1こまに けずる ぶん × とどくまでの こま数 が ちょうど 1ばいに なるように
+  //  ZB_DPS を きめて あるので、この かんたんな 言いかたが そのまま あたる)
   var ZB_SPEEDS = [
     { key: "slow",   label: "ゆっくり", v: 0.0042 },
     { key: "normal", label: "ふつう",   v: 0.0062 },
     { key: "fast",   label: "はやい",   v: 0.0088 }
   ];
-  // おばけの つよさ。r かいめ = S1 × G^(r-1) × K^((r-1)^2)。
-  // K が ある ので かいを かさねる ほど きつく なり、どんなに 上手でも いつか おわる。
-  // この 3つの かずは 2000回ずつ しらべて きめた (README を 見てください)
-  var ZB_S1 = 3, ZB_G = 2.2, ZB_K = 1.025;
-  var ZB_RANKS = [3, 5, 8, 12, 18];
+  // おばけの かず。r かいめ = S1 × G^(r-1) × K^((r-1)^2)。
+  // K が ある ので かいを かさねる ほど きつく なり、いつかは おわる。
+  // この かずは 2000回ずつ しらべて きめた (README を 見てください)
+  var ZB_S1 = 3, ZB_G = 2.8, ZB_K = 1.035;
+  var ZB_RANKS = [2, 4, 6, 10, 14];
   var ZB_N0 = 5, ZB_P0 = 1;
-  // おばけの つよさは「ここまでに 出た もんの かず ÷ 2」で きまる。
-  // だから 1かいに もんが 3つ 出る ことが あっても つりあいは くずれない
-  var ZB_GATES = 2;
+  var ZB_GATES = 2;              // おばけの つよさは「出た もんの かず ÷ これ」で きまる
   var ZB_GAP = 0.95;             // つぎの ものが 出てくるまで (画面 なんこぶん)
   var ZB_GAP_CHAIN = 0.42;       // れんぞくで 来る ときの あいだ
+  var ZB_WIDE_P = 0.25;          // 4つに 1つの もんは 3たく
+  var ZB_CHAIN_P = 0.25;         // 4かいに 1どくらい もんが 3つ つづく
+  var ZB_BOX_P = 0.55;           // おばけの あとに たからばこが 出る わりあい
+  var ZB_BOX_HP = 0.35;          // はこの かたさ (ちからの なんわり ぶんか)
+  var ZB_BOX_AIM = 0.16;         // はこに たまが あたる よこの ずれ
   var ZB_BOSS_EVERY = 4;         // 4かいに 1ど 大おばけ (3・7・11…かいめ)
-  var ZB_BOSS_MUL = 1.5;         // 大おばけの つよさ
-  var ZB_GUN_MAX = 16;           // いちどに とばす たまの かず の 上げどまり
-  var ZB_SHOTS_MAX = 60;
+  var ZB_BOSS_MUL = 1.5;
   var ZB_YOU = 0.80;             // じぶんの いちは 画面の 上から どのへんか
   var ZB_MOVE = 0.05;            // よこに うごく はやさ (1こま あたり)
-  var ZB_EDGE = 0.19;            // かたまりごと 画面に おさまる ように、はしに よらない
-  var ZB_BAND = 0.11;            // もんの たかさ (画面に たいする わりあい)
-  var ZB_FIGHT_AT = 0.34;        // おばけが これくらい 近づいたら うちはじめる
-  var ZB_FIGHT_F = 55;           // たたかいに かける こま数 (だいたい 1びょう)
-  var ZB_FIGHT_SLOW = 0.25;      // たたかって いる あいだ すすむ はやさ
-  var ZB_SHOT_SPD = 0.075;       // たまの はやさ (1こまで どれだけ すすむか)
-  var ZB_SHOT_EVERY = 5;         // なんこまに 1かい うつか
+  var ZB_EDGE = 0.19;            // かたまりごと 画面に おさまる ように
+  var ZB_BAND = 0.11;            // もんの たかさ
+  var ZB_RANGE = 0.85;           // たまが とどく ところ。ここから たたかいが はじまる
+  // 近づいてからの ちかづく はやさ。みちの ながれる はやさを えらんでも
+  // たたかいの ながさが かわらない ように、あわせて おばけの 足を かえる。
+  // そうしないと「はやい」を えらぶだけで むずかしさが かわって しまう
+  var ZB_CLOSE = 0.0105;
+  var ZB_GHOST_MIN = 0.0012;
+  var ZB_DPS = ZB_CLOSE / ZB_RANGE;   // 1こまに けずる ぶん (ちからに たいする わりあい)
+  var ZB_SHOTS_MAX = 60;
+  var ZB_GUN_MAX = 16;           // 1かいに とばす たまの かず の 上げどまり
+
+  // ぶきを つよく すると たまの 見た目と はやさが かわる。
+  // けずる ちからは ぶきの かずで きまって いて、ここは 見た目だけ
+  var ZB_GUN = [
+    null,
+    { r: 0.011, c: "#f2c230", v: 0.075, every: 5.0 },
+    { r: 0.014, c: "#f7b32b", v: 0.085, every: 4.4 },
+    { r: 0.017, c: "#f59120", v: 0.095, every: 3.8 },
+    { r: 0.020, c: "#ef6c2a", v: 0.105, every: 3.2 },
+    { r: 0.024, c: "#e2453a", v: 0.115, every: 2.6 }
+  ];
 
   // なかまを ならべる いち。まんなかから うずまきに ふやして いく
   var ZB_SLOTS = (function () {
@@ -3391,97 +3409,29 @@
   var zbScoreEl = $("zombie-score"), zbRankEl = $("zombie-rank");
   var zbStageEl = $("zombie-stage"), zbMsgEl = $("zombie-msg");
   var zbW = 0, zbH = 0, zbDpr = 1;
-  var zbItems = [], zbPops = [], zbPos = 0, zbNextY = 0;
+  var zbItems = [], zbPops = [], zbShots = [], zbPos = 0, zbNextY = 0;
   var zbProjN = ZB_N0, zbProjP = ZB_P0;
-  var zbFightOn = null, zbShots = [];
   var zbPat = null, zbPatI = 0, zbGates = 0, zbWaveNo = 0;
   var zbN = ZB_N0, zbP = ZB_P0, zbX = 0.5, zbAim = 0.5;
-  var zbCleared = 0, zbBest = 0, zbWas = 0;
+  var zbCleared = 0, zbBest = 0, zbWas = 0, zbGun = 0;
   var zbOver = false, zbRunning = false, zbRaf = null, zbLast = 0;
-  var zbSpeed = ZB_SPEEDS[1], zbBuilt = false;
+  var zbSpeed = ZB_SPEEDS[1], zbBuilt = false, zbDown = false;
 
   function zbKey() { return "zb-" + zbSpeed.key; }
+  function zbPower() { return zbN * zbP; }
+  function zbGunOf() { return ZB_GUN[zbP > 5 ? 5 : (zbP < 1 ? 1 : zbP)]; }
+  function zbGhostV() {
+    var v = ZB_CLOSE - zbSpeed.v;
+    return v < ZB_GHOST_MIN ? ZB_GHOST_MIN : v;
+  }
 
   function zbStrength(gates, boss) {
     var r = gates / ZB_GATES, e = r - 1;
     return Math.round(ZB_S1 * Math.pow(ZB_G, e) * Math.pow(ZB_K, e * e) * (boss ? ZB_BOSS_MUL : 1));
   }
 
-  // もんの 出かた。4かいに 1どくらい 3つ つづけて 来る (れんぞく)。
-  // えらぶ かずは もん ごとに きめる (4つに 1つが 3たく)
-  var ZB_WIDE_P = 0.25, ZB_CHAIN_P = 0.25;
-
-  function zbPattern() {
-    return Math.random() < ZB_CHAIN_P ? { gates: 3, chain: true } : { gates: 2, chain: false };
-  }
-
-  // おなじ なかみの もんが ならぶと えらぶ いみが ないので、しゅるいを かえる
-  function zbGateOpts(n, count) {
-    var out = [], used = {}, k, guard = 0;
-    while (out.length < count && guard++ < 30) {
-      k = zbPickKind();
-      if (used[k]) continue;
-      used[k] = 1;
-      out.push(zbOption(k, n));
-    }
-    while (out.length < count) out.push(zbOption("add", n));
-    return out;
-  }
-
-  // もんの なかみ。なかまの かずに あわせて ふえる かずも 大きく する。
-  // そうしないと さきに いくほど「+8」が どうでも よく なって しまう
-  function zbOption(kind, n) {
-    var a;
-    if (kind === "mul") return { kind: "mul", amount: 2, label: "×2", good: 1 };
-    if (kind === "add") {
-      a = Math.max(3, Math.round(n * (0.3 + Math.random() * 0.5)));
-      return { kind: "add", amount: a, label: "+" + a, good: 1 };
-    }
-    if (kind === "sub") {
-      a = Math.max(2, Math.round(n * (0.15 + Math.random() * 0.25)));
-      return { kind: "sub", amount: a, label: "−" + a, good: 0 };
-    }
-    return { kind: "pow", amount: 1, label: "ぶき+1", good: 2 };
-  }
-
-  // ふだに かいて ある ことを そのまま あてはめる。
-  // 「ついた ときの かず」を あとから かぞえるので、とちゅうで
-  // なかまが かわっても ふだの とおりに なる
-  function zbApplyN(o, n) {
-    if (o.kind === "mul") return n * o.amount;
-    if (o.kind === "add") return n + o.amount;
-    if (o.kind === "sub") return n - o.amount;
-    return n;
-  }
-  function zbApplyP(o, p) { return o.kind === "pow" ? p + o.amount : p; }
-
-  // これから 出す もんの かずは、そこに ついた ころの なかまの かずに
-  // あわせたい。すでに ならんで いる ものを 1つずつ たどって 見つもる。
-  // どちらの もんを とおるかは 分からないので 2つの まんなかを とる
-  function zbProject() {
-    var i, j, it, nn = zbN, pp = zbP, sn, sp;
-    for (i = 0; i < zbItems.length; i++) {
-      it = zbItems[i];
-      if (it.done) continue;
-      if (it.kind === "gate") {
-        sn = 0;
-        sp = 0;
-        for (j = 0; j < it.opts.length; j++) {
-          sn += zbApplyN(it.opts[j], nn);
-          sp += zbApplyP(it.opts[j], pp);
-        }
-        nn = Math.round(sn / it.opts.length);
-        pp = sp / it.opts.length;
-      } else {
-        nn -= Math.ceil(it.s / (pp < 1 ? 1 : pp));
-      }
-      if (nn < 1) nn = 1;
-    }
-    zbProjN = nn;
-    zbProjP = pp;
-  }
-
-  var ZB_KINDS = [["mul", 28], ["add", 34], ["sub", 20], ["pow", 18]];
+  // ---- もんの なかみ ----
+  var ZB_KINDS = [["mul", 20], ["add", 42], ["sub", 20], ["pow", 18]];
 
   function zbPickKind() {
     var t = 0, i, r;
@@ -3494,9 +3444,79 @@
     return "add";
   }
 
-  // さきの ものを いくつか 用意して おく。すすむ たびに つぎを たす
+  // ふえる かずは なかまの かずに あわせる。そうしないと さきに いくほど
+  // 「+8」が どうでも よく なって しまう
+  function zbOption(kind, n) {
+    var a;
+    if (kind === "mul") return { kind: "mul", amount: 2, label: "×2", good: 1 };
+    if (kind === "add") {
+      a = Math.max(3, Math.round(n * (0.3 + Math.random() * 0.5)));
+      return { kind: "add", amount: a, label: "+" + moComma(a), good: 1 };
+    }
+    if (kind === "sub") {
+      a = Math.max(2, Math.round(n * (0.15 + Math.random() * 0.25)));
+      return { kind: "sub", amount: a, label: "−" + moComma(a), good: 0 };
+    }
+    return { kind: "pow", amount: 1, label: "ぶき+1", good: 2 };
+  }
+
+  // ふだに かいて ある ことを そのまま あとで あてはめる。
+  // けっかの かずを さきに もつと、見つもりが ずれた ときに
+  // 「+8 と かいて あるのに 3 しか ふえない」が おきて しまう
+  function zbApplyN(o, n) {
+    if (o.kind === "mul") return n * o.amount;
+    if (o.kind === "add") return n + o.amount;
+    if (o.kind === "sub") return n - o.amount;
+    return n;
+  }
+  function zbApplyP(o, p) { return o.kind === "pow" ? p + o.amount : p; }
+
+  function zbGateOpts(n, count) {
+    var out = [], used = {}, k, guard = 0;
+    while (out.length < count && guard++ < 30) {
+      k = zbPickKind();
+      if (used[k]) continue;
+      used[k] = 1;
+      out.push(zbOption(k, n));
+    }
+    while (out.length < count) out.push(zbOption("add", n));
+    return out;
+  }
+
+  // これから 出す もんの かずは「そこに ついた ころの なかま」に あわせたい。
+  // すでに ならんで いる ものを たどって 見つもる。どの もんを とおるかは
+  // 分からないので、ならんだ ものの まんなかを とる
+  function zbProject() {
+    var i, j, it, nn = zbN, pp = zbP, sn, sp;
+    for (i = 0; i < zbItems.length; i++) {
+      it = zbItems[i];
+      if (it.done || it.kind !== "gate") continue;
+      sn = 0;
+      sp = 0;
+      for (j = 0; j < it.opts.length; j++) {
+        sn += zbApplyN(it.opts[j], nn);
+        sp += zbApplyP(it.opts[j], pp);
+      }
+      nn = Math.round(sn / it.opts.length);
+      pp = sp / it.opts.length;
+      if (nn < 1) nn = 1;
+    }
+    zbProjN = nn;
+    zbProjP = pp;
+  }
+
+  function zbPattern() {
+    return Math.random() < ZB_CHAIN_P ? { gates: 3, chain: true } : { gates: 2, chain: false };
+  }
+
+  function zbBoxReward(n) {
+    if (Math.random() < 0.4) return { kind: "pow", amount: 1, label: "ぶき+1" };
+    var a = Math.max(5, Math.round(n * 0.35) + 5);
+    return { kind: "add", amount: a, label: "なかま+" + moComma(a) };
+  }
+
   function zbGen() {
-    var i, opts, s, boss, sn, sp;
+    var i, opts, s, boss, sn, sp, hp;
     zbProject();
     // 画面の 外に 1つ ある くらいまで。さきまで 作って おくと
     // その ころの なかまの かずが よめなく なる
@@ -3522,15 +3542,21 @@
         zbWaveNo++;
         boss = (zbWaveNo % ZB_BOSS_EVERY) === 3;
         s = zbStrength(zbGates, boss);
-        zbItems.push({ kind: "wave", y: zbNextY, done: false, r: zbWaveNo, s: s, boss: boss });
-        zbProjN -= Math.ceil(s / (zbProjP < 1 ? 1 : zbProjP));
-        if (zbProjN < 1) zbProjN = 1;
+        zbItems.push({ kind: "wave", y: zbNextY, done: false, r: zbWaveNo,
+                       s: s, hp: s, boss: boss, live: false });
         zbPat = null;
+        if (Math.random() < ZB_BOX_P) {          // たからばこ
+          zbNextY += 0.55;
+          hp = Math.max(5, Math.round(zbProjN * zbProjP * ZB_BOX_HP));
+          zbItems.push({ kind: "box", y: zbNextY, done: false,
+                         x: 0.2 + Math.random() * 0.6, hp: hp, hp0: hp,
+                         prize: zbBoxReward(zbProjN) });
+        }
       }
     }
   }
 
-  // いま どの もんを とおろうと して いるか。3たくの ときは 3つに わける
+  // ---- とおる ----
   function zbLane(k) {
     var i = Math.floor(zbX * k);
     if (i < 0) i = 0;
@@ -3538,8 +3564,8 @@
     return i;
   }
 
-  function zbPop(text, color, x) {
-    zbPops.push({ text: text, color: color, x: x, life: 1 });
+  function zbPop(text, color) {
+    zbPops.push({ text: text, color: color, x: zbX, life: 1 });
   }
 
   function zbHit(item) {
@@ -3549,84 +3575,23 @@
     zbP = zbApplyP(o, zbP);
     if (zbN < 0) zbN = 0;
     if (o.kind === "pow") {
-      zbPop("ぶきが つよく なった！", "#c2691f", zbX);
+      zbPop("ぶきが つよく なった！", "#c2691f");
       soundGold();
     } else {
-      zbPop((zbN >= before ? "+" : "") + (zbN - before) + "にん", zbN >= before ? "#2f8f4e" : "#c0392b", zbX);
+      zbPop((zbN >= before ? "+" : "−") + moComma(Math.abs(zbN - before)) + "にん",
+            zbN >= before ? "#2f8f4e" : "#c0392b");
       if (zbN >= before) soundHit(); else soundAgain();
     }
-    if (zbN <= 0) { zbEnd(); return; }
+    if (zbN <= 0) { zbEnd("なかまが いなく なりました。"); return; }
     zbPaint();
   }
 
-  // おばけが 近づくと うちはじめる。1ぴきずつ たおして いき、
-  // 「なかま 1人が ぶきの かず だけ たおす」ぶんだけ なかまが へる。
-  // へる かずは ぜんぶで おばけ ÷ ぶき で、まえと おなじ。
-  // ちがうのは、それが 目の 前で おきる ように なった こと
-  function zbStartFight(item) {
-    item.left = item.s;
-    zbFightOn = { item: item, total: item.s, lost: 0, acc: 0, gun: 0 };
-  }
-
-  function zbFightStep(dt) {
-    var f = zbFightOn, it = f.item, kill, want;
-    // どんなに 大きい むれでも たたかいは だいたい 1びょうで おわる ように する
-    f.acc += (f.total / ZB_FIGHT_F) * dt;
-    kill = Math.floor(f.acc);
-    if (kill > 0) {
-      f.acc -= kill;
-      if (kill > it.left) kill = it.left;
-      it.left -= kill;
-      soundFlip();
-    }
-    // たまは たおした かずとは べつに、いってい の かんかくで 出す。
-    // そうしないと 小さい むれの とき 1はつも 見えずに おわって しまう
-    f.gun += dt;
-    while (f.gun >= ZB_SHOT_EVERY) { f.gun -= ZB_SHOT_EVERY; zbShoot(); }
-    want = Math.ceil((f.total - it.left) / zbP);
-    if (want > f.lost) {
-      zbN -= (want - f.lost);
-      f.lost = want;
-      zbPaint();
-      if (zbN <= 0) {                            // なかまが さきに いなく なった
-        zbN = 0;
-        zbFightOn = null;                        // のこった おばけは ばんに のこす
-        zbEnd();
-        return;
-      }
-    }
-    if (it.left <= 0) {
-      it.done = true;
-      zbCleared = it.r;
-      if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
-      zbPop("−" + f.lost + "にん", "#c0392b", zbX);
-      soundMatch();
-      zbFightOn = null;
-      zbPaint();
-    }
-  }
-
-  // たまは なかまの かたまりから おばけの かたまりへ とんで いく。
-  // まっすぐ 上に とばすと よこに ずれた ときに あたって 見えない
-  // たまは なかま 1人に つき 1はつ。ふえる ほど あつく なる。
-  // ばんに 出る 人は いちばん 多くて 61人なので たまも そこまでで、
-  // ふるい iPad でも まわる ように 1かいに とばす かずを かぎって ある
-  function zbShoot() {
-    if (!zbFightOn) return;
-    var shown = zbN > ZB_SLOTS.length ? ZB_SLOTS.length : zbN;
-    var many = shown > ZB_GUN_MAX ? ZB_GUN_MAX : shown;
-    var unit = zbUnit(zbN), ty = zbSY(zbFightOn.item.y) / zbH, i, sl;
-    for (i = 0; i < many; i++) {
-      if (zbShots.length >= ZB_SHOTS_MAX) break;
-      sl = ZB_SLOTS[i];
-      zbShots.push({
-        x0: zbX + (sl.x * unit * 1.3) / zbW,
-        y0: ZB_YOU + (sl.y * unit * 1.3) / zbH,
-        x1: 0.5 + (Math.random() - 0.5) * 0.16,
-        y1: ty,
-        t: 0
-      });
-    }
+  function zbTakePrize(item) {
+    var o = item.prize;
+    if (o.kind === "pow") zbP += o.amount; else zbN += o.amount;
+    zbPop(o.label + "！", "#c2691f");
+    soundGold();
+    zbPaint();
   }
 
   // ---- 絵 ----
@@ -3642,9 +3607,8 @@
     g.fill();
   }
 
-  function zbGhost(g, x, y, r) {
-    if (!g.beginPath) return;
-    g.fillStyle = "#f4f4f8";
+  function zbGhostShape(g, x, y, r, col) {
+    g.fillStyle = col;
     g.beginPath();
     g.arc(x, y, r, 0, Math.PI * 2, false);
     g.fill();
@@ -3653,6 +3617,14 @@
     g.arc(x - r * 0.6, y + r * 0.85, r * 0.4, 0, Math.PI * 2, false);
     g.arc(x + r * 0.6, y + r * 0.85, r * 0.4, 0, Math.PI * 2, false);
     g.fill();
+  }
+
+  // しろい おばけは うすい みちの 上だと 見えない。
+  // ひとまわり 大きい こい 色を 下に しいて ふちに する
+  function zbGhost(g, x, y, r) {
+    if (!g.beginPath) return;
+    zbGhostShape(g, x, y, r * 1.14, "#8d94a0");
+    zbGhostShape(g, x, y, r, "#f8f8fc");
     g.fillStyle = "#3a3a46";
     g.beginPath();
     g.arc(x - r * 0.35, y - r * 0.1, r * 0.18, 0, Math.PI * 2, false);
@@ -3675,10 +3647,6 @@
     }
   }
 
-  function zbCrowd(g, cx, cy, count, draw) {
-    zbPack(g, cx, cy, count, zbUnit(count), draw);
-  }
-
   function zbBigText(g, text, x, y, px, color) {
     g.fillStyle = color;
     g.textAlign = "center";
@@ -3688,6 +3656,10 @@
   }
 
   function zbSY(y) { return zbH * ZB_YOU - (y - zbPos) * zbH; }
+
+  // かずは おばけの 上に 出す。まだ 画面の 上に いて 書けない ときは
+  // かわりに 下がわに 出す (上に ずらすと おばけと かさなって しまう)
+  function zbTopY(up, down, least) { return up < zbH * least ? down : up; }
 
   function zbDrawGate(g, item) {
     var y = zbSY(item.y), h = zbH * ZB_BAND, k = item.opts.length;
@@ -3712,26 +3684,24 @@
     g.strokeRect(here * w + 2, y - h / 2 + 2, w - 4, h - 4);
   }
 
-  // おばけも こちらと おなじ「かたまり＋上に かず」で 見せる。
-  // まえは うしろに あかい ふだを 出して いたが、たてのように 見えて
-  // 何の かずだか 分からなかった
+  // おばけも こちらと おなじ「かたまり＋上に かず」で 見せる
   function zbDrawWave(g, item) {
-    var left = (item.left === undefined) ? item.s : item.left;
-    if (left <= 0) return;
     var y = zbSY(item.y), shown;
+    if (item.hp <= 0) return;
     if (y < -zbH * 0.35 || y > zbH + zbH * 0.35) return;
-    if (item.boss) { zbDrawBoss(g, item, y, left); return; }
-    shown = Math.ceil(Math.min(ZB_SLOTS.length, item.s) * left / item.s);
+    if (item.boss) { zbDrawBoss(g, item, y); return; }
+    shown = Math.ceil(Math.min(ZB_SLOTS.length, item.s) * item.hp / item.s);
     zbPack(g, zbW * 0.5, y, shown, zbUnit(item.s), zbGhost);
-    zbBigText(g, String(left), zbW * 0.5, y - zbH * 0.105, zbH * 0.062, "#8e2b22");
+    zbBigText(g, moComma(Math.ceil(item.hp)), zbW * 0.5,
+              zbTopY(y - zbH * 0.105, y + zbH * 0.115, 0.04), zbH * 0.062, "#8e2b22");
   }
 
-  // 大おばけ。へる 人数の けいさんは おなじ ままで、1ぴきに まとめて 見せる。
-  // のこりの ちからを おびで 出すので、けずれて いくのが 分かる
-  function zbDrawBoss(g, item, y, left) {
+  // 大おばけ。ちからの おびは あたまの 上 (下に おくと なかまと かさなる)
+  function zbDrawBoss(g, item, y) {
     var r = zbW * 0.17, bw = zbW * 0.46, bh = zbH * 0.022, bx = zbW * 0.5 - bw / 2;
-    var by = y - r * 1.12;                       // ちからの おびは あたまの 上。
-    zbGhost(g, zbW * 0.5, y, r);                 // 下に おくと なかまと かさなる
+    var by = y - r * 1.12;                       // 入って くる あいだは 画面の 上。
+                                                 // かずは おびの 行にも 出して ある
+    zbGhost(g, zbW * 0.5, y, r);
     if (g.beginPath) {                           // おこった 口
       g.fillStyle = "#3a3a46";
       g.beginPath();
@@ -3741,14 +3711,35 @@
     g.fillStyle = "rgba(0,0,0,.16)";
     g.fillRect(bx, by, bw, bh);
     g.fillStyle = "#c0392b";
-    g.fillRect(bx, by, bw * left / item.s, bh);
-    zbBigText(g, String(left), zbW * 0.5, by - zbH * 0.045, zbH * 0.072, "#8e2b22");
+    g.fillRect(bx, by, bw * item.hp / item.s, bh);
+    zbBigText(g, moComma(Math.ceil(item.hp)), zbW * 0.5, by - zbH * 0.045, zbH * 0.072, "#8e2b22");
     zbBigText(g, "大おばけ", zbW * 0.5, by - zbH * 0.108, zbH * 0.036, "#8e2b22");
+  }
+
+  // たからばこ。たまが あたる ところに いれば こわせる
+  function zbDrawBox(g, item, aimed) {
+    var y = zbSY(item.y), s = zbW * 0.15, x = item.x * zbW;
+    if (y + s < -10 || y - s > zbH + 10) return;
+    g.fillStyle = "#a9743c";
+    g.fillRect(x - s / 2, y - s / 2, s, s);
+    g.fillStyle = "rgba(255,255,255,.25)";
+    g.fillRect(x - s / 2, y - s / 2, s, s * 0.22);
+    g.fillStyle = "#e0b45e";                     // かなぐ
+    g.fillRect(x - s / 2, y - s * 0.09, s, s * 0.18);
+    g.strokeStyle = aimed ? "#2f2a24" : "rgba(90,60,25,.5)";
+    g.lineWidth = aimed ? 4 : 2;
+    g.strokeRect(x - s / 2 + 1, y - s / 2 + 1, s - 2, s - 2);
+    g.fillStyle = "rgba(0,0,0,.16)";             // のこりの かたさ
+    g.fillRect(x - s / 2, y + s * 0.6, s, zbH * 0.016);
+    g.fillStyle = "#8e5a20";
+    g.fillRect(x - s / 2, y + s * 0.6, s * item.hp / item.hp0, zbH * 0.016);
+    zbBigText(g, item.prize.label, x, zbTopY(y - s * 0.78, y + s * 1.05, 0.028),
+              zbH * 0.034, "#7a5420");
   }
 
   function zbDraw() {
     if (!zbCtx || !zbW) return;
-    var g = zbCtx, i, it, cy, step, off, p, sh, px;
+    var g = zbCtx, i, it, cy, step, off, p, sh, px, gun = zbGunOf();
     g.setTransform(zbDpr, 0, 0, zbDpr, 0, 0);
     g.fillStyle = "#e7ecdf";                     // みち
     g.fillRect(0, 0, zbW, zbH);
@@ -3764,26 +3755,32 @@
       g.fillRect(zbW * 0.49, i * step + off, zbW * 0.02, step * 0.45);
     }
 
+    // こちらの はし。ここに とどかれたら まけ
+    cy = zbH * ZB_YOU;
+    g.fillStyle = "rgba(192,57,43,.22)";
+    g.fillRect(0, cy - zbH * 0.012, zbW, zbH * 0.008);
+
     for (i = 0; i < zbItems.length; i++) {
       it = zbItems[i];
       if (it.done) continue;
-      if (it.kind === "gate") zbDrawGate(g, it); else zbDrawWave(g, it);
+      if (it.kind === "gate") zbDrawGate(g, it);
+      else if (it.kind === "wave") zbDrawWave(g, it);
+      else zbDrawBox(g, it, it === zbTarget && it.kind === "box");
     }
 
-    cy = zbH * ZB_YOU;
-    g.fillStyle = "#f2c230";                     // たま
+    g.fillStyle = gun.c;                         // たま
     for (i = 0; i < zbShots.length; i++) {
       sh = zbShots[i];
       if (!g.beginPath) break;
       g.beginPath();
       g.arc((sh.x0 + (sh.x1 - sh.x0) * sh.t) * zbW,
-            (sh.y0 + (sh.y1 - sh.y0) * sh.t) * zbH, zbW * 0.013, 0, Math.PI * 2, false);
+            (sh.y0 + (sh.y1 - sh.y0) * sh.t) * zbH, zbW * sh.r, 0, Math.PI * 2, false);
       g.fill();
     }
 
     if (zbN > 0) {
-      zbCrowd(g, zbX * zbW, cy, zbN, zbPerson);
-      zbBigText(g, String(zbN), zbX * zbW, cy - zbH * 0.11, zbH * 0.062, "#23324f");
+      zbPack(g, zbX * zbW, cy, zbN, zbUnit(zbN), zbPerson);
+      zbBigText(g, moComma(zbN), zbX * zbW, cy - zbH * 0.11, zbH * 0.062, "#23324f");
     }
 
     for (i = 0; i < zbPops.length; i++) {
@@ -3791,18 +3788,68 @@
       g.globalAlpha = p.life < 0.4 ? p.life / 0.4 : 1;
       // はしで 出すと ことばが ばんから はみ出すので まんなか よりに する
       px = p.x < 0.3 ? 0.3 : (p.x > 0.7 ? 0.7 : p.x);
-      zbBigText(g, p.text, px * zbW, cy - zbH * 0.17 - (1 - p.life) * zbH * 0.1,
+      zbBigText(g, p.text, px * zbW, cy - zbH * 0.20 - (1 - p.life) * zbH * 0.1,
                 zbH * 0.05, p.color);
       g.globalAlpha = 1;
     }
   }
 
+  // ---- うごき ----
+  var zbTarget = null;
+
+  // たまは なかま 1人に つき 1はつ、かたまりの その人の ところから 出る。
+  // ふるい iPad でも まわる ように、1かいに とばす かずと
+  // 画面に ある かずを かぎって ある
+  function zbShoot(gun) {
+    var shown = zbN > ZB_SLOTS.length ? ZB_SLOTS.length : zbN;
+    var many = shown > ZB_GUN_MAX ? ZB_GUN_MAX : shown;
+    var unit = zbUnit(zbN), i, sl, tx, ty;
+    if (many < 1) return;
+    if (zbTarget) {
+      tx = (zbTarget.kind === "box" ? zbTarget.x : 0.5);
+      ty = zbSY(zbTarget.y) / zbH;
+    } else {
+      tx = zbX;
+      ty = -0.1;                                 // ねらいが なければ まっすぐ 上へ
+    }
+    for (i = 0; i < many; i++) {
+      if (zbShots.length >= ZB_SHOTS_MAX) break;
+      sl = ZB_SLOTS[i];
+      zbShots.push({
+        x0: zbX + (sl.x * unit * 1.3) / zbW,
+        y0: ZB_YOU + (sl.y * unit * 1.3) / zbH,
+        x1: tx + (Math.random() - 0.5) * 0.14,
+        y1: ty,
+        v: gun.v, r: gun.r, t: 0
+      });
+    }
+  }
+
+  // いま たまが あたる もの。おばけが いれば おばけ、
+  // いなければ たまの すじに ある たからばこ
+  function zbPickTarget() {
+    var i, it, best = null;
+    for (i = 0; i < zbItems.length; i++) {
+      it = zbItems[i];
+      if (it.done || it.kind !== "wave" || it.hp <= 0) continue;
+      if (it.y - zbPos > ZB_RANGE) continue;
+      if (!best || it.y < best.y) best = it;
+    }
+    if (best) return best;
+    for (i = 0; i < zbItems.length; i++) {
+      it = zbItems[i];
+      if (it.done || it.kind !== "box" || it.hp <= 0) continue;
+      if (it.y - zbPos > ZB_RANGE || it.y < zbPos) continue;
+      if (Math.abs(it.x - zbX) > ZB_BOX_AIM) continue;
+      if (!best || it.y < best.y) best = it;
+    }
+    return best;
+  }
+
   function zbStep(dt) {
-    var i, it, d, lim;
+    var i, it, d, lim, gun = zbGunOf(), gv = zbGhostV(), dmg;
     if (!zbOver) {
-      // たたかって いる あいだも すこしずつ すすむ。ぴたりと 止めるより
-      // うって いる あいだ ずっと 近づいて 見える ほうが それらしい
-      zbPos += zbSpeed.v * dt * (zbFightOn ? ZB_FIGHT_SLOW : 1);
+      zbPos += zbSpeed.v * dt;
       lim = ZB_MOVE * dt;
       d = zbAim - zbX;
       if (d > lim) d = lim;
@@ -3811,53 +3858,106 @@
       if (zbX < ZB_EDGE) zbX = ZB_EDGE;
       if (zbX > 1 - ZB_EDGE) zbX = 1 - ZB_EDGE;
 
-      if (zbFightOn) {
-        zbFightStep(dt);
-      } else {
+      // もん
+      for (i = 0; i < zbItems.length; i++) {
+        it = zbItems[i];
+        if (it.done || it.kind !== "gate" || it.y > zbPos) continue;
+        it.done = true;
+        zbHit(it);
+        if (zbOver) break;
+      }
+
+      if (!zbOver) {
+        // おばけは とどく ところまで 来ると こちらへ 走りだす
         for (i = 0; i < zbItems.length; i++) {
           it = zbItems[i];
-          if (it.done) continue;
-          if (it.kind === "gate") {
-            if (it.y > zbPos) continue;
-            it.done = true;
-            zbHit(it);
-          } else {
-            // おばけには ぶつかる 前に 気づいて、てまえから うちはじめる
-            if (it.y - zbPos > ZB_FIGHT_AT) continue;
-            zbStartFight(it);
-          }
-          break;
+          if (it.done || it.kind !== "wave") continue;
+          if (it.y - zbPos <= ZB_RANGE) { it.live = true; it.y -= gv * dt; }
         }
+
+        zbTarget = zbPickTarget();
+        if (zbTarget) {
+          dmg = zbPower() * ZB_DPS * dt;
+          zbTarget.hp -= dmg;
+          if (zbTarget.hp <= 0) {
+            zbTarget.hp = 0;
+            zbTarget.done = true;
+            if (zbTarget.kind === "wave") {
+              zbCleared = zbTarget.r;
+              if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
+              zbPop("やっつけた！", "#2f8f4e");
+              soundMatch();
+              zbPaint();
+            } else {
+              zbTakePrize(zbTarget);
+            }
+            zbTarget = null;
+          }
+        }
+
+        // とどかれたら おしまい
+        for (i = 0; i < zbItems.length; i++) {
+          it = zbItems[i];
+          if (it.done || it.kind !== "wave" || it.hp <= 0) continue;
+          if (it.y <= zbPos) { zbEnd("おばけに とどかれました。"); break; }
+        }
+      }
+
+      if (!zbOver) {
+        zbGun += dt;
+        while (zbGun >= gun.every) { zbGun -= gun.every; zbShoot(gun); }
         zbGen();
-        // とおりすぎた ものは すてる
         while (zbItems.length && zbItems[0].done && zbItems[0].y < zbPos - 0.9) zbItems.shift();
       }
     }
 
     for (i = zbShots.length - 1; i >= 0; i--) {
-      zbShots[i].t += ZB_SHOT_SPD * dt;
+      zbShots[i].t += zbShots[i].v * dt;
       if (zbShots[i].t >= 1) zbShots.splice(i, 1);
     }
-
     for (i = zbPops.length - 1; i >= 0; i--) {
       zbPops[i].life -= 0.016 * dt;
       if (zbPops[i].life <= 0) zbPops.splice(i, 1);
     }
   }
 
-  function zbPaint() {
-    zbStageEl.innerHTML = "なかま <b>" + zbN + "</b>　ぶき <b>" + zbP + "</b>　おばけ <b>" +
-                          zbCleared + "</b> かい";
-    zbScoreEl.innerHTML = String(zbBest);
-    zbRankEl.innerHTML = zbBest > 0 ? rankLabelOf(zbBest, ZB_RANKS) : "";
+  // むかって くる おばけの かず。これと ちからを くらべる のが この ゲームなので、
+  // ばんの 上にも 出して おく (ばんの 中の かずは 入って くる あいだ 読みにくい)
+  function zbComing() {
+    var i, it, best = null;
+    for (i = 0; i < zbItems.length; i++) {
+      it = zbItems[i];
+      if (it.done || it.kind !== "wave" || it.hp <= 0) continue;
+      if (!best || it.y < best.y) best = it;
+    }
+    return best ? Math.ceil(best.hp) : 0;
   }
 
-  function zbEnd() {
+  // 毎こま よびだすので、かわって いない ときは 書きなおさない。
+  // ふるい iPad では innerHTML を さわる だけでも おそく なる
+  var zbBandWas = "", zbBestWas = -1;
+
+  function zbPaint() {
+    var txt = "ちから <b>" + moComma(zbPower()) + "</b>　おばけ <b>" +
+      moComma(zbComing()) + "</b>　なかま <b>" + moComma(zbN) + "</b>　ぶき <b>" + zbP +
+      "</b>　<b>" + zbCleared + "</b>かい";
+    if (txt !== zbBandWas) {
+      zbBandWas = txt;
+      zbStageEl.innerHTML = txt;
+    }
+    if (zbBest !== zbBestWas) {
+      zbBestWas = zbBest;
+      zbScoreEl.innerHTML = String(zbBest);
+      zbRankEl.innerHTML = zbBest > 0 ? rankLabelOf(zbBest, ZB_RANKS) : "";
+    }
+  }
+
+  function zbEnd(why) {
+    if (zbOver) return;
     zbOver = true;
-    zbN = 0;
     var isBest = zbCleared > zbWas;
     var label = rankLabelOf(zbCleared, ZB_RANKS);
-    var text = "おばけを " + zbCleared + " かい やっつけました！";
+    var text = why + " おばけを " + zbCleared + " かい やっつけました！";
     if (label) text += " " + label;
     if (isBest) text += " さいこう きろく！";
     zbPaint();
@@ -3902,6 +4002,7 @@
     if (dt > 3) dt = 3;
     zbStep(dt);
     zbDraw();
+    if (!zbOver) zbPaint();                      // おばけの かずは けずれて いく
     zbRaf = anRequest(zbFrame);
   }
 
@@ -3922,12 +4023,15 @@
     if (!zbBuilt) zbBuildSpeeds();
     zbItems = [];
     zbPops = [];
+    zbShots = [];
+    zbTarget = null;
     zbPos = 0;
     zbNextY = 0.35;                              // はじめの もんが すぐには 来ない ように
     zbPat = null;
     zbPatI = 0;
     zbGates = 0;
     zbWaveNo = 0;
+    zbGun = 0;
     zbN = ZB_N0;
     zbP = ZB_P0;
     zbProjN = ZB_N0;
@@ -3935,11 +4039,11 @@
     zbX = 0.5;
     zbAim = 0.5;
     zbCleared = 0;
-    zbFightOn = null;
-    zbShots = [];
     zbOver = false;
     zbBest = Number(load(zbKey(), "0")) || 0;
     zbWas = zbBest;
+    zbBandWas = "";
+    zbBestWas = -1;
     zbGen();
     zbMsgEl.innerHTML = "";
     zbMsgEl.className = "msg";
@@ -3996,18 +4100,8 @@
       zbCanvas.onmouseup = function () { zbDown = false; };
     }
   }
-  var zbDown = false;
 
   onTap($("zombie-reset"), zbStart);
-
-  // つぎに 来る おばけの つよさ。まだ 作って いなければ 見つもる
-  function zbNextWaveS() {
-    var i;
-    for (i = 0; i < zbItems.length; i++) {
-      if (!zbItems[i].done && zbItems[i].kind === "wave") return zbItems[i].s;
-    }
-    return zbStrength(zbGates + ZB_GATES, (zbWaveNo + 1) % ZB_BOSS_EVERY === 3);
-  }
 
   function zbOptInfo(opts) {
     var out = [], i;
@@ -4019,17 +4113,24 @@
 
   // しらべる ための 窓。よむ だけ
   window.zbState = function () {
-    var i, next = null;
+    var i, it, next = null, box = null;
     for (i = 0; i < zbItems.length; i++) {
-      if (!zbItems[i].done && (next === null || zbItems[i].y < next.y)) next = zbItems[i];
+      it = zbItems[i];
+      if (it.done) continue;
+      if (it.kind !== "box" && (next === null || it.y < next.y)) next = it;
+      if (it.kind === "box" && (box === null || it.y < box.y)) box = it;
     }
-    return { n: zbN, p: zbP, cleared: zbCleared, over: zbOver, running: zbRunning,
-             fighting: !!zbFightOn,
-             x: zbX, shots: zbShots.length, gates: zbGates, ws: zbNextWaveS(),
-             next: next ? { kind: next.kind, y: next.y, s: next.s || 0,
-                            boss: !!next.boss, opts: next.opts ? zbOptInfo(next.opts) : null } : null,
-             pos: zbPos };
+    return {
+      n: zbN, p: zbP, power: zbPower(), cleared: zbCleared, over: zbOver, running: zbRunning,
+      x: zbX, pos: zbPos, shots: zbShots.length, gates: zbGates,
+      target: zbTarget ? zbTarget.kind : null,
+      next: next ? { kind: next.kind, y: next.y, s: next.s || 0, hp: next.hp || 0,
+                     boss: !!next.boss, live: !!next.live,
+                     opts: next.opts ? zbOptInfo(next.opts) : null } : null,
+      box: box ? { y: box.y, x: box.x, hp: box.hp, hp0: box.hp0, label: box.prize.label } : null
+    };
   };
+
 
   // ============================================================
   // タブの切り替え
