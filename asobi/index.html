@@ -501,7 +501,7 @@
   <p class="msg" id="zombie-msg"></p>
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは <b>みちを ふさぐ ように</b> ならんで、近づくと こちらへ 走って きます。たおしきれず とどいた ぶんだけ <b>なかまが へります</b>。<br>なかまが いなく なったら おしまいです。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は たまが あたる ところに いれば こわせて、なかまか ぶきが もらえます。</p>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは <b>みちを ふさぐ ように</b> ならんで、近づくと こちらへ 走って きます。たおしきれず とどいた ぶんだけ <b>なかまが へります</b>。<br>なかまが いなく なったら おしまいです。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は おばけの すぐ 手前に 出ます。はこの れつに 入ると たまは <b>はこの ほうへ いきます</b>。<br>とれば なかまか ぶきが ふえますが、その あいだ <b>おばけは けずれません</b>。とるか、まもるかです。</p>
 </div>
 
 <div id="confetti"></div>
@@ -776,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v59";
+  var APP_VER = "v60";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3363,6 +3363,7 @@
   var ZB_BOX_P = 0.55;           // おばけの あとに たからばこが 出る わりあい
   var ZB_BOX_HP = 0.35;          // はこの かたさ (ちからの なんわり ぶんか)
   var ZB_BOX_AIM = 0.16;         // はこに たまが あたる よこの ずれ
+  var ZB_BOX_AHEAD = 0.35;       // はこは おばけの どれだけ 手前に 出るか
   var ZB_BOSS_EVERY = 4;         // 4かいに 1ど 大おばけ (3・7・11…かいめ)
   var ZB_BOSS_MUL = 1.5;
   var ZB_YOU = 0.80;             // じぶんの いちは 画面の 上から どのへんか
@@ -3610,20 +3611,26 @@
         if (zbProjN < 1) zbProjN = 1;
         zbPatI++;
       } else {
-        zbNextY += ZB_GAP;
+        // たからばこは おばけの すぐ 手前に おく。こう すると
+        // おばけが 来て いる あいだ ずっと「はこを とるか、けずるか」に なる。
+        // はこは ながれて くる だけ、おばけは 走って くるので、
+        // ちょうど おばけが とどく ころに はこも 通りすぎる
+        if (Math.random() < ZB_BOX_P) {
+          zbNextY += ZB_GAP - ZB_BOX_AHEAD;
+          hp = Math.max(5, Math.round(zbProjN * zbProjP * ZB_BOX_HP));
+          zbItems.push({ kind: "box", y: zbNextY, done: false,
+                         x: 0.2 + Math.random() * 0.6, hp: hp, hp0: hp,
+                         prize: zbBoxReward(zbProjN) });
+          zbNextY += ZB_BOX_AHEAD;
+        } else {
+          zbNextY += ZB_GAP;
+        }
         zbWaveNo++;
         boss = (zbWaveNo % ZB_BOSS_EVERY) === 3;
         s = zbStrength(zbGates, boss);
         zbItems.push({ kind: "wave", y: zbNextY, done: false, r: zbWaveNo,
                        s: s, hp: s, boss: boss, live: false });
         zbPat = null;
-        if (Math.random() < ZB_BOX_P) {          // たからばこ
-          zbNextY += 0.55;
-          hp = Math.max(5, Math.round(zbProjN * zbProjP * ZB_BOX_HP));
-          zbItems.push({ kind: "box", y: zbNextY, done: false,
-                         x: 0.2 + Math.random() * 0.6, hp: hp, hp0: hp,
-                         prize: zbBoxReward(zbProjN) });
-        }
       }
     }
   }
@@ -3945,20 +3952,23 @@
 
   // いま たまが あたる もの。おばけが いれば おばけ、
   // いなければ たまの すじに ある たからばこ
+  // いま たまが あたる もの。
+  // はこの れつに 入って いれば、おばけが 来て いても はこを うつ。
+  // つまり「はこを とる」と「おばけを けずる」は とりあいに なる
   function zbPickTarget() {
     var i, it, best = null;
-    for (i = 0; i < zbItems.length; i++) {
-      it = zbItems[i];
-      if (it.done || it.kind !== "wave" || it.hp <= 0) continue;
-      if (it.y - zbPos > ZB_RANGE) continue;
-      if (!best || it.y < best.y) best = it;
-    }
-    if (best) return best;
     for (i = 0; i < zbItems.length; i++) {
       it = zbItems[i];
       if (it.done || it.kind !== "box" || it.hp <= 0) continue;
       if (it.y - zbPos > ZB_RANGE || it.y < zbPos) continue;
       if (Math.abs(it.x - zbX) > ZB_BOX_AIM) continue;
+      if (!best || it.y < best.y) best = it;
+    }
+    if (best) return best;
+    for (i = 0; i < zbItems.length; i++) {
+      it = zbItems[i];
+      if (it.done || it.kind !== "wave" || it.hp <= 0) continue;
+      if (it.y - zbPos > ZB_RANGE) continue;
       if (!best || it.y < best.y) best = it;
     }
     return best;
