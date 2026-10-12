@@ -501,7 +501,7 @@
   <p class="msg" id="zombie-msg"></p>
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは <b>みちを ふさぐ ように</b> ならんで、近づくと こちらへ 走って きます。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>たおしきれず とどいた ぶんだけ <b>なかまが へります</b>。なかまが いなく なったら おしまいです。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は おばけの すぐ 手前に 出ます。はこの れつに 入ると たまは <b>はこの ほうへ いきます</b>。<br>とれば なかまか ぶきが ふえますが、その あいだ <b>おばけは けずれません</b>。とるか、まもるかです。<br><b>おばけ 15かいで クリア</b>です。<b>まいかい いちばん よい もんを とおれば、かならず さいごまで いけます</b>。うんで 行きどまりに なる ことは ありません。</p>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>だから <b>いる ところの まうえが いちばん よく けずれます</b>。左右に うごいて 掃くように たおすと はやいです。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br><b>ちから</b> が おばけの かず いじょう なら たおしきれます。とどいた ぶんだけ なかまが へります。<br>おばけには しゅるいが あります。<b>かたい</b>（はがねいろ）は <b>ぶき</b> が ないと ほとんど 通りません。<b>はやい</b>（きいろ）は はやく とどきます。4かいに 1ど <b>大おばけ</b>。<br>つぎに 来る しゅるいは ばんの 上の おびに 出ます。<b>かたい なら ぶき、ふつう なら 人数</b> が こたえです。<br><b>たからばこ</b> は おばけの すぐ 手前。はこの れつに 入ると たまは はこへ いきます。その あいだ おばけは けずれません。<br><b>おばけ 15かいで クリア</b>。<b>まいかい いちばん よい もんを とおれば かならず さいごまで いけます</b>。</p>
 </div>
 
 <div id="confetti"></div>
@@ -776,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v63";
+  var APP_VER = "v64";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3370,8 +3370,11 @@
   var ZB_BOX_HP = 0.35;          // はこの かたさ (ちからの なんわり ぶんか)
   var ZB_BOX_AIM = 0.16;         // はこに たまが あたる よこの ずれ
   var ZB_BOX_AHEAD = 0.35;       // はこは おばけの どれだけ 手前に 出るか
-  var ZB_BOSS_EVERY = 4;         // 4かいに 1ど 大おばけ (3・7・11…かいめ)
   var ZB_BOSS_MUL = 1.5;
+  // かたい おばけの よろい。その ころの ぶきの 7わりを けずる。
+  // ひとつの かずに して しまうと、ぶきが 上がった ころには きかなく なる
+  var ZB_ARMOUR_F = 0.7;
+  var ZB_FAST = 1.6;             // はやい おばけ。この ばい はやく とどく
   var ZB_YOU = 0.80;             // じぶんの いちは 画面の 上から どのへんか
   // おくゆき。とおく なる ほど つまって、小さく なる。
   // たて (u = d/(1+dP)) と よこ の ちぢみかたを わけて ある。
@@ -3424,6 +3427,11 @@
   var ZB_MAX_SHOWN = 72;         // ばんに かく いちばん 多い かず
   var ZB_POOF_MAX = 16;          // 画面に 出す「たおれた」けむりの かず
   var ZB_POOF_RATE = 4;          // 1こまに 出す かず
+  // たまが よく あたる よこの はばと、はなれた れつに あたる わりあい。
+  // ZB_FAR が 0 でないので、うごかなくても クリアは できる。
+  // うごけば その ぶん はやく けずれて、たからばこを とる よゆうが 生まれる
+  var ZB_COVER = 0.18;
+  var ZB_FAR = 0.7;
   var ZB_ROAD = 0.86;            // みちの はば (はしの ふちを のぞく)
   var ZB_GHOST_R = 0.055;        // おばけ 1ぴきの 上げどまり
 
@@ -3479,53 +3487,99 @@
   // みちいっぱいに ひろげた たいれつ (おばけ)。
   // total で かたちを きめ、shown ぴき だけ かく。
   // こう すると けずられても ならびが くずれず、はしから きえて いく
-  function zbLineR(total) {
-    var r = (ZB_ROAD * zbW) / zbPer(total) * 0.40;
-    return r > zbW * ZB_GHOST_R ? zbW * ZB_GHOST_R : r;
-  }
 
   // おばけ 1ぴきの いち。たおれた ときの けむりも おなじ ところに 出すので
   // ここを 1つの ところに まとめて ある。
   // すこし 上下に ゆらして、立って いる あいだは 生きて 見える ように する
-  function zbLinePos(wy, total, idx) {
-    var sc = zbSC(wy), per = zbPer(total);
-    var pitch = (ZB_ROAD * zbW) / per * sc, r = zbLineR(total) * sc;
-    var xs = zbColOrderOut(per), row = Math.floor(idx / per), col = idx % per;
+  // おばけは れつ ごとに たいりょくを もつ。たまは まっすぐ 前にしか とばないので、
+  // 自分が いる あたりの れつは よく けずれ、はなれた れつは ZB_FAR ばい しか
+  // けずれない。立ち止まって いると 前の れつだけ あなが あいて 両はしが のこる
+  function zbColX(per, c) {
+    return 0.5 + zbColOrderOut(per)[c] * (ZB_ROAD / per);
+  }
+
+  function zbGhostR(per) {
+    var r = (ZB_ROAD * zbW) / per * 0.40;
+    return r > zbW * ZB_GHOST_R ? zbW * ZB_GHOST_R : r;
+  }
+
+  function zbWaveInit(item) {
+    var total = item.s > ZB_MAX_SHOWN ? ZB_MAX_SHOWN : item.s;
+    var per = item.boss ? 1 : zbPer(total);
+    var rows = item.boss ? 1 : Math.ceil(total / per);
+    var each = item.s / per, i;
+    item.cols = per;
+    item.rows = rows;
+    item.unit = item.s / (per * rows);           // かいた 1ぴき ぶんの たいりょく
+    item.col = [];
+    item.seen = [];
+    for (i = 0; i < per; i++) { item.col.push(each); item.seen.push(rows); }
+  }
+
+  function zbAlive(item, c) {
+    var a = Math.ceil(item.col[c] / item.unit);
+    return a > item.rows ? item.rows : (a < 0 ? 0 : a);
+  }
+
+  // けずる。いる ところの れつから あなが あき、はなれた ところは のこる
+  function zbHurt(item, dmg) {
+    var per, i, live = 0, give, w;
+    if (!item.col) zbWaveInit(item);
+    per = item.cols;
+    for (i = 0; i < per; i++) if (item.col[i] > 0) live++;
+    if (!live) return;
+    give = dmg / live;
+    for (i = 0; i < per; i++) {
+      if (item.col[i] <= 0) continue;
+      w = Math.abs(zbColX(per, i) - zbX) <= ZB_COVER ? 1 : ZB_FAR;
+      item.col[i] -= give * w;
+      if (item.col[i] < 0) item.col[i] = 0;
+    }
+    item.hp = 0;
+    for (i = 0; i < per; i++) item.hp += item.col[i];
+  }
+
+  function zbLinePos(item, c, r) {
+    var per = item.cols, rr = zbGhostR(per) * zbSC(item.y);
     return {
-      x: zbW * 0.5 + xs[col] * pitch + (row % 2 ? pitch * 0.25 : -pitch * 0.25),
-      y: zbSY(wy) - row * r * 1.9 + Math.sin(zbTick * 0.11 + idx * 1.7) * r * 0.14,
-      r: r
+      x: zbSX(zbColX(per, c), item.y),
+      y: zbSY(item.y) - r * rr * 1.9 + Math.sin(zbTick * 0.11 + (c * 3 + r) * 1.7) * rr * 0.14,
+      r: rr
     };
   }
 
-  function zbLine(g, wy, total, shown, draw) {
-    var i, q;
-    for (i = 0; i < shown; i++) {
-      q = zbLinePos(wy, total, i);               // れつは おくへ のびる
-      draw(g, q.x, q.y, q.r);
+  function zbLine(g, item, draw) {
+    var c, r, a, q;
+    for (c = 0; c < item.cols; c++) {
+      a = zbAlive(item, c);
+      for (r = 0; r < a; r++) {
+        q = zbLinePos(item, c, r);               // れつは おくへ のびる
+        draw(g, q.x, q.y, q.r);
+      }
     }
   }
 
-  function zbLineH(wy, total, shown) {
-    return Math.ceil(shown / zbPer(total)) * zbLineR(total) * zbSC(wy) * 1.9;
-  }
-
-  function zbShownOf(item) {
-    var total = item.s > ZB_MAX_SHOWN ? ZB_MAX_SHOWN : item.s;
-    return Math.ceil(total * item.hp / item.s);
+  function zbLineH(item) {
+    var c, a, top = 0;
+    for (c = 0; c < item.cols; c++) { a = zbAlive(item, c); if (a > top) top = a; }
+    return top * zbGhostR(item.cols) * zbSC(item.y) * 1.9;
   }
 
   // けずれた ぶんだけ「1ぴきずつ たおれる」けむりを 出す。
   // 大きい むれでは 1こまに 何百も へるので、出す かずは かぎる
   function zbPoof(item) {
-    var now = zbShownOf(item), was = item.shown, i, k = 0;
-    if (was === undefined) { item.shown = now; return; }
-    for (i = was - 1; i >= now && k < ZB_POOF_RATE; i--) {
-      if (zbPoofs.length >= ZB_POOF_MAX) break;
-      zbPoofs.push({ item: item, idx: i, life: 1 });
-      k++;
+    var c, a, r, k = 0;
+    if (!item.col) return;
+    for (c = 0; c < item.cols; c++) {
+      a = zbAlive(item, c);
+      for (r = item.seen[c] - 1; r >= a; r--) {
+        if (k < ZB_POOF_RATE && zbPoofs.length < ZB_POOF_MAX) {
+          zbPoofs.push({ item: item, c: c, r: r, life: 1 });
+          k++;
+        }
+      }
+      item.seen[c] = a;
     }
-    item.shown = now;
   }
 
   var zbCanvas = $("zombie-canvas");
@@ -3544,14 +3598,44 @@
   function zbKey() { return "zb-" + zbSpeed.key; }
   function zbPower() { return zbN * zbP; }
   function zbGunOf() { return ZB_GUN[zbP > 5 ? 5 : (zbP < 1 ? 1 : zbP)]; }
-  function zbGhostV() {
-    var v = ZB_CLOSE - zbSpeed.v;
+  // とどくまでの 時間が みちの はやさで かわらない ように、
+  // みちが はやい ぶん おばけの 足を おそく する。
+  // 「はやい おばけ」だけは そこから さらに はやく とどく
+  function zbGhostV(kind) {
+    var v = ZB_CLOSE * (kind === "fast" ? ZB_FAST : 1) - zbSpeed.v;
     return v < ZB_GHOST_MIN ? ZB_GHOST_MIN : v;
   }
 
-  function zbStrength(gates, boss) {
+  // 15かいの 出かたは きまって いる。おなじ ステージを なんども あそんで
+  // 「つぎは かたいから ぶきを とる」と おぼえられる ように する
+  var ZB_PLAN = ["", "", "boss", "", "hard", "", "boss", "fast",
+                 "", "hard", "boss", "fast", "", "hard", "boss"];
+
+  function zbKindOf(no) { return ZB_PLAN[no - 1] || ""; }
+
+  function zbStrength(gates, kind) {
     var r = gates / ZB_GATES, e = r - 1;
-    return Math.round(ZB_S1 * Math.pow(ZB_G, e) * Math.pow(ZB_K, e * e) * (boss ? ZB_BOSS_MUL : 1));
+    return Math.round(ZB_S1 * Math.pow(ZB_G, e) * Math.pow(ZB_K, e * e) *
+                      (kind === "boss" ? ZB_BOSS_MUL : 1));
+  }
+
+  // この なかまと ぶきで、その おばけに どれだけ ダメージを あたえられるか。
+  //   ふつう : なかま × ぶき
+  //   かたい : よろいの ぶん ぶきが けずられる。ぶきが ひくいと ほとんど 通らない
+  //   はやい : はやく とどくので、うてる 時間が みじかい ぶん すくない
+  // これで「なかまを ふやす」と「ぶきを つよく する」が べつの こたえに なる
+  function zbDamage(n, p, kind, armour) {
+    if (kind === "hard") {
+      var e = p - (armour || 0);
+      return e > 0 ? n * e : 0;
+    }
+    if (kind === "fast") return n * p / ZB_FAST;
+    return n * p;
+  }
+
+  function zbArmourFor(p) {
+    var a = Math.round(p * ZB_ARMOUR_F);
+    return a < 1 ? 1 : a;
   }
 
   // ---- もんの なかみ ----
@@ -3595,11 +3679,25 @@
   }
   function zbApplyP(o, p) { return o.kind === "pow" ? p + o.amount : p; }
 
-  // need = この もんで さいてい どれだけ ちからを ふやせば いいか (ばいりつ)。
-  // ランダムに 作った なかに それが なければ、いちばん よい ものを
-  // ちょうど need に なる 大きさの 「+N」 に さしかえる
-  function zbGateOpts(n, p, count, need) {
-    var out = [], used = {}, k, guard = 0, i, m, base = n * p, bi = 0, bm = 0, a;
+  // target の ダメージを 出すのに ひつような なかまの かず / ぶきの つよさ
+  function zbNeedN(p, kind, target, armour) {
+    if (kind === "hard") return p > armour ? Math.ceil(target / (p - armour)) : -1;
+    if (kind === "fast") return Math.ceil(target * ZB_FAST / p);
+    return Math.ceil(target / p);
+  }
+  function zbNeedP(n, kind, target, armour) {
+    if (n < 1) return -1;
+    if (kind === "hard") return Math.ceil(target / n) + armour;
+    if (kind === "fast") return Math.ceil(target * ZB_FAST / n);
+    return Math.ceil(target / n);
+  }
+
+  // この もんで とどいて いて ほしい ダメージに、ランダムに 作った なかの
+  // どれかが とどいて いなければ、いちばん よい ものを ちょうど とどく
+  // 大きさに さしかえる。かたい おばけの 前では 「ぶき+N」に なる
+  function zbGateOpts(n, p, count, need, want, kind, left, armour) {
+    var out = [], used = {}, k, guard = 0, i, d, base, bi = 0, bm = -1;
+    var target, a, q, useP;
     while (out.length < count && guard++ < 30) {
       k = zbPickKind();
       if (used[k]) continue;
@@ -3607,23 +3705,36 @@
       out.push(zbOption(k, n));
     }
     while (out.length < count) out.push(zbOption("add", n));
+
+    base = zbDamage(n, p, kind, armour);
     for (i = 0; i < out.length; i++) {
-      m = zbApplyN(out[i], n) * zbApplyP(out[i], p) / base;
-      if (m > bm) { bm = m; bi = i; }
+      d = zbDamage(zbApplyN(out[i], n), zbApplyP(out[i], p), kind, armour);
+      if (d > bm) { bm = d; bi = i; }
     }
-    if (bm < need) {
-      a = Math.ceil(n * (need - 1));
-      if (a < 1) a = 1;
+    // いまの ちからが まったく 通らない (ぶきが よろいに 負けて いる) ときは
+    // ばいりつで 言えないので、のこりの もんで 2ばいずつ 行ける とした 目あて
+    target = base > 0 ? base * need : want / Math.pow(2, left - 1);
+    if (bm >= target) return out;
+
+    // かたい おばけの 前は ぶきで 答える。それ いがいは 人数で 答える
+    useP = (kind === "hard");
+    q = zbNeedP(n, kind, target, armour) - p;
+    a = zbNeedN(p, kind, target, armour) - n;
+    if (useP && q >= 1 && q <= 9) {
+      out[bi] = { kind: "pow", amount: q, label: "ぶき+" + q, good: 2 };
+    } else if (a >= 1) {
       out[bi] = { kind: "add", amount: a, label: "+" + moComma(a), good: 1 };
+    } else if (q >= 1) {
+      out[bi] = { kind: "pow", amount: q, label: "ぶき+" + q, good: 2 };
     }
     return out;
   }
 
   // ならんで いる もののなかで いちばん ちからが 大きく なる ものを えらぶ
-  function zbBestOpt(opts, n, p) {
+  function zbBestOpt(opts, n, p, kind, armour) {
     var i, v, bi = 0, bv = -1;
     for (i = 0; i < opts.length; i++) {
-      v = zbApplyN(opts[i], n) * zbApplyP(opts[i], p);
+      v = zbDamage(zbApplyN(opts[i], n), zbApplyP(opts[i], p), kind, armour);
       if (v > bv) { bv = v; bi = i; }
     }
     return opts[bi];
@@ -3652,23 +3763,33 @@
   }
 
   function zbGen() {
-    var opts, s, boss, hp, left, want, need, best;
+    var opts, s, kind, hp, left, want, need, best, cur;
     // 画面の 外に 1つ ある くらいまで。さきまで 作って おくと
     // その ころの なかまの かずが よめなく なる
     while (zbNextY < zbPos + ZB_AHEAD && zbWaveNo < ZB_GOAL) {
-      if (!zbPat) { zbPat = zbPattern(); zbPatI = 0; }
+      if (!zbPat) {
+        zbPat = zbPattern();
+        zbPatI = 0;
+        // よろいは この かいの はじめに きめて、もんも おばけも おなじ かずを つかう
+        zbPat.of = zbKindOf(zbWaveNo + 1);
+        zbPat.armour = zbPat.of === "hard" ? zbArmourFor(zbPaceP) : 0;
+      }
       if (zbPatI < zbPat.gates) {
         zbNextY += (zbPatI === 0 || !zbPat.chain) ? ZB_GAP : ZB_GAP_CHAIN;
         // この もんを ふくめて、つぎの おばけまでに のこる もんの かず
         left = zbPat.gates - zbPatI;
-        boss = ((zbWaveNo + 1) % ZB_BOSS_EVERY) === 3;
-        want = zbStrength(zbGates + left, boss) * ZB_MARGIN;
-        need = Math.pow(want / zbPacePower(), 1 / left);
-        if (!(need > 1)) need = 1;
-        opts = zbGateOpts(zbPaceN, zbPaceP, Math.random() < ZB_WIDE_P ? 3 : 2, need);
+        kind = zbPat.of;
+        // 「この さきの おばけに、みちすじの ちからで どれだけ 通るか」で くらべる。
+        // かたい おばけの 前では ぶきを ふやす ほうが 答えに なる
+        want = zbStrength(zbGates + left, kind) * ZB_MARGIN;
+        cur = zbDamage(zbPaceN, zbPaceP, kind, zbPat.armour);
+        need = cur > 0 ? Math.pow(want / cur, 1 / left) : 0;
+        if (!(need > 1)) need = cur > 0 ? 1 : 0;
+        opts = zbGateOpts(zbPaceN, zbPaceP, Math.random() < ZB_WIDE_P ? 3 : 2,
+                          need, want, kind, left, zbPat.armour);
         zbItems.push({ kind: "gate", y: zbNextY, done: false, opts: opts });
         zbGates++;
-        best = zbBestOpt(opts, zbPaceN, zbPaceP);
+        best = zbBestOpt(opts, zbPaceN, zbPaceP, kind, zbPat.armour);
         zbPaceN = zbApplyN(best, zbPaceN);
         zbPaceP = zbApplyP(best, zbPaceP);
         if (zbPaceN < 1) zbPaceN = 1;
@@ -3689,10 +3810,11 @@
           zbNextY += ZB_GAP;
         }
         zbWaveNo++;
-        boss = (zbWaveNo % ZB_BOSS_EVERY) === 3;
-        s = zbStrength(zbGates, boss);
+        kind = zbPat.of;
+        s = zbStrength(zbGates, kind);
         zbItems.push({ kind: "wave", y: zbNextY, done: false, r: zbWaveNo,
-                       s: s, hp: s, boss: boss, live: false });
+                       s: s, hp: s, boss: kind === "boss", of: kind,
+                       armour: zbPat.armour, live: false });
         zbPat = null;
       }
     }
@@ -3772,10 +3894,19 @@
 
   // しろい おばけは うすい みちの 上だと 見えない。
   // ひとまわり 大きい こい 色を 下に しいて ふちに する
+  // しゅるいで 色を かえる。かたいは はがねいろ、はやいは きいろ
+  var zbGhostCol = "#f8f8fc", zbGhostRim = "#8d94a0";
+
+  function zbGhostSkin(kind) {
+    if (kind === "hard") { zbGhostCol = "#aeb8c6"; zbGhostRim = "#5c6676"; }
+    else if (kind === "fast") { zbGhostCol = "#ffe9a8"; zbGhostRim = "#b8903a"; }
+    else { zbGhostCol = "#f8f8fc"; zbGhostRim = "#8d94a0"; }
+  }
+
   function zbGhost(g, x, y, r) {
     if (!g.beginPath) return;
-    zbGhostShape(g, x, y, r * 1.14, "#8d94a0");
-    zbGhostShape(g, x, y, r, "#f8f8fc");
+    zbGhostShape(g, x, y, r * 1.14, zbGhostRim);
+    zbGhostShape(g, x, y, r, zbGhostCol);
     g.fillStyle = "#3a3a46";
     g.beginPath();
     g.arc(x - r * 0.35, y - r * 0.1, r * 0.18, 0, Math.PI * 2, false);
@@ -3893,17 +4024,22 @@
 
   // おばけも こちらと おなじ「かたまり＋上に かず」で 見せる
   function zbDrawWave(g, item) {
-    var y = zbSY(item.y), shown, total, top;
+    var y = zbSY(item.y), top;
     if (item.hp <= 0) return;
     if (y < -zbH * 0.35 || y > zbH + zbH * 0.35) return;
-    if (item.boss) { zbDrawBoss(g, item, y); return; }
-    total = item.s > ZB_MAX_SHOWN ? ZB_MAX_SHOWN : item.s;
-    shown = item.shown === undefined ? zbShownOf(item) : item.shown;
-    zbLine(g, item.y, total, shown, zbGhost);
+    if (!item.col) zbWaveInit(item);
+    zbGhostSkin(item.of);
+    if (item.boss) { zbDrawBoss(g, item, y); zbGhostSkin(""); return; }
+    zbLine(g, item, zbGhost);
     // かずは かたまりの 上。れつが 上へ のびる ぶん よけて おく
-    top = y - zbLineH(item.y, total, shown) - zbH * 0.045;
-    zbBigText(g, moComma(Math.ceil(item.hp)), zbW * 0.5,
-              zbTopY(top, y + zbH * 0.09, 0.04), zbH * 0.062, "#8e2b22", "#ffffff");
+    top = zbTopY(y - zbLineH(item) - zbH * 0.045, y + zbH * 0.09, 0.055);
+    zbBigText(g, moComma(Math.ceil(item.hp)), zbW * 0.5, top,
+              zbH * 0.062, "#8e2b22", "#ffffff");
+    if (item.of) {
+      zbBigText(g, item.of === "hard" ? "かたい" : "はやい", zbW * 0.5, top - zbH * 0.052,
+                zbH * 0.040, item.of === "hard" ? "#44506b" : "#9a6a12", "#ffffff");
+    }
+    zbGhostSkin("");
   }
 
   // 大おばけ。ちからの おびは あたまの 上 (下に おくと なかまと かさなる)
@@ -4020,7 +4156,7 @@
     for (i = 0; i < zbPoofs.length; i++) {      // たおれた おばけ
       pf = zbPoofs[i];
       it = pf.item;
-      q = zbLinePos(it.y, it.s > ZB_MAX_SHOWN ? ZB_MAX_SHOWN : it.s, pf.idx);
+      q = zbLinePos(it, pf.c, pf.r);
       g.globalAlpha = pf.life * 0.9;
       zbGhost(g, q.x, q.y - (1 - pf.life) * q.r * 0.9, q.r * (1 + (1 - pf.life) * 0.8));
       g.globalAlpha = 1;
@@ -4090,7 +4226,7 @@
   }
 
   function zbStep(dt) {
-    var i, it, d, lim, gun = zbGunOf(), gv = zbGhostV(), dmg, sh, stop, sL, sR, loss;
+    var i, it, d, lim, gun = zbGunOf(), dmg, sh, stop, sL, sR, loss;
     if (!zbOver) {
       zbPos += zbSpeed.v * dt;
       lim = ZB_MOVE * dt;
@@ -4115,14 +4251,18 @@
         for (i = 0; i < zbItems.length; i++) {
           it = zbItems[i];
           if (it.done || it.kind !== "wave") continue;
-          if (it.y - zbPos <= ZB_RANGE) { it.live = true; it.y -= gv * dt; }
+          if (it.y - zbPos <= ZB_RANGE) { it.live = true; it.y -= zbGhostV(it.of) * dt; }
         }
 
         zbTarget = zbPickTarget();
         if (zbTarget) {
-          dmg = zbPower() * ZB_DPS * dt;
-          zbTarget.hp -= dmg;
-          if (zbTarget.kind === "wave" && !zbTarget.boss) zbPoof(zbTarget);
+          dmg = zbDamage(zbN, zbP, zbTarget.of, zbTarget.armour) * ZB_DPS * dt;
+          if (zbTarget.kind === "wave") {
+            zbHurt(zbTarget, dmg);               // れつ ごとに けずる
+            if (!zbTarget.boss) zbPoof(zbTarget);
+          } else {
+            zbTarget.hp -= dmg;
+          }
           if (zbTarget.hp <= 0) {
             zbTarget.hp = 0;
             zbTarget.done = true;
@@ -4210,17 +4350,22 @@
       if (it.done || it.kind !== "wave" || it.hp <= 0) continue;
       if (!best || it.y < best.y) best = it;
     }
-    return best ? Math.ceil(best.hp) : 0;
+    return best;
   }
+
+  var ZB_WORD = { hard: "かたい", fast: "はやい", boss: "大" };
 
   // 毎こま よびだすので、かわって いない ときは 書きなおさない。
   // ふるい iPad では innerHTML を さわる だけでも おそく なる
   var zbBandWas = "", zbBestWas = -1;
 
   function zbPaint() {
-    var txt = "ちから <b>" + moComma(zbPower()) + "</b>　おばけ <b>" +
-      moComma(zbComing()) + "</b>　なかま <b>" + moComma(zbN) + "</b>　ぶき <b>" + zbP +
-      "</b>　<b>" + zbCleared + "</b>/" + ZB_GOAL + "かい";
+    var w = zbComing(), kindWord = w && w.of ? ZB_WORD[w.of] : "";
+    // 「いまの ちから」と「むかって くる おばけ」を ならべる。
+    // しゅるいも ここに 出す。かたい なら ぶき、ふつう なら 人数 が こたえに なる
+    var txt = "ちから <b>" + moComma(Math.round(zbDamage(zbN, zbP, w ? w.of : "", w ? w.armour : 0))) +
+      "</b>　" + kindWord + "おばけ <b>" + moComma(w ? Math.ceil(w.hp) : 0) + "</b>　なかま <b>" +
+      moComma(zbN) + "</b>　ぶき <b>" + zbP + "</b>　<b>" + zbCleared + "</b>/" + ZB_GOAL + "かい";
     if (txt !== zbBandWas) {
       zbBandWas = txt;
       zbStageEl.innerHTML = txt;
@@ -4411,9 +4556,12 @@
       n: zbN, p: zbP, power: zbPower(), cleared: zbCleared, over: zbOver, running: zbRunning,
       x: zbX, pos: zbPos, shots: zbShots.length, gates: zbGates,
       through: zbThrough, lostTo: zbLostTo,
+      ws: zbComing() ? Math.ceil(zbComing().hp) : zbStrength(zbGates + ZB_GATES, zbKindOf(zbWaveNo + 1)),
+      wof: zbComing() ? (zbComing().of || "") : zbKindOf(zbWaveNo + 1),
+      warm: zbComing() ? (zbComing().armour || 0) : (zbPat ? zbPat.armour : 0),
       target: zbTarget ? zbTarget.kind : null,
       next: next ? { kind: next.kind, y: next.y, s: next.s || 0, hp: next.hp || 0,
-                     boss: !!next.boss, live: !!next.live,
+                     boss: !!next.boss, of: next.of || "", live: !!next.live,
                      opts: next.opts ? zbOptInfo(next.opts) : null } : null,
       box: box ? { y: box.y, x: box.x, hp: box.hp, hp0: box.hp0, label: box.prize.label } : null
     };
