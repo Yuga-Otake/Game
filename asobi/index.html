@@ -495,13 +495,13 @@
 
 <!-- おばけたいじ (なかまを あつめて すすむ) -->
 <div id="game-zombie" style="display:none">
-  <p class="score">さいこう　<b id="zombie-score">0</b> かい　<span id="zombie-rank" class="rank"></span></p>
-  <p class="stage" id="zombie-stage">ちから <b>5</b>　おばけ <b>0</b>　なかま <b>5</b>　ぶき <b>1</b>　<b>0</b>かい</p>
+  <p class="score">さいこう　<b id="zombie-score">0</b> / 15 かい　<span id="zombie-rank" class="rank"></span></p>
+  <p class="stage" id="zombie-stage">ちから <b>5</b>　おばけ <b>0</b>　なかま <b>5</b>　ぶき <b>1</b>　<b>0</b>/15かい</p>
   <div id="zombie-wrap"><canvas id="zombie-canvas"></canvas></div>
   <p class="msg" id="zombie-msg"></p>
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは <b>みちを ふさぐ ように</b> ならんで、近づくと こちらへ 走って きます。たおしきれず とどいた ぶんだけ <b>なかまが へります</b>。<br>なかまが いなく なったら おしまいです。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は おばけの すぐ 手前に 出ます。はこの れつに 入ると たまは <b>はこの ほうへ いきます</b>。<br>とれば なかまか ぶきが ふえますが、その あいだ <b>おばけは けずれません</b>。とるか、まもるかです。</p>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br>おばけは <b>みちを ふさぐ ように</b> ならんで、近づくと こちらへ 走って きます。<br><b>ちから（なかま × ぶき）</b> が おばけの かず いじょう なら たおしきれます。<br>たおしきれず とどいた ぶんだけ <b>なかまが へります</b>。なかまが いなく なったら おしまいです。<br>4かいに 1ど <b>大おばけ</b> が 来ます。<br><b>たからばこ</b> は おばけの すぐ 手前に 出ます。はこの れつに 入ると たまは <b>はこの ほうへ いきます</b>。<br>とれば なかまか ぶきが ふえますが、その あいだ <b>おばけは けずれません</b>。とるか、まもるかです。<br><b>おばけ 15かいで クリア</b>です。<b>まいかい いちばん よい もんを とおれば、かならず さいごまで いけます</b>。うんで 行きどまりに なる ことは ありません。</p>
 </div>
 
 <div id="confetti"></div>
@@ -776,7 +776,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v60";
+  var APP_VER = "v61";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3353,7 +3353,13 @@
   // K が ある ので かいを かさねる ほど きつく なり、いつかは おわる。
   // この かずは 2000回ずつ しらべて きめた (README を 見てください)
   var ZB_S1 = 3, ZB_G = 2.8, ZB_K = 1.035;
-  var ZB_RANKS = [2, 4, 6, 10, 14];
+  var ZB_GOAL = 15;              // 15かい のりこえたら クリア。
+                                 // 「いつも いちばん よい もんを とおれば まにあう」ように
+                                 // 作って あるので、えらび方さえ あって いれば さいごまで いける
+  var ZB_MARGIN = 1.8;           // みちすじの よゆう。おばけの 1.5ばい (大おばけ) と、
+                                 // たからばこを とって 手が 止まる ぶん (0.65ばい) を
+                                 // あわせても まだ 足りる ように とって ある
+  var ZB_RANKS = [2, 5, 8, 12, ZB_GOAL];
   var ZB_N0 = 5, ZB_P0 = 1;
   var ZB_GATES = 2;              // おばけの つよさは「出た もんの かず ÷ これ」で きまる
   var ZB_GAP = 0.95;             // つぎの ものが 出てくるまで (画面 なんこぶん)
@@ -3482,7 +3488,6 @@
   var zbStageEl = $("zombie-stage"), zbMsgEl = $("zombie-msg");
   var zbW = 0, zbH = 0, zbDpr = 1;
   var zbItems = [], zbPops = [], zbShots = [], zbPos = 0, zbNextY = 0;
-  var zbProjN = ZB_N0, zbProjP = ZB_P0;
   var zbPat = null, zbPatI = 0, zbGates = 0, zbWaveNo = 0;
   var zbN = ZB_N0, zbP = ZB_P0, zbX = 0.5, zbAim = 0.5;
   var zbCleared = 0, zbBest = 0, zbWas = 0, zbGun = 0;
@@ -3544,8 +3549,11 @@
   }
   function zbApplyP(o, p) { return o.kind === "pow" ? p + o.amount : p; }
 
-  function zbGateOpts(n, count) {
-    var out = [], used = {}, k, guard = 0;
+  // need = この もんで さいてい どれだけ ちからを ふやせば いいか (ばいりつ)。
+  // ランダムに 作った なかに それが なければ、いちばん よい ものを
+  // ちょうど need に なる 大きさの 「+N」 に さしかえる
+  function zbGateOpts(n, p, count, need) {
+    var out = [], used = {}, k, guard = 0, i, m, base = n * p, bi = 0, bm = 0, a;
     while (out.length < count && guard++ < 30) {
       k = zbPickKind();
       if (used[k]) continue;
@@ -3553,30 +3561,39 @@
       out.push(zbOption(k, n));
     }
     while (out.length < count) out.push(zbOption("add", n));
+    for (i = 0; i < out.length; i++) {
+      m = zbApplyN(out[i], n) * zbApplyP(out[i], p) / base;
+      if (m > bm) { bm = m; bi = i; }
+    }
+    if (bm < need) {
+      a = Math.ceil(n * (need - 1));
+      if (a < 1) a = 1;
+      out[bi] = { kind: "add", amount: a, label: "+" + moComma(a), good: 1 };
+    }
     return out;
+  }
+
+  // ならんで いる もののなかで いちばん ちからが 大きく なる ものを えらぶ
+  function zbBestOpt(opts, n, p) {
+    var i, v, bi = 0, bv = -1;
+    for (i = 0; i < opts.length; i++) {
+      v = zbApplyN(opts[i], n) * zbApplyP(opts[i], p);
+      if (v > bv) { bv = v; bi = i; }
+    }
+    return opts[bi];
   }
 
   // これから 出す もんの かずは「そこに ついた ころの なかま」に あわせたい。
   // すでに ならんで いる ものを たどって 見つもる。どの もんを とおるかは
   // 分からないので、ならんだ ものの まんなかを とる
-  function zbProject() {
-    var i, j, it, nn = zbN, pp = zbP, sn, sp;
-    for (i = 0; i < zbItems.length; i++) {
-      it = zbItems[i];
-      if (it.done || it.kind !== "gate") continue;
-      sn = 0;
-      sp = 0;
-      for (j = 0; j < it.opts.length; j++) {
-        sn += zbApplyN(it.opts[j], nn);
-        sp += zbApplyP(it.opts[j], pp);
-      }
-      nn = Math.round(sn / it.opts.length);
-      pp = sp / it.opts.length;
-      if (nn < 1) nn = 1;
-    }
-    zbProjN = nn;
-    zbProjP = pp;
-  }
+  // 「いつも いちばん よい ほうを えらんだ ときの みちすじ」。
+  // もんの かずは この みちすじから きめる。そう すると
+  //   ・まいかい いちばん よい ものを えらべば かならず おばけに まにあう
+  //   ・まちがえると その ぶん みちすじから おくれる (ばんは 手かげんしない)
+  // という ことに なる。うんで 行きどまりに なる ことが ない
+  var zbPaceN = ZB_N0, zbPaceP = ZB_P0;
+
+  function zbPacePower() { return zbPaceN * zbPaceP; }
 
   function zbPattern() {
     return Math.random() < ZB_CHAIN_P ? { gates: 3, chain: true } : { gates: 2, chain: false };
@@ -3589,26 +3606,26 @@
   }
 
   function zbGen() {
-    var i, opts, s, boss, sn, sp, hp;
-    zbProject();
+    var opts, s, boss, hp, left, want, need, best;
     // 画面の 外に 1つ ある くらいまで。さきまで 作って おくと
     // その ころの なかまの かずが よめなく なる
-    while (zbNextY < zbPos + 1.9) {
+    while (zbNextY < zbPos + 1.9 && zbWaveNo < ZB_GOAL) {
       if (!zbPat) { zbPat = zbPattern(); zbPatI = 0; }
       if (zbPatI < zbPat.gates) {
         zbNextY += (zbPatI === 0 || !zbPat.chain) ? ZB_GAP : ZB_GAP_CHAIN;
-        opts = zbGateOpts(zbProjN, Math.random() < ZB_WIDE_P ? 3 : 2);
+        // この もんを ふくめて、つぎの おばけまでに のこる もんの かず
+        left = zbPat.gates - zbPatI;
+        boss = ((zbWaveNo + 1) % ZB_BOSS_EVERY) === 3;
+        want = zbStrength(zbGates + left, boss) * ZB_MARGIN;
+        need = Math.pow(want / zbPacePower(), 1 / left);
+        if (!(need > 1)) need = 1;
+        opts = zbGateOpts(zbPaceN, zbPaceP, Math.random() < ZB_WIDE_P ? 3 : 2, need);
         zbItems.push({ kind: "gate", y: zbNextY, done: false, opts: opts });
         zbGates++;
-        sn = 0;
-        sp = 0;
-        for (i = 0; i < opts.length; i++) {
-          sn += zbApplyN(opts[i], zbProjN);
-          sp += zbApplyP(opts[i], zbProjP);
-        }
-        zbProjN = Math.round(sn / opts.length);
-        zbProjP = sp / opts.length;
-        if (zbProjN < 1) zbProjN = 1;
+        best = zbBestOpt(opts, zbPaceN, zbPaceP);
+        zbPaceN = zbApplyN(best, zbPaceN);
+        zbPaceP = zbApplyP(best, zbPaceP);
+        if (zbPaceN < 1) zbPaceN = 1;
         zbPatI++;
       } else {
         // たからばこは おばけの すぐ 手前に おく。こう すると
@@ -3617,10 +3634,10 @@
         // ちょうど おばけが とどく ころに はこも 通りすぎる
         if (Math.random() < ZB_BOX_P) {
           zbNextY += ZB_GAP - ZB_BOX_AHEAD;
-          hp = Math.max(5, Math.round(zbProjN * zbProjP * ZB_BOX_HP));
+          hp = Math.max(5, Math.round(zbPacePower() * ZB_BOX_HP));
           zbItems.push({ kind: "box", y: zbNextY, done: false,
                          x: 0.2 + Math.random() * 0.6, hp: hp, hp0: hp,
-                         prize: zbBoxReward(zbProjN) });
+                         prize: zbBoxReward(zbPaceN) });
           zbNextY += ZB_BOX_AHEAD;
         } else {
           zbNextY += ZB_GAP;
@@ -3671,6 +3688,7 @@
     zbCleared = item.r;
     if (zbCleared > zbBest) { zbBest = zbCleared; save(zbKey(), zbBest); }
     zbPaint();
+    if (zbCleared >= ZB_GOAL) zbEnd("");         // さいごまで いった
   }
 
   function zbTakePrize(item) {
@@ -4099,7 +4117,7 @@
   function zbPaint() {
     var txt = "ちから <b>" + moComma(zbPower()) + "</b>　おばけ <b>" +
       moComma(zbComing()) + "</b>　なかま <b>" + moComma(zbN) + "</b>　ぶき <b>" + zbP +
-      "</b>　<b>" + zbCleared + "</b>かい";
+      "</b>　<b>" + zbCleared + "</b>/" + ZB_GOAL + "かい";
     if (txt !== zbBandWas) {
       zbBandWas = txt;
       zbStageEl.innerHTML = txt;
@@ -4115,8 +4133,11 @@
     if (zbOver) return;
     zbOver = true;
     var isBest = zbCleared > zbWas;
+    var win = zbCleared >= ZB_GOAL;
     var label = rankLabelOf(zbCleared, ZB_RANKS);
-    var text = why + " おばけを " + zbCleared + " かい のりこえました！";
+    var text = win
+      ? "さいごまで いきました！ おばけ " + ZB_GOAL + " かい ぜんぶ のりこえました！"
+      : why + " おばけを " + zbCleared + " / " + ZB_GOAL + " かい のりこえました！";
     if (label) text += " " + label;
     if (isBest) text += " さいこう きろく！";
     zbPaint();
@@ -4193,8 +4214,8 @@
     zbGun = 0;
     zbN = ZB_N0;
     zbP = ZB_P0;
-    zbProjN = ZB_N0;
-    zbProjP = ZB_P0;
+    zbPaceN = ZB_N0;
+    zbPaceP = ZB_P0;
     zbX = 0.5;
     zbAim = 0.5;
     zbCleared = 0;
