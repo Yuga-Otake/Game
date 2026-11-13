@@ -3346,15 +3346,17 @@
   //  ZB_DPS を きめて あるので、この かんたんな 言いかたが そのまま あたる)
   // margin = みちすじの よゆう。1.8 なら、立ち止まった まま (0.7ばい) でも
   //   1.26ばい あるので、もんを えらび まちがえ なければ クリアできる。
-  // quiz = もんが「もんだい」に なる わりあい。
+  // quiz = おばけ 1かいぶんの もんの なかに「もんだい」が 入る わりあい。
+  //   もんだいは 1かいに 1もんまで。2もん つづくと、2もんめを よむ ひまが
+  //   シビアで 1.4びょう しか なかった
   // leak = とどかれた ときに へる 人数の ばい。
-  // シビアは よゆうが 1.4 しか なく、とどかれた ときの いたでも 3ばい。
+  // シビアは よゆうが すくなく、とどかれた ときの いたでも 3ばい。
   // えらび まちがえた ぶんが そのまま 返って くる
   var ZB_SPEEDS = [
-    { key: "slow",   label: "ゆっくり", v: 0.0042, margin: 1.8,  quiz: 0.15, leak: 1 },
-    { key: "normal", label: "ふつう",   v: 0.0062, margin: 1.8,  quiz: 0.25, leak: 1 },
-    { key: "fast",   label: "はやい",   v: 0.0088, margin: 1.8,  quiz: 0.35, leak: 1 },
-    { key: "hard",   label: "シビア",   v: 0.0115, margin: 1.4,  quiz: 0.55, leak: 3 }
+    { key: "slow",   label: "ゆっくり", v: 0.0042, margin: 1.8,  quiz: 0.30, leak: 1 },
+    { key: "normal", label: "ふつう",   v: 0.0062, margin: 1.8,  quiz: 0.45, leak: 1 },
+    { key: "fast",   label: "はやい",   v: 0.0088, margin: 1.8,  quiz: 0.60, leak: 1 },
+    { key: "hard",   label: "シビア",   v: 0.0115, margin: 1.25, quiz: 0.85, leak: 3 }
   ];
   // おばけの かず。r かいめ = S1 × G^(r-1) × K^((r-1)^2)。
   // K が ある ので かいを かさねる ほど きつく なり、いつかは おわる。
@@ -3538,7 +3540,8 @@
     give = dmg / live;
     for (i = 0; i < per; i++) {
       if (item.col[i] <= 0) continue;
-      w = Math.abs(zbColX(per, i) - zbX) <= ZB_COVER ? 1 : ZB_FAR;
+      // 大おばけは みちを ふさぐ 大きさ なので、どこから うっても あたる
+      w = (item.boss || Math.abs(zbColX(per, i) - zbX) <= ZB_COVER) ? 1 : ZB_FAR;
       item.col[i] -= give * w;
       if (item.col[i] < 0) item.col[i] = 0;
     }
@@ -3604,6 +3607,22 @@
 
   function zbKey() { return "zb-" + zbSpeed.key; }
   function zbPower() { return zbN * zbP; }
+
+  // 1万 を こえる かずは「万」「億」で 出す。さいごの ほうは おばけが
+  // 何十億に なり、「1,234,567,890」では けたを かぞえて いる うちに 通りすぎる。
+  // 上から 3けた だけ のこす (切りすて。ちからを 大きく 見せない ため)
+  function zbSig(v) {
+    if (v >= 100) return moComma(Math.floor(v));
+    if (v >= 10) return String(Math.floor(v * 10) / 10);
+    return String(Math.floor(v * 100) / 100);
+  }
+  function zbNum(n) {
+    n = Math.round(n);
+    if (n < 10000) return moComma(n);
+    if (n < 100000000) return zbSig(n / 10000) + "万";
+    if (n < 1000000000000) return zbSig(n / 100000000) + "億";
+    return zbSig(n / 1000000000000) + "兆";
+  }
   function zbGunOf() { return ZB_GUN[zbP > 5 ? 5 : (zbP < 1 ? 1 : zbP)]; }
   // とどくまでの 時間が みちの はやさで かわらない ように、
   // みちが はやい ぶん おばけの 足を おそく する。
@@ -3612,6 +3631,13 @@
     var v = ZB_CLOSE * (kind === "fast" ? ZB_FAST : 1) - zbSpeed.v;
     return v < ZB_GHOST_MIN ? ZB_GHOST_MIN : v;
   }
+  // おばけを 1こまに けずる わりあい。「とどくまでに ちょうど zbDamage の
+  // ぶんだけ けずれる」ように、近づく はやさに あわせる。
+  // きまった かず (ZB_DPS) の ままだと 2つ ずれて いた:
+  //   ・はやい おばけは zbDamage で 1.6 で わり、うてる 時間も 1.6ぶんの1 で、
+  //     二重に ひかれて いた (ばんの「ちから」の 4わり しか 通らなかった)
+  //   ・シビアは みちが おばけの 足より はやく、たたかいが 67こまに ちぢんで いた
+  function zbRate(kind) { return (zbGhostV(kind) + zbSpeed.v) / ZB_RANGE; }
 
   // 15かいの 出かたは きまって いる。おなじ ステージを なんども あそんで
   // 「つぎは かたいから ぶきを とる」と おぼえられる ように する
@@ -3623,6 +3649,7 @@
   // ---- もんだいの もん ----
   // まちがえた れつの ばつ。みちすじから すこし おくれる くらいに する
   var ZB_QUIZ_COST = 0.22;
+  var ZB_CALC_P = 0.4;           // もんだいの うち けいさんが 出る わりあい
   // ふだん くらべない もの どうしや、かんが はずれる ものを えらんで ある。
   // 「かずが 近くて まよう」のでは なく「へえ そうなの」と なる ほうを ねらう。
   // c = あたりの ばんごう
@@ -3695,7 +3722,7 @@
     while (set.length < count) set.push(ans + set.length * 3 + 2);
     out = zbShuffle(set.slice(0));
     c = zbHas(out, ans);
-    return { q: q + " は？", a: out, c: c, calc: true };
+    return { q: q + " は？", a: out, c: c, calc: true, why: q + " ＝ " + ans };
   }
 
   function zbHas(list, v) {
@@ -3704,14 +3731,34 @@
     return -1;
   }
 
-  // つぎに 出す もんだい。おなじ ものが つづけて 出ない ように まわして つかう
-  var zbQuizBag = [];
+  // つぎに 出す もんだい。おなじ ものが つづけて 出ない ように まわして つかう。
+  // こたえの 左右は 出す たびに まぜる。ひょうでは あたりを 先に 書いて あるので、
+  // そのまま 出すと「ことばの もんだいは 左」と おぼえる だけで あたって しまう
+  var zbQuizBag = [], zbQuizLast = "";
   function zbPickQuiz(count) {
-    var q;
-    if (Math.random() < 0.5) return zbMakeCalc(count === 3 ? 3 : 2);
-    if (!zbQuizBag.length) zbQuizBag = zbShuffle(ZB_QUIZ.slice(0));
+    var q, a, c, i;
+    if (Math.random() < ZB_CALC_P) {
+      for (i = 0; i < 4; i++) {
+        q = zbMakeCalc(count === 3 ? 3 : 2);
+        if (q.q !== zbQuizLast) break;
+      }
+      zbQuizLast = q.q;
+      return q;
+    }
+    if (!zbQuizBag.length) {
+      zbQuizBag = zbShuffle(ZB_QUIZ.slice(0));
+      // ひとまわり した つぎの 1もんめが、さっきの さいごと おなじに ならない ように
+      i = zbQuizBag.length - 1;
+      if (i > 0 && zbQuizBag[i].q === zbQuizLast) {
+        q = zbQuizBag[i]; zbQuizBag[i] = zbQuizBag[0]; zbQuizBag[0] = q;
+      }
+    }
     q = zbQuizBag.pop();
-    return { q: q.q, a: q.a.slice(0), c: q.c };
+    a = q.a.slice(0);
+    c = q.c;
+    if (a.length === 2 && Math.random() < 0.5) { a = [a[1], a[0]]; c = 1 - c; }
+    zbQuizLast = q.q;
+    return { q: q.q, a: a, c: c, why: q.why || "" };
   }
 
   function zbStrength(gates, kind) {
@@ -3894,6 +3941,11 @@
         // よろいは この かいの はじめに きめて、もんも おばけも おなじ かずを つかう
         zbPat.of = zbKindOf(zbWaveNo + 1);
         zbPat.armour = zbPat.of === "hard" ? zbArmourFor(zbPaceP) : 0;
+        // もんだいは 1かいに 1もんまで。なんばんめの もんに するかも ここで きめる。
+        // つづけて 来る もん (chain) には 出さない。よむ ひまが ないし、
+        // もんだいの 字が すぐ 上の もんに かさなって しまう
+        zbPat.quizAt = (!zbPat.chain && Math.random() < zbSpeed.quiz)
+                     ? Math.floor(Math.random() * zbPat.gates) : -1;
       }
       if (zbPatI < zbPat.gates) {
         zbNextY += (zbPatI === 0 || !zbPat.chain) ? ZB_GAP : ZB_GAP_CHAIN;
@@ -3907,11 +3959,8 @@
         need = cur > 0 ? Math.pow(want / cur, 1 / left) : 0;
         if (!(need > 1)) need = cur > 0 ? 1 : 0;
         wide = Math.random() < ZB_WIDE_P ? 3 : 2;
-        // はやさごとの わりあいで もんだいの もんに なる。
-        // 「どちらが 大きいか」は 2たく、けいさんは れつの かずに あわせる。
-        // つづけて 来る もん (chain) には 出さない。よむ ひまが ないし、
-        // もんだいの 字が すぐ 上の もんに かさなって しまう
-        quiz = (!zbPat.chain && Math.random() < zbSpeed.quiz) ? zbPickQuiz(wide) : null;
+        // 「どちらが 大きいか」は 2たく、けいさんは れつの かずに あわせる
+        quiz = zbPatI === zbPat.quizAt ? zbPickQuiz(wide) : null;
         opts = quiz
              ? zbQuizOpts(zbPaceN, zbPaceP, need, want, kind, left, zbPat.armour, quiz)
              : zbGateOpts(zbPaceN, zbPaceP, wide, need, want, kind, left, zbPat.armour);
@@ -4445,7 +4494,8 @@
 
         zbTarget = zbPickTarget();
         if (zbTarget) {
-          dmg = zbDamage(zbN, zbP, zbTarget.of, zbTarget.armour) * ZB_DPS * dt;
+          dmg = zbDamage(zbN, zbP, zbTarget.of, zbTarget.armour) * dt *
+                (zbTarget.kind === "wave" ? zbRate(zbTarget.of) : ZB_DPS);
           if (zbTarget.kind === "wave") {
             zbHurt(zbTarget, dmg);               // れつ ごとに けずる
             if (!zbTarget.boss) zbPoof(zbTarget);
@@ -4496,7 +4546,9 @@
         zbGun += dt;
         while (zbGun >= gun.every) { zbGun -= gun.every; zbShoot(gun); }
         zbGen();
-        while (zbItems.length && zbItems[0].done && zbItems[0].y < zbPos - 0.9) zbItems.shift();
+        // こわさなかった はこは done に ならない。done を まって いると、
+        // その はこが 先頭に いすわって うしろの ものが ずっと かたづかない
+        while (zbItems.length && zbItems[0].y < zbPos - 0.9) zbItems.shift();
       }
     }
 
@@ -4691,15 +4743,21 @@
     zbAim = x;
   }
 
+  // ばんの 上に ある ゆびを つかう。touches[0] は「画面の どこかに さいしょに
+  // ふれた ゆび」なので、ばんの 外に おいた 手の ひらを ひろって しまう
+  function zbTouchOf(e) {
+    return (e.targetTouches && e.targetTouches[0]) || (e.touches && e.touches[0]) || null;
+  }
+
   if (zbCanvas) {
     zbCanvas.ontouchstart = function (e) {
-      var t = e.touches && e.touches[0];
+      var t = zbTouchOf(e);
       if (t) zbAimAt(t.clientX);
       if (e.preventDefault) e.preventDefault();
       return false;
     };
     zbCanvas.ontouchmove = function (e) {
-      var t = e.touches && e.touches[0];
+      var t = zbTouchOf(e);
       if (t) zbAimAt(t.clientX);
       if (e.preventDefault) e.preventDefault();
       return false;
