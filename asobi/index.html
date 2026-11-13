@@ -44,6 +44,12 @@
     font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
     -webkit-text-size-adjust: 100%;
   }
+  /* iOS 10 は user-scalable=no を むしするので、2どたたきの 拡大は こちらで ふせぐ。
+     さわった ときの 灰色の 四角も 出さない */
+  html, body, button, canvas {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  }
   body {
     text-align: center;
     padding: 14px 12px 40px;
@@ -178,7 +184,7 @@
   }
   .big.icon { font-size: 28px; padding: 10px 18px; min-width: 76px; }
   .big.theme { font-size: 17px; padding: 9px 12px; min-height: 48px; margin-bottom: 4px; }
-  .big.theme.locked { color: #a2977f; background: #efe8d6; }
+  .big.theme.locked { color: #7a6e5a; background: #efe8d6; }
 
   .ctrl { margin: 0 0 10px; }
   .ctrl .label {
@@ -278,6 +284,19 @@
   }
   .pick.right { background: #dff0dd; border-color: #8cc094; }
   .pick.wrong { background: #f3e2d2; border-color: #d9a77a; }
+  /* 2かい まちがえたら、ただしい ところを やさしく ひからせる */
+  .pick.hint {
+    -webkit-animation: odhint 1s ease-in-out infinite;
+    animation: odhint 1s ease-in-out infinite;
+  }
+  @-webkit-keyframes odhint {
+    0%, 100% { background-color: #ffffff; border-color: #d9cdb2; }
+    50% { background-color: #ffeeb0; border-color: #e0a030; }
+  }
+  @keyframes odhint {
+    0%, 100% { background-color: #ffffff; border-color: #d9cdb2; }
+    50% { background-color: #ffeeb0; border-color: #e0a030; }
+  }
 
   /* ---- ビーズ ---- */
   #beads-board { border-spacing: 6px; background: #efe6cf; border-radius: 12px; }
@@ -355,7 +374,7 @@
   .dex { margin: 0 auto 2px; max-width: 620px; line-height: 1.4; }
   .dex b { white-space: nowrap; font-weight: normal; }   /* 行のあたまが 矢印だけに ならないように */
   .dex span { font-size: 25px; vertical-align: middle; }
-  .dex i { font-size: 15px; color: #a2977f; font-style: normal; vertical-align: middle; }
+  .dex i { font-size: 15px; color: #7a6e5a; font-style: normal; vertical-align: middle; }
   .dex .yet { opacity: .45; }
   #animal-wrap { margin: 0 auto; }
   #animal-canvas {
@@ -393,8 +412,9 @@
   }
 
   /* ---- おいわいの紙ふぶき ---- */
-  #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; }
-  #confetti span { position: fixed; }
+  /* 紙ふぶきは 見せる だけ。下の ボタンの タップを じゃま しない */
+  #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; pointer-events: none; }
+  #confetti span { position: fixed; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -428,7 +448,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。<br>同時に 出ている ものを <b>まとめて しとめる</b> と <b>🐲 ドラゴンフィーバー</b>。2ひきで ＋1びょう、3びきで ＋2.5びょうと 3びょうの きんいろ。<b>あとの だんかいほど 大きく</b> なります（さいだい 2.5ばい）。<br>出てすぐ しとめるのを 5かい つづけると <b>⚡ はやうち</b>。＋2びょう もらえます。</p>
+  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます（真・ドラゴンだけは 👑 めいじん）。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。<br>同時に 出ている ものを <b>まとめて しとめる</b> と <b>🐲 ドラゴンフィーバー</b>。2ひきで ＋1びょう、3びきで ＋2.5びょうと 3びょうの きんいろ。<b>あとの だんかいほど 大きく</b> なります（さいだい 2.5ばい）。<br>出てすぐ しとめるのを 5かい つづけると <b>⚡ はやうち</b>。＋2びょう もらえます。</p>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -521,6 +541,8 @@
     var touched = false;
     el.ontouchstart = function (e) {
       touched = true;                            // このあと 来る click は 無視する
+      // ずっと 無視 しつづけると、マウスも 使える 画面で マウスが きかなく なる
+      setTimeout(function () { touched = false; }, 800);
       fn();
       if (e.preventDefault) e.preventDefault();
       return false;
@@ -540,13 +562,19 @@
   }
 
   // 古い環境やプライベートブラウズでも落ちないように、保存は必ず try で包む
+  // 保存できない環境 (プライベートブラウズ) でも、あそんで いる あいだは
+  // おぼえて おく。さいしょに 手元の 入れものに 書き、そのあと 保存を ためす
+  var mirror = {};
   function load(key, dflt) {
+    var mk = "k" + key;
+    if (mirror.hasOwnProperty(mk)) return mirror[mk];
     try {
       var v = window.localStorage.getItem("asobi-" + key);
       return v === null ? dflt : v;
     } catch (e) { return dflt; }
   }
   function save(key, value) {
+    mirror["k" + key] = String(value);
     try { window.localStorage.setItem("asobi-" + key, String(value)); } catch (e) {}
   }
 
@@ -561,8 +589,10 @@
     var d;
     try { d = g.getImageData(0, 0, w, h).data; } catch (e) { return null; }
     var x0 = w, y0 = h, x1 = -1, y1 = -1, x, y;
-    for (y = 0; y < h; y++) {
-      for (x = 0; x < w; x++) {
+    // 1つ おきの 点だけ しらべる (ジットの ない 古い iPad では 6万5千点は 重い)。
+    // そのぶん はこを 1px ひろげて、絵の ふちが 切れないように する
+    for (y = 0; y < h; y += 2) {
+      for (x = 0; x < w; x += 2) {
         if (d[(y * w + x) * 4 + 3] > 24) {
           if (x < x0) x0 = x;
           if (x > x1) x1 = x;
@@ -572,12 +602,58 @@
       }
     }
     if (x1 < 0) return null;
+    x0 = Math.max(0, x0 - 1);
+    y0 = Math.max(0, y0 - 1);
+    x1 = Math.min(w - 1, x1 + 1);
+    y1 = Math.min(h - 1, y1 + 1);
     return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+
+  // ふるい iPad (iOS 10.2 より 前) には 🦈 🦋 🦑 🛴 が なくて、
+  // 四角い 「ない しるし」が 出る。そこで 同じ ところに ある、まだ 絶対に ない
+  // 字 (U+1F9FF / U+1F6FC) と 同じ 絵に なる かを 見て、ない ときは むかしからの 絵に かえる。
+  // 同じ ところの ない 字は ぜんぶ 同じ 四角に なり、ある 字は ちがう 絵に なる。
+  var SAFE_REF = { "\uD83E\uDD88": "\uD83E\uDDFF", "\uD83E\uDD8B": "\uD83E\uDDFF",
+                   "\uD83E\uDD91": "\uD83E\uDDFF", "\uD83D\uDEF4": "\uD83D\uDEFC" };
+  var SAFE_ALT = { "\uD83E\uDD88": "\uD83D\uDC2C", "\uD83E\uDD8B": "\uD83D\uDC1D",
+                   "\uD83E\uDD91": "\uD83D\uDC1A", "\uD83D\uDEF4": "\uD83D\uDC5F" };
+  var safeCache = {};
+
+  function glyphPixels(ch) {
+    var cv = document.createElement("canvas");
+    cv.width = 32;
+    cv.height = 32;
+    var g = cv.getContext ? cv.getContext("2d") : null;
+    if (!g) return null;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = "24px sans-serif";
+    g.fillText(ch, 16, 16);
+    try { return g.getImageData(0, 0, 32, 32).data; } catch (e) { return null; }
+  }
+
+  function safeFace(ch) {
+    if (!ch || !SAFE_REF.hasOwnProperty(ch)) return ch;
+    if (safeCache.hasOwnProperty(ch)) return safeCache[ch];
+    var a = glyphPixels(ch), b = glyphPixels(SAFE_REF[ch]);
+    var ok = true;
+    if (a && b) {
+      var blank = true, same = true;
+      for (var i = 0; i < a.length; i++) {
+        if (a[i] !== 0) blank = false;
+        if (a[i] !== b[i]) same = false;
+        if (!blank && !same) break;
+      }
+      if (blank || same) ok = false;
+    }
+    safeCache[ch] = ok ? ch : SAFE_ALT[ch];
+    return safeCache[ch];
   }
 
   // しっぱいは おぼえない。絵の 用意が まだの ときに 1かい しっぱいした だけで
   // ずっと 出なく なって しまうので、つぎに よばれたら もういちど ためす
   function faceSprite(face) {
+    face = safeFace(face);
     if (faceCache[face]) return faceCache[face];
     var n = 256;
     var off = document.createElement("canvas");
@@ -689,6 +765,31 @@
     return actx;
   }
 
+  // iOS 9/10 は touchend か click の中でしか 音が ひらかない。
+  // touchstart で とめて いる ゲームや タイマーから 先に 鳴らす ときの ために、
+  // 最初に さわった ときに 無音を 1つ 鳴らして ひらいて おく
+  function unlockAudio() {
+    try {
+      var ctx = audio();
+      if (ctx) {
+        var buf = ctx.createBuffer(1, 1, 22050);
+        var src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        if (src.start) src.start(0);
+        else if (src.noteOn) src.noteOn(0);
+      }
+    } catch (e) {}
+    if (document.removeEventListener) {
+      document.removeEventListener("touchend", unlockAudio, false);
+      document.removeEventListener("click", unlockAudio, false);
+    }
+  }
+  if (document.addEventListener) {
+    document.addEventListener("touchend", unlockAudio, false);
+    document.addEventListener("click", unlockAudio, false);
+  }
+
   // freqs を順番に鳴らす。鳴らせない環境では黙って何もしない
   function play(freqs, dur, type, gain) {
     if (!soundOn) return;
@@ -742,7 +843,7 @@
     var items = [];
 
     confBox.innerHTML = "";
-    for (var i = 0; i < 26; i++) {
+    for (var i = 0; i < 16; i++) {
       var s = document.createElement("span");
       s.innerHTML = chars[Math.floor(Math.random() * chars.length)];
       s.style.left = Math.floor(Math.random() * 92) + "%";
@@ -750,7 +851,7 @@
       var y = -40 - Math.floor(Math.random() * 260);
       s.style.top = y + "px";
       confBox.appendChild(s);
-      items.push({ el: s, y: y, v: 13 + Math.random() * 13 });
+      items.push({ el: s, y: y, v: 20 + Math.random() * 20 });   // 間が 長い ぶん 1回の 動きを 大きく
     }
 
     if (confTimer !== null) clearInterval(confTimer);
@@ -767,7 +868,7 @@
         confTimer = null;
         confBox.innerHTML = "";
       }
-    }, 33);
+    }, 50);   // 33 → 50ミリびょう。ふるい 端末の 書きかえを へらす
   }
 
   var stampsEl = $("stamps");
@@ -1262,7 +1363,7 @@
         var b = document.createElement("button");
         b.type = "button";
         b.className = "big theme" + (t === moTheme ? " on" : "") + (open ? "" : " locked");
-        b.innerHTML = open ? t.icon + " " + t.name : "🔒 " + t.name;
+        b.innerHTML = open ? safeFace(t.icon) + " " + t.name : "🔒 " + t.name;
         b.setAttribute("data-key", t.key);
         onTap(b, function () {
           if (!open) {
@@ -1270,7 +1371,7 @@
             var prev = MO_THEMES[moThemeIndex(t) - 1];
             var need = moOpenAt(t);
             moMsgEl.className = "msg again";
-            moMsgEl.innerHTML = prev.icon + " で " + RANK_MARKS[need].mark + " " +
+            moMsgEl.innerHTML = safeFace(prev.icon) + " で " + RANK_MARKS[need].mark + " " +
               RANK_MARKS[need].name + "（" + prev.ranks[need] + "てん）を とると あそべます";
             soundAgain();
             return;
@@ -1302,7 +1403,7 @@
         var td = document.createElement("td");
         td.className = "hole";
         td.innerHTML = '<canvas class="mole facecv"></canvas><span class="face"></span><span class="pop">＋1</span>';
-        (function (el) { onTap(el, function () { moHit(el); }); })(td);
+        (function (el) { onPress(el, function () { moHit(el); }); })(td);   // 指を はなす まえに はんのう
         moHoles.push(td);
         moCanvas.push(td.getElementsByTagName("canvas")[0]);
         moFaceEl.push(td.getElementsByTagName("span")[0]);
@@ -1415,7 +1516,7 @@
     // ボーナス中は ぜんぶ その ゲームの いきもので、ぜんぶ きんいろ
     var kind = moBonusOn ? MO_KINDS[0] : moPickKind();
     var gold = kind.key === "main" && (moBonusOn || Math.random() < 0.25);
-    var face = kind.key === "main" ? moTheme.face : (kind.key === "low" ? moTheme.low : MO_SNAKE);
+    var face = safeFace(kind.key === "main" ? moTheme.face : (kind.key === "low" ? moTheme.low : MO_SNAKE));
     var cls = "hole up" + (kind.key === "main" ? "" : " " + kind.key) + (gold ? " gold" : "");
     var now = new Date().getTime();
 
@@ -1519,6 +1620,10 @@
     moClearTimers();
     moHideAll();
     moStopClock();
+    // ボーナスの まま おわると、ばんが きんいろの まま のこって しまう
+    moBonusUntil = 0;
+    moBonusOn = false;
+    moBoard.className = "board";
     moLeft = 0;
     moPaintClock();
 
@@ -1539,7 +1644,7 @@
     if (label) text += " " + label;
     if (moTheme.endless && moComboBest > 1) text += " いちばん ながい れんさ " + moComboBest + "！";
     if (best) text += " さいこう きろく！";
-    if (opened && next) text += " " + next.icon + " " + next.name + " が あきました！";
+    if (opened && next) text += " " + safeFace(next.icon) + " " + next.name + " が あきました！";
 
     // ちょうこうとくてん の メダル。はじめて とった ときは とくべつな ことばを そえる
     var sup = moSuperIndex(moPoints);
@@ -1586,6 +1691,9 @@
     moBoard.className = "board";
     moPaintBest();
     moPaintStage();
+    // ほかの タブに いる あいだに 画面の むきが かわると、ばんが 小さい まま なので
+    // ばんの 上の ようすが きまった ここで はかりなおす
+    moResize();
     moStartClock();
     moRunning = true;
     // わくごとに すこし ずらして はじめる。ぜんぶ いっしょに 出ないように
@@ -1650,16 +1758,20 @@
   var meBest = Number(load("memory-best", "0")) || 0;
   var meTimeEl = $("memory-time"), meBestEl = $("memory-best");
 
-  function mePaintBest(now) {
-    var cur = now > 0 ? "てんすう " + now + " " + rankLabelOf(now, ME_RANKS) : "";
+  // しょうごうは さいごの てんすう (final) の ときだけ。とちゅうの めやすの てんすうに
+  // 🌱 などが つくと、まだ おわって いないのに 順位が きまった ように 見える
+  function mePaintBest(now, final) {
+    var cur = now > 0 ? "てんすう " + now + (final ? " " + rankLabelOf(now, ME_RANKS) : "") : "";
     var best = meBest > 0 ? "（さいこう " + meBest + "てん " + rankLabelOf(meBest, ME_RANKS) + "）" : "";
     meBestEl.innerHTML = cur + (cur && best ? "　" : "") + best;
   }
 
-  function meStartClock() {
-    meBeganAt = new Date().getTime();
-    meSeconds = 0;
-    meTimeEl.innerHTML = "0";
+  // spent = 前に あそんだ ぶん (ミリびょう)。タブを もどした ときに つづきから はかる
+  var meSpent = 0, meLive = false;
+  function meStartClock(spent) {
+    meBeganAt = new Date().getTime() - (spent || 0);
+    meSeconds = Math.floor((spent || 0) / 1000);
+    meTimeEl.innerHTML = String(meSeconds);
     if (meClockTimer !== null) clearInterval(meClockTimer);
     meClockTimer = setInterval(function () {
       meSeconds = Math.floor((new Date().getTime() - meBeganAt) / 1000);
@@ -1668,7 +1780,11 @@
     }, 250);
   }
   function meStopClock() {
-    if (meClockTimer !== null) { clearInterval(meClockTimer); meClockTimer = null; }
+    if (meClockTimer !== null) {
+      meSpent = new Date().getTime() - meBeganAt;
+      clearInterval(meClockTimer);
+      meClockTimer = null;
+    }
   }
 
   // ぜんぶ そろえた ぶん + はやさ + むだの 少なさ。
@@ -1720,8 +1836,8 @@
 
     meFaces = [];
     for (var p = 0; p < pairs; p++) {
-      meFaces.push(meTheme.faces[p]);
-      meFaces.push(meTheme.faces[p]);
+      meFaces.push(safeFace(meTheme.faces[p]));
+      meFaces.push(safeFace(meTheme.faces[p]));
     }
     for (var i = meFaces.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -1750,6 +1866,23 @@
     }
     holdStill(meBoard);
     meResize();
+    meLive = true;
+  }
+
+  // タブを もどした とき、とちゅうなら ばんを そのまま のこす。
+  // ほかの タブに いく とき meStop が 時計と 「もどす」まちを 止めて いるので、
+  // ひらいた ままの ちがう 2まいは ここで ふせて、時計は つづきから うごかす
+  function meResume() {
+    if (!meLive || !meCells.length) return false;
+    if (meOpen.length >= 2) {
+      meCells[meOpen[0]].className = "card";
+      meCells[meOpen[1]].className = "card";
+      meOpen = [];
+    }
+    meBusy = false;
+    meStartClock(meSpent);
+    meResize();
+    return true;
   }
 
   function meResize() {
@@ -1763,8 +1896,20 @@
     }
   }
 
+  // ちがった 2まいを ふせる。2びょう たった ときと、まっている あいだに
+  // どれかを さわった ときの どちらでも ここを とおる
+  function meFlipBack() {
+    if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
+    if (meOpen.length >= 2) {
+      meCells[meOpen[0]].className = "card";
+      meCells[meOpen[1]].className = "card";
+      meOpen = [];
+    }
+    meBusy = false;
+  }
+
   function meFlip(i) {
-    if (meBusy) return;
+    if (meBusy) meFlipBack();       // さわった ことは むだに せず、すぐ ふせて つづける
     if (meDone[i]) return;
     if (meOpen.length && meOpen[0] === i) return;   // 同じカードの 2度めくりは無効
 
@@ -1798,17 +1943,12 @@
       var pts = meFinalScore();
       var isBest = pts > meBest;
       if (isBest) { meBest = pts; save("memory-best", meBest); }
-      mePaintBest(pts);
+      meLive = false;
+      mePaintBest(pts, true);
       celebrate(meMsgEl, meSeconds + "びょうで " + pts + "てん！" + (isBest ? " さいこう きろく！" : ""));
     } else {
       meBusy = true;
-      meBackTimer = setTimeout(function () {
-        meCells[a].className = "card";
-        meCells[b].className = "card";
-        meOpen = [];
-        meBusy = false;
-        meBackTimer = null;
-      }, 1200);
+      meBackTimer = setTimeout(meFlipBack, 2000);   // ゆっくり 読む 人の ために 2びょう
     }
   }
 
@@ -1840,6 +1980,7 @@
   var odScoreEl = $("odd-score"), odMsgEl = $("odd-msg");
   var odCells = [], odScore = 0, odTarget = -1, odBusy = false, odNextTimer = null;
   var odSize = ODD_SIZES[1], odCols = 3;
+  var odLive = false, odPending = false, odWrong = 0;   // とちゅうか / つぎの もんだいを まっているか / まちがえた かず
 
   (function () {
     var key = load("odd", "6");
@@ -1861,11 +2002,29 @@
     odScoreEl.innerHTML = "0";
     odMsgEl.innerHTML = "";
     odMsgEl.className = "msg";
+    odLive = true;
     odQuestion();
+  }
+
+  // タブを もどした とき、とちゅうなら もんだいを そのまま のこす。
+  // 「せいかい！」の あと つぎへ すすむ まちの 最中に はなれて いたら、つぎの もんだいへ
+  function odResume() {
+    if (!odLive || !odCells.length) return false;
+    if (odPending) {
+      odPending = false;
+      odMsgEl.innerHTML = "";
+      odQuestion();
+    } else {
+      odResize();
+    }
+    return true;
   }
 
   function odQuestion() {
     var pair = ODD_PAIRS[Math.floor(Math.random() * ODD_PAIRS.length)];
+    pair = [safeFace(pair[0]), safeFace(pair[1])];
+    odWrong = 0;
+    odPending = false;
     // どちらを なかまはずれに するかも 入れ替える
     var same = pair[Math.random() < 0.5 ? 0 : 1];
     var odd = same === pair[0] ? pair[1] : pair[0];
@@ -1919,6 +2078,9 @@
       (function (cell) {
         setTimeout(function () { if (cell.className === "pick wrong") cell.className = "pick"; }, 700);
       })(odCells[i]);
+      // 2かい まちがえたら、ただしい ところを やさしく ひからせる (てんすうは へらさない)
+      odWrong++;
+      if (odWrong >= 2 && odCells[odTarget].className === "pick") odCells[odTarget].className = "pick hint";
       return;
     }
 
@@ -1930,12 +2092,13 @@
 
     if (odScore >= ODD_GOAL) {
       celebrate(odMsgEl, "10もん できました！");
-      odBusy = false;
-      return;
+      odLive = false;
+      return;                       // odBusy は ひらかない。「もういちど」(odStart) まで 固定
     }
 
     odMsgEl.className = "msg";
     odMsgEl.innerHTML = "せいかい！";
+    odPending = true;
     odNextTimer = setTimeout(function () {
       odMsgEl.innerHTML = "";
       odQuestion();
@@ -2041,6 +2204,7 @@
   var beCells = [], beBeads = [], beGoal = [], beNow = [], beCups = [];
   var beColor = 0, beLeft = 0, beSeconds = 0, beTimer = null, beBuilt = false;
   var beDown = false, beStrokeN = 0, beSeen = {};
+  var beLive = false, beSpent = 0, beBeganAt = 0;   // とちゅうか / 前に あそんだ ミリびょう
   var bePic = BE_PICS[0], beLevel = BE_LEVELS[1];
 
   (function () {
@@ -2103,19 +2267,24 @@
     beBestEl.innerHTML = best > 0 ? "さいこう " + best + "びょう" : "";
   }
 
-  function beStartClock() {
-    beSeconds = 0;
-    beTimeEl.innerHTML = "0";
+  // spent = 前に あそんだ ぶん。タブを もどした ときに つづきから はかる
+  function beStartClock(spent) {
+    beSeconds = Math.floor((spent || 0) / 1000);
+    beTimeEl.innerHTML = String(beSeconds);
     if (beTimer !== null) clearInterval(beTimer);
-    var began = new Date().getTime();
+    beBeganAt = new Date().getTime() - (spent || 0);
     beTimer = setInterval(function () {
-      var s = Math.floor((new Date().getTime() - began) / 1000);
+      var s = Math.floor((new Date().getTime() - beBeganAt) / 1000);
       if (s > 999) s = 999;
       if (s !== beSeconds) { beSeconds = s; beTimeEl.innerHTML = String(s); }
     }, 250);
   }
   function beStopClock() {
-    if (beTimer !== null) { clearInterval(beTimer); beTimer = null; }
+    if (beTimer !== null) {
+      beSpent = new Date().getTime() - beBeganAt;
+      clearInterval(beTimer);
+      beTimer = null;
+    }
   }
 
   // まちがいを ばらまく。もとの 色とは ちがう、この 絵で つかって いる 色に する
@@ -2351,6 +2520,7 @@
 
   function beFinish() {
     beStopClock();
+    beLive = false;
     var best = Number(load(beKey(), "0")) || 0;
     var isBest = best === 0 || beSeconds < best;
     if (isBest) save(beKey(), beSeconds);
@@ -2370,6 +2540,16 @@
     beMsgEl.className = "msg";
     beResize();
     beStartClock();
+    beLive = true;
+  }
+
+  // タブを もどした とき、とちゅうなら ばんを そのまま のこして 時計を つづける
+  function beResume() {
+    if (!beLive || !beBuilt) return false;
+    beDown = false;
+    beResize();
+    beStartClock(beSpent);
+    return true;
   }
 
   function beStop() { beStopClock(); }
@@ -4770,17 +4950,24 @@
   // ============================================================
   // タブの切り替え
   // ============================================================
+  // show = タブを ひらく ときの はじまり。
+  // resume (なくても よい) = とちゅうの ラウンドが あれば そのまま つづけて true を かえす。
+  //   false か なければ show で 新しく はじめる。
+  // resize = その ゲームの 大きさあわせ。いま 見えて いる タブの ぶんだけ よばれる
   var TABS = [
-    { key: "mogura", tab: "tab-mogura", pane: "game-mogura", show: moStart, hide: moStop },
-    { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: meStop },
-    { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop },
-    { key: "beads",  tab: "tab-beads",  pane: "game-beads",  show: beStart, hide: beStop },
-    { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop },
-    { key: "jenga",  tab: "tab-jenga",  pane: "game-jenga",  show: jgStart, hide: jgStop },
-    { key: "zombie", tab: "tab-zombie", pane: "game-zombie", show: zbStart, hide: zbStop }
+    { key: "mogura", tab: "tab-mogura", pane: "game-mogura", show: moStart, hide: moStop, resize: moResize },
+    { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: meStop, resume: meResume, resize: meResize },
+    { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop, resume: odResume, resize: odResize },
+    { key: "beads",  tab: "tab-beads",  pane: "game-beads",  show: beStart, hide: beStop, resume: beResume, resize: beResize },
+    { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop, resize: anResize },
+    { key: "jenga",  tab: "tab-jenga",  pane: "game-jenga",  show: jgStart, hide: jgStop, resize: jgResize },
+    { key: "zombie", tab: "tab-zombie", pane: "game-zombie", show: zbStart, hide: zbStop, resize: zbResize }
   ];
 
+  var curTab = "";
+
   function showTab(key) {
+    if (key === curTab) return;       // いま ひらいて いる タブを おしても やりなおさない
     for (var i = 0; i < TABS.length; i++) {
       var t = TABS[i];
       var on = t.key === key;
@@ -4790,7 +4977,13 @@
       if (!on && t.hide) t.hide();
     }
     for (var j = 0; j < TABS.length; j++) {
-      if (TABS[j].key === key) { save("tab", key); TABS[j].show(); return; }
+      if (TABS[j].key === key) {
+        curTab = key;
+        save("tab", key);
+        if (TABS[j].resume && TABS[j].resume()) return;
+        TABS[j].show();
+        return;
+      }
     }
   }
 
@@ -4798,7 +4991,12 @@
     (function (cfg) { onTap($(cfg.tab), function () { showTab(cfg.key); }); })(TABS[t]);
   }
 
-  window.onresize = function () { moResize(); meResize(); odResize(); beResize(); anResize(); jgResize(); zbResize(); };
+  // 見えて いない ゲームは はかれない (offsetTop が 0 に なる) ので、いまの タブだけ
+  window.onresize = function () {
+    for (var i = 0; i < TABS.length; i++) {
+      if (TABS[i].key === curTab && TABS[i].resize) TABS[i].resize();
+    }
+  };
 
   // ---- 起動 ----
   checkVersion();
