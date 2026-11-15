@@ -447,6 +447,10 @@
   .dex span { font-size: 25px; vertical-align: middle; }
   .dex i { font-size: 15px; color: #6d6355; font-style: normal; vertical-align: middle; }
   .dex .yet { opacity: .45; }
+  /* つぎ・その つぎ。さいしょの 1ひきを 大きく、2ひきめは ちいさく */
+  .anq { margin: 0 auto 4px; height: 52px; line-height: 52px; font-size: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+  .anq canvas { vertical-align: middle; background: #fff1d0; border-radius: 50%; }
+  .anq .anq-s { font-size: 15px; color: #6d6355; }
   #animal-wrap { margin: 0 auto; }
   #animal-canvas {
     box-sizing: content-box;       /* 枠の ぶんだけ 絵が ちぢまない ように */
@@ -567,7 +571,8 @@
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
 <div id="game-animal" style="display:none">
   <div class="ctrl"><span class="label">なにで あそぶ</span><span id="animal-themes"></span></div>
-  <p class="score">てんすう　<b id="animal-score">0</b>　<span id="animal-rank" class="rank"></span>　つぎは　<span id="animal-next-face" class="nextface">🐭</span></p>
+  <p class="score">てんすう　<b id="animal-score">0</b>　<span id="animal-rank" class="rank"></span></p>
+  <p class="anq">つぎは <canvas id="animal-next-c" class="anq1"></canvas>　<span class="anq-s">その つぎ</span> <canvas id="animal-next2-c" class="anq2"></canvas></p>
   <p class="dex" id="animal-dex"></p>
   <p class="best" id="animal-best"></p>
   <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
@@ -2733,7 +2738,7 @@
   var anCanvas = $("animal-canvas");
   var anCtx = anCanvas.getContext ? anCanvas.getContext("2d") : null;
   var anScoreEl = $("animal-score"), anBestEl = $("animal-best");
-  var anMsgEl = $("animal-msg"), anNextEl = $("animal-next-face");
+  var anMsgEl = $("animal-msg");
 
   var anW = 360, anH = 440, anDpr = 1;
   var anBodies = [], anSprites = [], anRadii = [];
@@ -2758,6 +2763,24 @@
   }
   var anNext = 0, anOver = false, anOverCount = 0, anBiggestSeen = false;
   var anRaf = null, anRunning = false, anCooldown = 0, anDrawnCount = 0;
+  // ---- みための ためだけの もの。からだの うごきには ふれない ----
+  var AN_FX_MAX = 28;            // 同時に 出す えんしゅつの 上限
+  var AN_POP = 10;               // 合体した どうぶつが ぽよんと 戻る コマ数
+  var AN_SPARK = ["#ffc233", "#ff8fb0", "#ffffff", "#7fd0ff"];
+  var anFx = [], anFxLive = 0, anPopLive = 0, anFxSeed = 12345;
+  var anPopTab = [];
+  var anNext2 = -1, anTop = 0, anMade = [];
+  var anDanger = false, anFrameNo = 0, anDrawNo = 0;
+  var anBg = null, anBgKey = "";
+  (function () {
+    var i;
+    for (i = 0; i < AN_FX_MAX; i++) anFx.push({ on: false, k: 0, x: 0, y: 0, dx: 0, dy: 0, t: 0, l: 1, v: 0, c: 0, s: 0 });
+    // 1.25ばいから はじまって、ちょっと ちぢみすぎて、1ばいに おちつく
+    for (i = 0; i <= AN_POP; i++) {
+      var t = 1 - i / AN_POP;
+      anPopTab.push(1 + 0.25 * (1 - t) * Math.cos(t * Math.PI * 1.2));
+    }
+  })();
   var anStarted = false;         // はじまる まえの 書きかえで しょうごうを しらせない ための めじるし
   var anAimX = -1;               // ゆびの いち (はこの なかの x)。-1 なら さわっていない
   var anDirty = true;            // true なら つぎの コマで かならず 描きなおす
@@ -2929,6 +2952,7 @@
     anCanvas.height = Math.round(anH * anDpr);
 
     anBuildSprites();
+    anBuildBg();
     // 幅が変わったら、いまの どうぶつの 大きさも 合わせる
     for (var i = 0; i < anBodies.length; i++) anBodies[i].r = anRadius(anBodies[i].type);
     // canvas の はばを 入れると 絵が きえる。おしまいの あとは 描く ループが
@@ -2944,12 +2968,149 @@
       av: (Math.random() - 0.5) * 0.02,        // まわる はやさ
       age: 0, dead: false
     });
+    if (type > anTop) anTop = type;
     anSeen(type);
   }
 
+  // 「つぎ」と「その つぎ」。ひとつ さきに くじを ひいておくだけで、
+  // でる じゅんばんは 前と かわらない
   function anPickNext() {
-    anNext = Math.floor(Math.random() * AN_DROPPABLE);
-    anNextEl.innerHTML = anFaces()[anNext];
+    if (anNext2 < 0) anNext2 = Math.floor(Math.random() * AN_DROPPABLE);
+    anNext = anNext2;
+    anNext2 = Math.floor(Math.random() * AN_DROPPABLE);
+    anQueuePaint();
+  }
+
+  // つぎの どうぶつを 小さな canvas に 絵で 出す (字だと ふるい iPad で ちいさい)
+  function anQFace(cv, css, face) {
+    if (!cv) return;
+    var px = css * (anDpr > 1 ? 2 : 1);
+    if (cv.width !== px) {
+      cv.width = px; cv.height = px;
+      cv.style.width = css + "px"; cv.style.height = css + "px";
+    }
+    if (!drawFaceOn(cv, face, 0.9)) {
+      var g = cv.getContext ? cv.getContext("2d") : null;
+      if (!g) return;
+      g.clearRect(0, 0, px, px);
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = Math.floor(px * 0.7) + "px sans-serif";
+      g.fillText(face, px / 2, px / 2);
+    }
+  }
+  function anQueuePaint() {
+    anQFace($("animal-next-c"), 48, anFaces()[anNext]);
+    anQFace($("animal-next2-c"), 30, anFaces()[anNext2]);
+  }
+
+  // ---- えんしゅつ。いくつも 作らない ように 決まった 数の 入れものを つかいまわす ----
+  function anRnd() {
+    anFxSeed = (anFxSeed * 16807) % 2147483647;   // Math.random は つかわない (くじを ずらさない ため)
+    return anFxSeed / 2147483647;
+  }
+  function anFxAdd(k, x, y, l, dx, dy, v, c, s) {
+    for (var i = 0; i < AN_FX_MAX; i++) {
+      var f = anFx[i];
+      if (f.on) continue;
+      f.on = true; f.k = k; f.x = x; f.y = y; f.t = 0; f.l = l;
+      f.dx = dx; f.dy = dy; f.v = v; f.c = c; f.s = s;
+      anFxLive++;
+      return;
+    }
+  }
+  function anFxClear() {
+    for (var i = 0; i < AN_FX_MAX; i++) anFx[i].on = false;
+    anFxLive = 0;
+    anPopLive = 0;
+  }
+  // 合体した ところの わっか・きらきら・てんすう。first は はじめて できた どうぶつ
+  function anBurst(x, y, type, pts, first) {
+    var r = anRadius(type);
+    anFxAdd(1, x, y, 22, 0, 0, r, 0, 0);
+    if (first) anFxAdd(1, x, y, 30, 0, 0, r * 1.5, 0, 0);
+    var n = first ? 14 : 6;
+    for (var i = 0; i < n; i++) {
+      var ang = (i + anRnd() * 0.7) / n * 6.2832;
+      var dist = r * (0.9 + anRnd() * 0.5) + (first ? 26 : 14);
+      anFxAdd(2, x, y, first ? 26 : 20, Math.cos(ang) * dist, Math.sin(ang) * dist,
+              0, i % 4, first ? 4 : 3);
+    }
+    anFxAdd(3, x, y - r * 0.4, 46, 0, 0, pts, 0, 20 + type * 3 + (first ? 4 : 0));
+  }
+  function anFxUpdate() {
+    var was = anFxLive > 0 || anPopLive > 0;
+    var i;
+    for (i = 0; i < AN_FX_MAX; i++) {
+      var f = anFx[i];
+      if (!f.on) continue;
+      f.t++;
+      if (f.t >= f.l) { f.on = false; anFxLive--; }
+    }
+    var pops = 0;
+    for (i = 0; i < anBodies.length; i++) {
+      var b = anBodies[i];
+      if (b.pop > 0) { b.pop--; pops++; }
+    }
+    anPopLive = pops;
+    if (was || anFxLive > 0 || pops > 0) anDirty = true;   // きえた コマも 1かい 描いて 消す
+  }
+  function anDrawFx(g) {
+    g.lineJoin = "round";
+    for (var i = 0; i < AN_FX_MAX; i++) {
+      var f = anFx[i];
+      if (!f.on) continue;
+      var u = f.t / f.l, e = 1 - (1 - u) * (1 - u);
+      if (f.k === 1) {
+        g.globalAlpha = 0.9 * (1 - u);
+        g.strokeStyle = "#ffae22";
+        g.lineWidth = 1 + 5 * (1 - u);
+        g.beginPath();
+        g.arc(f.x, f.y, f.v * (0.7 + 0.9 * e), 0, 6.2832);
+        g.stroke();
+      } else if (f.k === 2) {
+        g.globalAlpha = 1 - u * u;
+        g.fillStyle = AN_SPARK[f.c];
+        g.beginPath();
+        g.arc(f.x + f.dx * e, f.y + f.dy * e, f.s * (1 - u * 0.6), 0, 6.2832);
+        g.fill();
+      } else {
+        g.globalAlpha = u < 0.6 ? 1 : 1 - (u - 0.6) / 0.4;
+        var tx = f.x < 34 ? 34 : (f.x > anW - 34 ? anW - 34 : f.x);
+        var ty = f.y - 6 - 34 * e;
+        if (ty < f.s) ty = f.s;
+        g.font = "bold " + f.s + "px sans-serif";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.lineWidth = 5;
+        g.strokeStyle = "rgba(255,250,235,.95)";
+        g.strokeText("+" + f.v, tx, ty);
+        g.fillStyle = "#4a2a0c";
+        g.fillText("+" + f.v, tx, ty);
+      }
+    }
+    g.globalAlpha = 1;
+  }
+
+  // はこの かべの かげと ゆかの おびは、いちど 絵に して 使いまわす
+  function anBuildBg() {
+    var key = anW + "|" + anH + "|" + anDpr;
+    if (key === anBgKey && anBg) return;
+    anBgKey = key;
+    anBg = document.createElement("canvas");
+    anBg.width = Math.round(anW * anDpr);
+    anBg.height = Math.round(anH * anDpr);
+    var g = anBg.getContext ? anBg.getContext("2d") : null;
+    if (!g) { anBg = null; return; }
+    g.setTransform(anDpr, 0, 0, anDpr, 0, 0);
+    for (var i = 0; i < 6; i++) {
+      g.fillStyle = "rgba(120,90,50," + (0.08 * (1 - i / 6)).toFixed(3) + ")";
+      g.fillRect(i * 3, 0, 3, anH);
+      g.fillRect(anW - (i + 1) * 3, 0, 3, anH);
+    }
+    g.fillStyle = "rgba(214,184,132,.30)";
+    g.fillRect(0, anH - 14, anW, 14);
+    g.fillStyle = "rgba(170,130,80,.30)";
+    g.fillRect(0, anH - 14, anW, 2);
   }
 
   // かべに めり込まない ように はこの なかに おさめる。おとす ときも
@@ -2984,7 +3145,11 @@
     if (type + 1 >= AN_LAST) anScore += 100;
     anPaintScore();
 
+    var first = !anMade[type + 1];
+    anMade[type + 1] = true;
     anAdd(type + 1, x, y, 0, 0);
+    anBodies[anBodies.length - 1].pop = AN_POP;     // ぽよんと 大きく 見せる (あたりの 大きさは そのまま)
+    anBurst(x, y, type + 1, anScoreFor(type) + (type + 1 >= AN_LAST ? 100 : 0), first);
     if (type + 1 >= AN_LAST) {
       anBigMade++;
       save(anKey("big"), anBigMade);
@@ -2994,8 +3159,14 @@
       anBiggestSeen = true;
       anClearTheme();
     } else {
-      soundMatch();
+      anMergeSound(type + 1);
     }
+  }
+
+  // おおきい どうぶつほど ひくく、すこし ながい 2つの おと
+  function anMergeSound(nt) {
+    var f = 1150 - nt * 105;
+    play([f, f * 1.26], 0.07 + 0.016 * nt, "sine", 0.16);
   }
 
   function anClampSpin(b) {
@@ -3136,6 +3307,20 @@
     } else {
       anOverCount = 0;
     }
+
+    // あぶない ようすを 見せる ための しらべ。おしまいの きまりは かえない。
+    // 線より 上、または 小さい どうぶつ 1ぴき ぶん 下まで 来て とまって いたら あぶない
+    var lim = lineY + (anRadii[0] || 0), near = false;
+    for (i = 0; i < anBodies.length; i++) {
+      b = anBodies[i];
+      if (b.age > 40 && b.y - b.r < lim &&
+          Math.abs(b.vy) < AN_CALM && Math.abs(b.vx) < AN_CALM) { near = true; break; }
+    }
+    if (near !== anDanger) anDirty = true;
+    anDanger = near;
+    if (near) anDirty = true;          // せんを ぴかぴか させる あいだだけ 描きつづける
+    anFrameNo++;
+    anFxUpdate();
   }
 
   function anFinish() {
@@ -3152,11 +3337,16 @@
     anPaintBest();
 
     anMsgEl.className = "msg";
+    var tail = "<br>いちばん おおきいのは " + anFaces()[anTop];
+    if (!best) {
+      tail += anBest > anScore ? "　さいこうまで あと " + (anBest - anScore) + "てん"
+                               : "　さいこうと おなじ てん";
+    }
     if (best) {
       // さいこう てんすうを こえたら はなまる
-      celebrate(anMsgEl, "いっぱいに なりました。" + anScore + "てん　さいこう きろく！");
+      celebrate(anMsgEl, "いっぱいに なりました。" + anScore + "てん　さいこう きろく！" + tail);
     } else {
-      anMsgEl.innerHTML = "いっぱいに なりました。" + anScore + "てん";
+      anMsgEl.innerHTML = "いっぱいに なりました。" + anScore + "てん" + tail;
       soundAgain();
     }
   }
@@ -3172,12 +3362,29 @@
     var g = anCtx;
     g.setTransform(anDpr, 0, 0, anDpr, 0, 0);
     g.clearRect(0, 0, anW, anH);
+    anDrawNo++;
+    if (anBg) g.drawImage(anBg, 0, 0, anW, anH);
 
     // おしまいの めやすの線。うすい ベージュだと 見えないので ほんのり 赤い てんせんに する。
     // setLineDash は ふるい iPad に ないので、みじかい 四角を ならべる
     var lineY = Math.round(anH * AN_LINE);
-    g.fillStyle = "rgba(214,96,96,.55)";
-    for (var dx = 0; dx < anW; dx += 14) g.fillRect(dx, lineY - 1, 8, 3);
+    var prog = anOverCount / AN_OVER_FRAMES;
+    if (prog > 1) prog = 1;
+    if (anDanger) {
+      // あぶない ときは ぴかぴか 赤く、おしまいに ちかい ほど ふとく。
+      // 左から 赤い 線が のびて、みちたら おしまい
+      var pulse = 0.5 + 0.5 * Math.sin(anFrameNo * 0.25);
+      var th = 3 + Math.round(pulse * 2 + prog * 4);
+      g.fillStyle = "rgba(228,52,52," + (0.6 + 0.35 * pulse).toFixed(2) + ")";
+      for (var dz = 0; dz < anW; dz += 14) g.fillRect(dz, lineY - (th >> 1), 8, th);
+      if (prog > 0) {
+        g.fillStyle = "rgba(200,30,30,.95)";
+        g.fillRect(0, lineY - 4, Math.round(anW * prog), 8);
+      }
+    } else {
+      g.fillStyle = "rgba(214,96,96,.55)";
+      for (var dx = 0; dx < anW; dx += 14) g.fillRect(dx, lineY - 1, 8, 3);
+    }
 
     for (var i = 0; i < anBodies.length; i++) {
       var b = anBodies[i];
@@ -3187,8 +3394,22 @@
       g.save();
       g.translate(b.x, b.y);
       g.rotate(b.a);
-      g.drawImage(sp, -b.r, -b.r, b.r * 2, b.r * 2);
+      var sc = b.pop > 0 ? anPopTab[b.pop] : 1;       // 見た目だけ ふくらます
+      g.drawImage(sp, -b.r * sc, -b.r * sc, b.r * 2 * sc, b.r * 2 * sc);
       g.restore();
+    }
+    if (anFxLive > 0) anDrawFx(g);
+    if (anDanger) {
+      g.font = "bold 19px sans-serif";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.lineJoin = "round";
+      g.lineWidth = 5;
+      g.strokeStyle = "rgba(255,250,235,.95)";
+      var warn = prog > 0.4 ? "あぶない！ もうすぐ おわり" : "いっぱいに なりそう！";
+      g.strokeText(warn, anW / 2, lineY - 20);
+      g.fillStyle = "#b02a2a";
+      g.fillText(warn, anW / 2, lineY - 20);
     }
 
     // ゆびの 上に 次の どうぶつを うすく 見せて、まっすぐ 下に 線を ひく
@@ -3248,6 +3469,11 @@
     anBiggestSeen = false;
     anCooldown = 0;
     anAimX = -1;
+    anNext2 = -1;
+    anTop = 0;
+    anMade = [];
+    anDanger = false;
+    anFxClear();
     anStarted = false;
     anRankShown = anRankIndex(0);
     anPaintScore();
@@ -3344,7 +3570,9 @@
   // しらべる ための 窓。よむ だけで、ここから さわる ことは できない
   window.anState = function () {
     return { bodies: anBodies.length, running: anRunning, over: anOver,
-             started: anStarted, next: anNext, aimX: anAimX, w: anW, score: anScore };
+             started: anStarted, next: anNext, aimX: anAimX, w: anW, score: anScore,
+             next2: anNext2, frame: anFrameNo, draws: anDrawNo, effects: anFxLive,
+             pops: anPopLive, danger: anDanger, overCount: anOverCount, top: anTop };
   };
 
 
