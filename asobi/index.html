@@ -158,6 +158,11 @@
     margin: 16px 0 6px;
   }
   .msg.again { color: #6d6355; color: var(--sub); }
+  /* あそんで いる とちゅうに 出す もんだいの こたえ。おわりの ことばより 小さく */
+  .msg.told { font-size: 20px; }
+  .msg.told.miss { color: #c0392b; }
+  .review { font-size: 17px; color: #6d6355; color: var(--sub); margin: 12px auto 0; max-width: 620px; line-height: 1.7; }
+  .review b { color: #2f2a24; }
   .big {
     font-family: inherit;
     font-size: 21px;
@@ -404,6 +409,7 @@
   /* ---- おばけたいじ ---- */
   #zombie-wrap { margin: 0 auto; }
   #zombie-canvas {
+    box-sizing: content-box;       /* 枠の ぶんだけ 絵が ちぢまない ように */
     display: block;
     margin: 0 auto;
     background: #e7ecdf;
@@ -523,7 +529,8 @@
   <p class="msg" id="zombie-msg"></p>
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>だから <b>いる ところの まうえが いちばん よく けずれます</b>。左右に うごいて 掃くように たおすと はやいです。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br><b>ちから</b> が おばけの かず いじょう なら たおしきれます。とどいた ぶんだけ なかまが へります。<br>おばけには しゅるいが あります。<b>かたい</b>（はがねいろ）は <b>ぶき</b> が ないと ほとんど 通りません。<b>はやい</b>（きいろ）は はやく とどきます。4かいに 1ど <b>大おばけ</b>。<br>つぎに 来る しゅるいは ばんの 上の おびに 出ます。<b>かたい なら ぶき、ふつう なら 人数</b> が こたえです。<br><b>たからばこ</b> は おばけの すぐ 手前。はこの れつに 入ると たまは はこへ いきます。その あいだ おばけは けずれません。<br><b>あおい もん</b> は もんだいです。<b>こたえの ほうを とおります</b>。けいさんと「どっちが 大きい？」が 出ます。といは <b>ばんの 下の しろい おび</b>に かならず 出ます。<br><b>おばけ 15かいで クリア</b>。<b>まいかい いちばん よい もんを とおれば かならず さいごまで いけます</b>。<br><b>シビア</b> は はやくて、もんが <b>2つに 1つ もんだい</b>に なります。とどかれた ときに へる 人数も <b>3ばい</b>なので、まちがえると すぐ へります。左右に 掃くと とどかれる かずが はんぶんに なります。</p>
+  <div class="review" id="zombie-review"></div>
+  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>だから <b>いる ところの まうえが いちばん よく けずれます</b>。左右に うごいて 掃くように たおすと はやいです。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br><b>ちから</b> が おばけの かず いじょう なら たおしきれます。とどいた ぶんだけ なかまが へります。<br>おばけには しゅるいが あります。<b>かたい</b>（はがねいろ）は <b>ぶき</b> が ないと ほとんど 通りません。<b>はやい</b>（きいろ）は はやく とどきます。4かいに 1ど <b>大おばけ</b>。<br>つぎに 来る しゅるいは ばんの 上の おびに 出ます。<b>かたい なら ぶき、ふつう なら 人数</b> が こたえです。<br><b>たからばこ</b> は おばけの すぐ 手前。はこの れつに 入ると たまは はこへ いきます。その あいだ おばけは けずれません。<br><b>あおい もん</b> は もんだいです。<b>こたえの ほうを とおります</b>。けいさんと「◯か ✕か」「どっち？」が 出ます。といは <b>ばんの 下の しろい おび</b>に かならず 出ます。とおった あと、<b>こたえと わけ</b>が おなじ おびに 出ます。<br>ばんの 上に ならんだ 丸は 15かいぶんの おばけです。<b>はいいろは かたい、きいろは はやい、赤は 大おばけ</b>。のりこえると みどりに なります。<br><b>おばけ 15かいで クリア</b>。<b>まいかい いちばん よい もんを とおれば かならず さいごまで いけます</b>。<br><b>シビア</b> は はやくて、<b>ほとんど まいかい もんだい</b>が 出ます。とどかれた ときに へる 人数も <b>3ばい</b>なので、まちがえると すぐ へります。左右に 掃くと とどかれる かずが はんぶんに なります。</p>
 </div>
 
 <div id="confetti"></div>
@@ -3678,7 +3685,7 @@
   // ひとつの かずに して しまうと、ぶきが 上がった ころには きかなく なる
   var ZB_ARMOUR_F = 0.7;
   var ZB_FAST = 1.6;             // はやい おばけ。この ばい はやく とどく
-  var ZB_YOU = 0.80;             // じぶんの いちは 画面の 上から どのへんか
+  var ZB_YOU = 0.78;             // じぶんの いちは 画面の 上から どのへんか (下に おびが ある)
   // おくゆき。とおく なる ほど つまって、小さく なる。
   // たて (u = d/(1+dP)) と よこ の ちぢみかたを わけて ある。
   // ほんとうの とおしずは たてと よこが おなじ ひりつだが、それだと
@@ -3843,13 +3850,15 @@
     for (i = 0; i < per; i++) item.hp += item.col[i];
   }
 
+  // 1こまに おばけの かずだけ よばれる。まいかい 入れものを 作ると
+  // ごみ集めで 止まるので、1つを つかいまわす (よんだ 側は すぐ つかう こと)
+  var zbQ = { x: 0, y: 0, r: 0 };
   function zbLinePos(item, c, r) {
     var per = item.cols, rr = zbGhostR(per) * zbSC(item.y);
-    return {
-      x: zbSX(zbColX(per, c), item.y),
-      y: zbSY(item.y) - r * rr * 1.9 + Math.sin(zbTick * 0.11 + (c * 3 + r) * 1.7) * rr * 0.14,
-      r: rr
-    };
+    zbQ.x = zbSX(zbColX(per, c), item.y);
+    zbQ.y = zbSY(item.y) - r * rr * 1.9 + Math.sin(zbTick * 0.11 + (c * 3 + r) * 1.7) * rr * 0.14;
+    zbQ.r = rr;
+    return zbQ;
   }
 
   function zbLine(g, item, draw) {
@@ -3889,7 +3898,7 @@
   var zbCanvas = $("zombie-canvas");
   var zbCtx = (zbCanvas && zbCanvas.getContext) ? zbCanvas.getContext("2d") : null;
   var zbScoreEl = $("zombie-score"), zbRankEl = $("zombie-rank");
-  var zbStageEl = $("zombie-stage"), zbMsgEl = $("zombie-msg");
+  var zbStageEl = $("zombie-stage"), zbMsgEl = $("zombie-msg"), zbReviewEl = $("zombie-review");
   var zbW = 0, zbH = 0, zbDpr = 1;
   var zbItems = [], zbPops = [], zbShots = [], zbPoofs = [], zbPos = 0, zbNextY = 0, zbTick = 0;
   var zbPat = null, zbPatI = 0, zbGates = 0, zbWaveNo = 0;
@@ -3898,6 +3907,7 @@
   var zbThrough = 0, zbLostTo = 0;      // とどかれた かいすうと、そこで へった 人数
   var zbOver = false, zbRunning = false, zbRaf = null, zbLast = 0;
   var zbSpeed = ZB_SPEEDS[1], zbBuilt = false, zbDown = false;
+  var zbLive = false, zbPaused = false, zbOverT = 0;   // とちゅうか / 止めて いるか / おわってからの こま
 
   function zbKey() { return "zb-" + zbSpeed.key; }
   function zbPower() { return zbN * zbP; }
@@ -3946,37 +3956,168 @@
   var ZB_CALC_P = 0.4;           // もんだいの うち けいさんが 出る わりあい
   // ふだん くらべない もの どうしや、かんが はずれる ものを えらんで ある。
   // 「かずが 近くて まよう」のでは なく「へえ そうなの」と なる ほうを ねらう。
-  // c = あたりの ばんごう
-  var ZB_QUIZ = [
-    { q: "ほねの かずが 多いのは？",            a: ["あかちゃん", "おとな"], c: 0 },
-    { q: "どせい（土星）は 水に うく",          a: ["◯", "✕"], c: 0 },
-    { q: "ラクダの こぶに 入って いるのは？",   a: ["あぶら", "水"], c: 0 },
-    { q: "ゾウは ジャンプできる",               a: ["◯", "✕"], c: 1 },
-    { q: "サメに ほねは ある",                  a: ["◯", "✕"], c: 1 },
-    { q: "ながい きょりを はやいのは？",        a: ["ウマ", "チーター"], c: 0 },
-    { q: "ペンギンは 北きょくにも いる",        a: ["◯", "✕"], c: 1 },
-    { q: "さむいのは？",                        a: ["南きょく", "北きょく"], c: 0 },
-    { q: "タコの しんぞうは いくつ？",          a: ["3つ", "1つ"], c: 0 },
-    { q: "くびの ほねが 多いのは？",            a: ["おなじ", "キリン"], c: 0 },
-    { q: "ダイヤモンドは もやすと なくなる",    a: ["◯", "✕"], c: 0 },
-    { q: "ハチミツは くさらない",               a: ["◯", "✕"], c: 0 },
-    { q: "バナナは 木に なる",                  a: ["◯", "✕"], c: 1 },
-    { q: "からだで いちばん かたいのは？",      a: ["は", "ほね"], c: 0 },
-    { q: "1円玉は 水に うく",                   a: ["◯", "✕"], c: 0 },
-    { q: "さしわたしが 大きいのは？",           a: ["オーストラリア", "月"], c: 0 },
-    { q: "国土が ひろいのは？",                 a: ["日本", "ドイツ"], c: 0 },
-    { q: "大きいのは？",                        a: ["海の ふかさ", "ふじさんの 高さ"], c: 0 },
-    { q: "カタツムリに 歯は ある",              a: ["◯", "✕"], c: 0 },
-    { q: "エッフェルとうが 高いのは？",         a: ["なつ", "ふゆ"], c: 0 },
-    { q: "金魚の きおくは 3びょう",             a: ["◯", "✕"], c: 1 },
-    { q: "トウモロコシの ひげと つぶは？",      a: ["おなじ かず", "ひげが 多い"], c: 0 },
-    { q: "おもいのは？",                        a: ["金", "てつ"], c: 0 },
-    { q: "空での 大きさが おなじ くらいなのは？", a: ["たいようと 月", "月と ほし"], c: 0 },
-    { q: "たけのこは 1日で 1m のびる",          a: ["◯", "✕"], c: 0 },
-    { q: "くじらは さかなの なかま",            a: ["◯", "✕"], c: 1 },
-    { q: "カンガルーは うしろに 歩ける",        a: ["◯", "✕"], c: 1 },
-    { q: "人口が 多いのは？",                   a: ["日本", "フランス"], c: 0 }
+  // どれも 2ど たしかめて ある (README を 見てください)。
+  // [もんだい, わけ]。わけは こたえた あとに 出す ひとこと
+  var ZB_Q_TRUE = [                // ◯ が あたり
+    ["どせい（土星）は 水に うく", "どせいは 水より かるい ほし"],
+    ["ダイヤモンドは もやすと なくなる", "もえて ガスに なって しまう"],
+    ["ハチミツは くさらない", "何年 たっても 食べられる"],
+    ["カタツムリに 歯は ある", "したに 1万こ いじょうの 歯"],
+    ["かるい ボウリングの 玉は 水に うく", "5キロより かるい 玉は うく"],
+    ["1円玉は そっと おくと 水に うく", "水の ひょうめんの 力で うく"],
+    ["サメの ほねは ぜんぶ なんこつ", "かたい ほねは 1本も ない"],
+    ["キリンの くびの ほねは 人と おなじ 数", "どちらも 7こ"],
+    ["バナナは 木では なく 草", "みきに 見えるのは はの たば"],
+    ["オーストラリアの はばは 月より 大きい", "東西 4000km、月は 3500km"],
+    ["トウモロコシの ひげと つぶは おなじ 数", "ひげ 1本が つぶ 1こに つながる"],
+    ["空の 太陽と 月は おなじ 大きさに 見える", "太陽は 400ばい 大きく 400ばい 遠い"],
+    ["竹は 1日に 1m のびる ことも ある", "1日に 1m20cm のびた きろくも"],
+    ["ホッキョクグマの 毛は とうめい", "毛は とうめいで はだは 黒い"],
+    ["キリンの したは 40cmより 長い", "45cm ほど。はっぱを まきとる"],
+    ["ナマケモノは およぎが とくい", "木の 上より 水の 中が はやい"],
+    ["ネコは あまい 味が わからない", "あまさを かんじる しくみが ない"],
+    ["ミツバチの 一生の みつは 小さじ 1ぱい 以下", "小さじ 1ぱいにも ならない"],
+    ["たまごの からには あなが 何千こも ある", "小さな あなで いきを して いる"],
+    ["キャベツと ブロッコリーは もとは 同じ 草", "同じ やせいの 草から 作られた"],
+    ["ジャガイモは トマトの なかま", "どちらも ナスの なかま"],
+    ["竹の 花が さくのは 何十年に 1回", "マダケは 120年に 1回 ほど"],
+    ["月は いつも 同じ 面を 地球に むけて いる", "うらがわは 地球から ほとんど 見えない"],
+    ["いなずまは 太陽の ひょうめんより あつい", "いなずま 3万ど、太陽 6000ど"],
+    ["日本の いちばん 東は 東京都", "東の はしの 南鳥島は 東京都"],
+    ["日本の いちばん 南も 東京都", "南の はしの おきのとり島も 東京都"],
+    ["ピラミッドが できた あとも マンモスは いた", "さいごの マンモスは 4000年前"],
+    ["1万円さつと 1円玉は ほぼ おなじ おもさ", "どちらも やく 1グラム"],
+    ["地球が まわる はやさは ひこうきより はやい", "赤道で 時速 1700km、旅客機は 900km"],
+    ["東京ドームの 中の 空気は ジャンボ機より おもい", "空気 1500トン、ジャンボ 400トン"],
+    ["イルカは のうを 半分ずつ ねむらせる", "およぎながら 半分ずつ 休む"],
+    ["ガラスは すなから できる", "すなを とかして かためる"],
+    ["人の ほねで いちばん 小さいのは 耳の 中", "3ミリ ほどの ほねが 耳に ある"],
+    ["ソメイヨシノは みんな 同じ 木から ふやした", "つぎ木で ふやした 同じ 木"],
+    ["イチョウは きょうりゅうの 時代から ある", "2おく年 前から ほとんど 同じ すがた"],
+    ["アーモンドは ももの なかま", "ももの たねの 中と そっくり"],
+    ["イチゴは バラの なかま", "リンゴも サクラも バラの なかま"],
+    ["日本には 活火山が 100 いじょう ある", "ぜんぶで 111 ある"],
+    ["1円玉を 作るには 1円より 多く かかる", "アルミと 作る 手間で 1円を こえる"],
+    ["太陽の はばは 地球の 100ばい いじょう", "地球が 109こ ならぶ"],
+    ["土星の わは こおりの つぶ", "小さな こおりの つぶの あつまり"],
+    ["月に つけた 足あとは ずっと のこる", "風も 雨も ないので きえない"],
+    ["カンガルーは 生まれた とき 2cm ほど", "ふくろの 中で 大きく なる"],
+    ["カラスは 人の かおを おぼえる", "何年も おぼえて いる"],
+    ["エビの しんぞうは あたまの ほうに ある", "あたまと むねが くっついた ところ"],
+    ["チョウは 足で 味が わかる", "足で はっぱの 味を たしかめる"],
+    ["ダチョウは 目が のうより 大きい", "目は 5cm、のうは それより 小さい"],
+    ["オスの シカの 角は 毎年 生えかわる", "春に ぬけて また 生える"],
+    ["レンコンの あなは 空気の 通り道", "どろの 中の ねに 空気を おくる"],
+    ["トンボの 目は 小さな 目の あつまり", "1万こ いじょうの 目の あつまり"],
+    ["タラバガニは ヤドカリの なかま", "カニに にて いるが 足は 8本"],
+    ["サケの 身が 赤いのは エサの 色", "エビや カニの 色が うつる"]
   ];
+  var ZB_Q_FALSE = [               // ✕ が あたり
+    ["ゾウは ジャンプできる", "足を 4本とも うかせられない"],
+    ["ペンギンは 北きょくにも いる", "北きょくには いない"],
+    ["金魚の きおくは 3びょう", "何か月も おぼえて いる"],
+    ["くじらは さかなの なかま", "人と おなじ ほにゅうるい"],
+    ["雨つぶは しずくの かたち", "小さいと 丸く、大きいと ひらたい"],
+    ["日本の 夏は 地球が 太陽に いちばん ちかい", "いちばん ちかいのは 1月"],
+    ["ダチョウは こわいと 頭を すなに うめる", "そう 見える だけ"],
+    ["コウモリは 目が 見えない", "目も ちゃんと 見えて いる"],
+    ["カメは こうらを ぬげる", "こうらは ほねの 一部"],
+    ["ウシは 赤い 色を 見ると こうふんする", "ぬのの うごきに はんのう する"],
+    ["ミツバチは オスにも はりが ある", "はりが あるのは メスだけ"],
+    ["ヒトデには のうが ある", "のうは なく しんけい だけ"],
+    ["ハチドリは うしろに とべない", "うしろにも とべる 鳥"],
+    ["ライオンの かりは おもに オスが する", "かりを するのは おもに メス"],
+    ["ウシの 角は 毎年 生えかわる", "ウシの 角は 一生 ぬけない"],
+    ["ヘビの からだは ぬるぬる して いる", "かわいて いて さらさら"],
+    ["かみなりは 同じ ところに 2回 落ちない", "高い ところには 何回も 落ちる"],
+    ["月の うらがわは いつも くらい", "うらがわにも 日は あたる"],
+    ["あまさは したの 先でしか わからない", "したの どこでも わかる"],
+    ["ジャガイモは 根", "土の 中の くきが ふくらんだ もの"],
+    ["サツマイモは ジャガイモの なかま", "アサガオの なかま"],
+    ["たたみの 大きさは どこでも おなじ", "京間と 江戸間で ちがう"],
+    ["えんぴつの しんは なまり", "こくえんと ねんどで 作る"],
+    ["フラミンゴは 生まれた ときから ピンク", "エサの 色で ピンクに なる"],
+    ["カニは みんな よこに 歩く", "前に 歩く カニも いる"],
+    ["カタツムリは からを ぬぐと ナメクジに なる", "からは 体の 一部で ぬげない"],
+    ["フクロウの くびは 1しゅう まわる", "まわるのは 4ぶんの3 しゅう まで"],
+    ["ヒマワリの 花は いつも 太陽を おいかける", "おいかけるのは つぼみの ころ まで"],
+    ["地球は ぴったり まん丸", "赤道の あたりが 少し ふくらむ"],
+    ["ながれぼしは 星が 落ちて いる", "すなつぶ ほどの ちりが 光る"],
+    ["北きょく星は 夜空で いちばん 明るい", "いちばん 明るいのは シリウス"],
+    ["ゴリラは むねを グーで たたく", "手を ひらいて たたく"],
+    ["クモは こんちゅう", "足が 8本。こんちゅうは 6本"],
+    ["カバは およぎが とくい", "うかずに 水の そこを 歩く"],
+    ["ホタルの 光は さわると あつい", "熱を ほとんど 出さない 光"],
+    ["ヘビは まばたきを する", "まぶたが なく、とうめいな うろこ"],
+    ["ピーナッツは 木に なる", "花の あと 土に もぐって 実る"],
+    ["月は 少しずつ 地球に 近づいて いる", "1年に 3.8cm ずつ はなれて いる"],
+    ["金星の 1日は 地球の 1日より みじかい", "1回 まわるのに 243日 かかる"],
+    ["ペンギンに ひざは ない", "足は 体の 中で まがって いる"],
+    ["ゾウの はなには ほねが ある", "きんにく だけで うごかす"],
+    ["北きょく点の こおりの 下は りく", "下は 海。大りくが あるのは 南きょく"],
+    ["うちゅうでも 音は きこえる", "音を つたえる 空気が ない"],
+    ["パンダは ネコの なかま", "クマの なかま"],
+    ["わさびは しょうがの なかま", "だいこんと 同じ アブラナの なかま"],
+    ["クラゲには しんぞうが ある", "のうも しんぞうも ない"],
+    ["コアラは 1日の ほとんど おきて いる", "1日に 20時間 ちかく ねむる"],
+    ["太陽の 光は 1びょうで 地球に とどく", "光でも 8分 20びょう かかる"],
+    ["カは オスも メスも 血を すう", "血を すうのは メスだけ"],
+    ["金魚は コイから 作られた", "フナから 作られた"],
+    ["シマウマの しまは みんな 同じ", "1とうずつ ちがう"],
+    ["タコの 血は 赤い", "血に どうが あって 青い"],
+    ["ホッキョクグマの はだは 白い", "はだは 黒い。毛は とうめい"],
+    ["ダンゴムシは こんちゅう", "エビや カニの なかま"],
+    ["ミミズには 目が ある", "目は なく、ひふで 光を かんじる"]
+  ];
+  // [もんだい, あたり, はずれ, わけ]。左右は 出す ときに まぜる
+  var ZB_Q_WHICH = [
+    ["ほねの 数が 多いのは？", "あかちゃん", "おとな", "あかちゃん 300こ、おとな 206こ"],
+    ["ラクダの こぶの 中は？", "あぶら", "水", "こぶは あぶらの かたまり"],
+    ["長い きょりを 走ると はやいのは？", "ウマ", "チーター", "チーターは すぐ つかれる"],
+    ["さむいのは？", "南きょく", "北きょく", "南きょくは 高い 大りくの 上"],
+    ["タコの しんぞうは いくつ？", "3つ", "1つ", "えらに 2つ、体に 1つ"],
+    ["体で いちばん かたいのは？", "歯", "ほね", "歯の ひょうめんが いちばん かたい"],
+    ["エベレストを いちばん ふかい 海に しずめると？", "かくれる", "頭が 出る", "海 1万900m、山 8849m"],
+    ["エッフェルとうが 高く なるのは？", "夏", "冬", "てつは あつさで のびる"],
+    ["せかいで 数が 多いのは？", "ニワトリ", "人", "ニワトリは 人の 3ばい いじょう"],
+    ["ひろいのは？", "北海道", "スイス", "北海道は スイスの 2ばい"],
+    ["おもいのは？", "くも ひとつ", "ゾウ 1とう", "わたぐも 1つで 500トン"],
+    ["東京から 近いのは？", "うちゅう", "大阪", "うちゅう 100km、大阪 400km"],
+    ["ほねが 多いのは？", "りょう手", "頭", "りょう手で 54こも ある"],
+    ["クレオパトラに 近い 時代は？", "人が 月に 行く", "ピラミッド", "ピラミッドは 2500年も 前"],
+    ["高いのは？", "入道雲", "ふじ山", "高い ものは 1万mを こえる"],
+    ["大さじ 1ぱいで おもいのは？", "しお", "さとう", "しお 18g、さとう 9g"],
+    ["のびるのが はやいのは？", "手の つめ", "足の つめ", "手は 足の 2ばい はやい"],
+    ["水に うくのは？", "古い たまご", "新しい たまご", "古いと 中の 空気が ふえる"],
+    ["むかしから いるのは？", "トンボ", "きょうりゅう", "トンボは 3おく年 前から"],
+    ["数が 多いのは？", "うちゅうの 星", "地球の すな", "星の ほうが ずっと 多い"],
+    ["先に 地球に いたのは？", "サメ", "木", "サメは 4おく年 前から いる"],
+    ["長いのは？", "人の ちょう", "キリンの くび", "ちょうは 7m ちかく、くびは 2m"],
+    ["日本で 多いのは？", "おてら", "コンビニ", "おてらは 7万 いじょう、コンビニ 5万6千"],
+    ["くらべると 長いのは？", "太陽の はば", "月までの きょり", "太陽 139万km、月まで 38万km"],
+    ["1おく円の 1万円さつ、おもさは？", "10キロ", "1キロ", "1まい 1グラムが 1万まい"],
+    ["おなじ かさで おもいのは？", "水", "あぶら", "あぶらは 水に うく"],
+    ["かんぴょうは 何から 作る？", "ユウガオの 実", "海そう", "実を ひもの ように むいて ほす"],
+    ["にじの いちばん 外がわの 色は？", "赤", "むらさき", "外が 赤、内が むらさき"],
+    ["目が 多いのは？", "ホタテ", "クモ", "ホタテは 何十こも。クモは ふつう 8こ"]
+  ];
+  // c = あたりの ばんごう
+  var ZB_QUIZ = (function () {
+    var out = [], i, r;
+    for (i = 0; i < ZB_Q_TRUE.length; i++) {
+      r = ZB_Q_TRUE[i];
+      out.push({ q: r[0], a: ["◯", "✕"], c: 0, why: r[1] });
+    }
+    for (i = 0; i < ZB_Q_FALSE.length; i++) {
+      r = ZB_Q_FALSE[i];
+      out.push({ q: r[0], a: ["◯", "✕"], c: 1, why: r[1] });
+    }
+    for (i = 0; i < ZB_Q_WHICH.length; i++) {
+      r = ZB_Q_WHICH[i];
+      out.push({ q: r[0], a: [r[1], r[2]], c: 0, why: r[3] });
+    }
+    return out;
+  })();
 
   function zbShuffle(list) {
     var i, j, t;
@@ -4050,7 +4191,9 @@
     q = zbQuizBag.pop();
     a = q.a.slice(0);
     c = q.c;
-    if (a.length === 2 && Math.random() < 0.5) { a = [a[1], a[0]]; c = 1 - c; }
+    // ◯✕ は ならびを かえない (いつも ◯ が 左)。◯ と ✕ の かずは
+    // ほぼ 半分ずつ なので、ならびから あたりは 分からない
+    if (a.length === 2 && a[0] !== "◯" && Math.random() < 0.5) { a = [a[1], a[0]]; c = 1 - c; }
     zbQuizLast = q.q;
     return { q: q.q, a: a, c: c, why: q.why || "" };
   }
@@ -4101,11 +4244,11 @@
     if (kind === "mul") return { kind: "mul", amount: 2, label: "×2", good: 1 };
     if (kind === "add") {
       a = Math.max(3, Math.round(n * (0.3 + Math.random() * 0.5)));
-      return { kind: "add", amount: a, label: "+" + moComma(a), good: 1 };
+      return { kind: "add", amount: a, label: "+" + zbNum(a), good: 1 };
     }
     if (kind === "sub") {
       a = Math.max(2, Math.round(n * (0.15 + Math.random() * 0.25)));
-      return { kind: "sub", amount: a, label: "−" + moComma(a), good: 0 };
+      return { kind: "sub", amount: a, label: "−" + zbNum(a), good: 0 };
     }
     return { kind: "pow", amount: 1, label: "ぶき+1", good: 2 };
   }
@@ -4165,7 +4308,7 @@
     if (useP && q >= 1 && q <= 9) {
       out[bi] = { kind: "pow", amount: q, label: "ぶき+" + q, good: 2 };
     } else if (a >= 1) {
-      out[bi] = { kind: "add", amount: a, label: "+" + moComma(a), good: 1 };
+      out[bi] = { kind: "add", amount: a, label: "+" + zbNum(a), good: 1 };
     } else if (q >= 1) {
       out[bi] = { kind: "pow", amount: q, label: "ぶき+" + q, good: 2 };
     }
@@ -4187,7 +4330,7 @@
     a = Math.max(2, Math.round(n * ZB_QUIZ_COST));
     for (i = 0; i < count; i++) {
       if (i === quiz.c) continue;
-      opts[i] = { kind: "sub", amount: a, label: "−" + moComma(a), good: 0 };
+      opts[i] = { kind: "sub", amount: a, label: "−" + zbNum(a), good: 0 };
     }
     return opts;
   }
@@ -4221,7 +4364,7 @@
   function zbBoxReward(n) {
     if (Math.random() < 0.4) return { kind: "pow", amount: 1, label: "ぶき+1" };
     var a = Math.max(5, Math.round(n * 0.35) + 5);
-    return { kind: "add", amount: a, label: "なかま+" + moComma(a) };
+    return { kind: "add", amount: a, label: "なかま+" + zbNum(a) };
   }
 
   function zbGen() {
@@ -4299,25 +4442,62 @@
     return i;
   }
 
+  // ことばが 2つ つづけて 出る とき (もんの すぐ あとに「やっつけた！」など) は
+  // かさならない ように 1だん 上に ずらす
   function zbPop(text, color) {
-    zbPops.push({ text: text, color: color, x: zbX, life: 1 });
+    var last = zbPops.length ? zbPops[zbPops.length - 1] : null;
+    zbPops.push({ text: text, color: color, x: zbX, life: 1,
+                  up: last && last.life > 0.7 ? last.up + 1 : 0 });
+  }
+
+  // もんだいの こたえあわせの 音。クイズばんぐみの「ピンポーン」と「ブブー」
+  function zbSoundRight() { play([1319, 1047], 0.17, "sine", 0.2); }
+  function zbSoundWrong() { play([185, 185], 0.16, "sawtooth", 0.07); }
+
+  // こたえた もんだいを おぼえて、こたえと わけを 見せる。
+  // まちがえた ときに 正しい こたえが 分からない ままだと、ただ そんを した だけに なる。
+  // ばんの 中の おびは つぎの もんだいで 上書き されるので、ばんの 下の 行にも のこす
+  var zbQuizLog = [], zbTold = null, zbFlash = 0;
+
+  function zbTell(q, ok) {
+    var ans = String(q.a[q.c]), why = q.why || "";
+    zbQuizLog.push({ q: q.q, ans: ans, why: why, ok: ok });
+    zbTold = { ok: ok, ans: ans, why: why, life: 1 };
+    zbFlash = ok ? 1 : -1;
+    zbMsgEl.className = ok ? "msg told" : "msg told miss";
+    zbMsgEl.innerHTML = (ok ? "◯ せいかい！　" : "✕ こたえは「" + ans + "」　") + why;
   }
 
   function zbHit(item) {
     var lane = zbLane(item.opts.length);
     var o = item.opts[lane];
-    var before = zbN;
-    var pre = item.quiz ? (lane === item.quiz.c ? "あたり！ " : "はずれ！ ") : "";
+    var before = zbN, q = item.quiz, ok = false, loss;
+    if (q) {
+      ok = lane === q.c;
+      zbTell(q, ok);
+    }
+    if (q && !ok) {
+      // はずれの ばつは「いまの なかま」の 2わり。みちすじの かずで ひくと、
+      // なかまが へって いる ときに 1かいの まちがいで おしまいに なって しまう。
+      // もんだいの まちがいでは おしまいに しない (さいごの 1人は のこす)
+      loss = Math.max(1, Math.round(zbN * ZB_QUIZ_COST));
+      if (loss > zbN - 1) loss = zbN - 1;
+      zbN -= loss;
+      zbPop(loss > 0 ? "ざんねん！ −" + zbNum(loss) + "にん" : "ざんねん！", "#c0392b");
+      zbSoundWrong();
+      zbPaint();
+      return;
+    }
     zbN = zbApplyN(o, zbN);
     zbP = zbApplyP(o, zbP);
     if (zbN < 0) zbN = 0;
     if (o.kind === "pow") {
-      zbPop(pre + "ぶきが つよく なった！", "#c2691f");
-      soundGold();
+      zbPop((q ? "せいかい！ " : "") + "ぶきが つよく なった！", "#c2691f");
+      if (q) zbSoundRight(); else soundGold();
     } else {
-      zbPop(pre + (zbN >= before ? "+" : "−") + moComma(Math.abs(zbN - before)) + "にん",
-            zbN >= before ? "#2f8f4e" : "#c0392b");
-      if (zbN >= before) soundHit(); else soundAgain();
+      zbPop((q ? "せいかい！ " : "") + (zbN >= before ? "+" : "−") +
+            zbNum(Math.abs(zbN - before)) + "にん", zbN >= before ? "#2f8f4e" : "#c0392b");
+      if (q) zbSoundRight(); else if (zbN >= before) soundHit(); else soundAgain();
     }
     if (zbN <= 0) { zbEnd("なかまが いなく なりました。"); return; }
     zbPaint();
@@ -4451,15 +4631,27 @@
     g.fillText(text, x, y);
   }
 
-  // ながい ことばは はこに 入る まで 字を ちいさく する
-  function zbFitText(g, text, x, y, px, maxW, color, halo) {
-    var i, w;
-    for (i = 0; i < 8; i++) {
-      g.font = "bold " + Math.round(px) + "px sans-serif";
-      w = g.measureText ? g.measureText(text).width : 0;
-      if (!w || w <= maxW) break;
-      px = px * (maxW / w) * 0.98;
+  // 字の はばは 大きさに 比例する。毎こま measureText を くりかえすと
+  // ふるい iPad では 重いので、100px の ときの はばを 1ど だけ はかって おぼえる
+  var zbTextW = {}, zbTextN = 0;
+  function zbWidth(g, text, px) {
+    var w = zbTextW[text];
+    if (w === undefined) {
+      if (zbTextN > 300) { zbTextW = {}; zbTextN = 0; }   // かずの ことばは つぎつぎ かわる
+      g.font = "bold 100px sans-serif";
+      w = g.measureText ? g.measureText(text).width : text.length * 100;
+      zbTextW[text] = w;
+      zbTextN++;
     }
+    return w * px / 100;
+  }
+
+  // ながい ことばは はこに 入る まで 字を ちいさく する。
+  // least が あれば それより 小さくは しない (はみ出す ほうが 読めない より まし)
+  function zbFitText(g, text, x, y, px, maxW, color, halo, least) {
+    var w = zbWidth(g, text, px);
+    if (w > maxW) px = px * maxW / w;
+    if (least && px < least) px = least;
     zbBigText(g, text, x, y, px, color, halo);
   }
 
@@ -4500,9 +4692,9 @@
            * (sc < 0.72 ? 0.72 : sc);
       if (item.quiz) {
         zbFitText(g, "" + item.quiz.a[i], x0 + w / 2, y, px, w * 0.88,
-                  "#ffffff", "rgba(0,0,0,.25)");
+                  "#ffffff", "rgba(0,0,0,.25)", zbH * 0.024);
       } else {
-        zbBigText(g, o.label, x0 + w / 2, y, px, "#ffffff", "rgba(0,0,0,.25)");
+        zbFitText(g, o.label, x0 + w / 2, y, px, w * 0.9, "#ffffff", "rgba(0,0,0,.25)");
       }
     }
     // もんだいは もんの 上。ばんの 上に はみ出す ときは ここには 出さない。
@@ -4537,19 +4729,82 @@
     return best;
   }
 
-  // もんだいは みちの 上だと、たまや おばけ、つぎの もんに かくれる ことが
-  // ある。かならず 読めるように ばんの 下にも 出す。ここは だれも 通らない
-  function zbQuizBand(g) {
-    var it = zbQuizNext(), y, h;
-    if (!it) return;
-    h = zbH * 0.082;
-    y = zbH - h - zbH * 0.016;
-    g.fillStyle = "rgba(255,255,255,.94)";
+  // つぎに 来る おばけの しゅるい (もう たたかって いる あいだは 出さない)
+  function zbNextKind() {
+    var w = zbComing();
+    if (w) return w.live ? "" : (w.of || "");
+    return zbPat ? (zbPat.of || "") : "";
+  }
+
+  var ZB_HINT = {
+    hard: "つぎは かたい おばけ。ぶきを とろう",
+    fast: "つぎは はやい おばけ。ちからを 多めに",
+    boss: "つぎは 大おばけ！ ちからを ためよう"
+  };
+
+  // ばんの 下の しろい おび。ここは だれも 通らないので、かならず 読める。
+  // 出す ものは 大事な じゅんに 1つ だけ:
+  //   1) これから とおる もんだい (みちの 上の 字は たまや おばけに かくれる)
+  //   2) いま こたえた もんだいの こたえと わけ
+  //   3) つぎの おばけが かたい / はやい / 大 の とき、その しらせ
+  function zbBand(g) {
+    var it, y, h = zbH * 0.094, col, l1, l2 = "", k;
+    if (zbOver) return;
+    it = zbQuizNext();
+    if (it) {
+      col = "#4a5878";
+      l1 = it.quiz.q;
+    } else if (zbTold && zbTold.life > 0) {
+      col = zbTold.ok ? "#2f8f4e" : "#c0392b";
+      l1 = zbTold.ok ? "◯ せいかい！" : "✕ こたえは「" + zbTold.ans + "」";
+      l2 = zbTold.why;
+    } else {
+      k = zbNextKind();
+      if (!k) return;
+      col = "#8a5a12";
+      l1 = ZB_HINT[k];
+    }
+    y = zbH - h - zbH * 0.012;
+    g.fillStyle = "rgba(255,255,255,.95)";
     g.fillRect(zbW * 0.03, y, zbW * 0.94, h);
-    g.fillStyle = "rgba(74,88,120,.55)";
-    g.fillRect(zbW * 0.03, y, zbW * 0.94, 3);
-    zbFitText(g, it.quiz.q, zbW * 0.5, y + h / 2, zbH * 0.055, zbW * 0.88,
-              "#2f2a24", null);
+    g.fillStyle = col;
+    g.fillRect(zbW * 0.03, y, zbW * 0.94, 4);
+    if (l2) {
+      zbFitText(g, l1, zbW * 0.5, y + h * 0.34, zbH * 0.040, zbW * 0.88, col, null);
+      zbFitText(g, l2, zbW * 0.5, y + h * 0.73, zbH * 0.036, zbW * 0.88, "#2f2a24", null);
+    } else {
+      zbFitText(g, l1, zbW * 0.5, y + h * 0.54, zbH * 0.052, zbW * 0.88,
+                it ? "#2f2a24" : col, null);
+    }
+  }
+
+  // ばんの 上の はしに、15かいぶんの おばけを 丸で ならべる。
+  // のりこえた ぶんは みどり。これからの ぶんは しゅるいの 色
+  // (はいいろ = かたい、きいろ = はやい、赤くて 大きい = 大おばけ)。
+  // 出かたは いつも おなじ なので、ここを 見れば つぎが 分かる
+  function zbPips(g) {
+    var i, k, x, r, y = zbH * 0.022, gap = zbW * 0.92 / ZB_GOAL;
+    if (!g.beginPath) return;
+    g.fillStyle = "rgba(255,255,255,.78)";
+    g.fillRect(0, 0, zbW, zbH * 0.044);
+    for (i = 0; i < ZB_GOAL; i++) {
+      k = ZB_PLAN[i];
+      x = zbW * 0.04 + gap * (i + 0.5);
+      r = zbH * (k === "boss" ? 0.013 : 0.009);
+      g.fillStyle = i < zbCleared ? "#3f8f4f"
+                  : k === "boss" ? "#c0392b" : k === "hard" ? "#7f8a9c"
+                  : k === "fast" ? "#e0a81c" : "#cfc7b4";
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2, false);
+      g.fill();
+      if (i === zbCleared && !zbOver) {          // いま むかって いる ところ
+        g.strokeStyle = "#2f2a24";
+        g.lineWidth = 2;
+        g.beginPath();
+        g.arc(x, y, r + 3, 0, Math.PI * 2, false);
+        g.stroke();
+      }
+    }
   }
 
   // おばけも こちらと おなじ「かたまり＋上に かず」で 見せる
@@ -4562,8 +4817,8 @@
     if (item.boss) { zbDrawBoss(g, item, y); zbGhostSkin(""); return; }
     zbLine(g, item, zbGhost);
     // かずは かたまりの 上。れつが 上へ のびる ぶん よけて おく
-    top = zbTopY(y - zbLineH(item) - zbH * 0.045, y + zbH * 0.09, 0.055);
-    zbBigText(g, moComma(Math.ceil(item.hp)), zbW * 0.5, top,
+    top = zbTopY(y - zbLineH(item) - zbH * 0.045, y + zbH * 0.09, 0.085);
+    zbBigText(g, zbNum(Math.ceil(item.hp)), zbW * 0.5, top,
               zbH * 0.062, "#8e2b22", "#ffffff");
     if (item.of) {
       zbBigText(g, item.of === "hard" ? "かたい" : "はやい", zbW * 0.5, top - zbH * 0.052,
@@ -4589,7 +4844,7 @@
     g.fillRect(bx, by, bw, bh);
     g.fillStyle = "#c0392b";
     g.fillRect(bx, by, bw * item.hp / item.s, bh);
-    zbBigText(g, moComma(Math.ceil(item.hp)), zbW * 0.5, by - zbH * 0.045, zbH * 0.072,
+    zbBigText(g, zbNum(Math.ceil(item.hp)), zbW * 0.5, by - zbH * 0.045, zbH * 0.072,
               "#8e2b22", "#ffffff");
     zbBigText(g, "大おばけ", zbW * 0.5, by - zbH * 0.108, zbH * 0.036, "#8e2b22");
   }
@@ -4617,7 +4872,7 @@
 
   function zbDraw() {
     if (!zbCtx || !zbW) return;
-    var g = zbCtx, i, it, cy, step, off, p, sh, px, far, near, wy, sy, sy2, pf, q;
+    var g = zbCtx, i, it, cy, step, off, p, sh, px, far, near, wy, sy, sy2, pf, q, half;
     g.setTransform(zbDpr, 0, 0, zbDpr, 0, 0);
     cy = zbH * ZB_YOU;
     g.fillStyle = "#cfd9c0";                     // そとがわ (はたけ)
@@ -4680,7 +4935,7 @@
 
     if (zbN > 0) {
       zbPack(g, zbX * zbW, cy, zbN, zbUnit(zbN), zbPerson, 1);
-      zbBigText(g, moComma(zbN), zbX * zbW, cy - zbH * 0.11, zbH * 0.062, "#23324f", "#ffffff");
+      zbBigText(g, zbNum(zbN), zbX * zbW, cy - zbH * 0.11, zbH * 0.062, "#23324f", "#ffffff");
     }
 
     for (i = 0; i < zbPoofs.length; i++) {      // たおれた おばけ
@@ -4692,16 +4947,35 @@
       g.globalAlpha = 1;
     }
 
-    zbQuizBand(g);                               // いちばん 上に かく
+    // あたり / はずれ / とどかれた ときに ばん ぜんたいを さっと そめる
+    if (zbFlash !== 0) {
+      g.fillStyle = zbFlash > 0 ? "#3f8f4f" : "#c0392b";
+      g.globalAlpha = (zbFlash > 0 ? zbFlash : -zbFlash) * 0.26;
+      g.fillRect(0, 0, zbW, zbH);
+      g.globalAlpha = 1;
+    }
+
+    zbBand(g);                                   // ここから 下は いちばん 上に かく
+    zbPips(g);
 
     for (i = 0; i < zbPops.length; i++) {
       p = zbPops[i];
       g.globalAlpha = p.life < 0.4 ? p.life / 0.4 : 1;
-      // はしで 出すと ことばが ばんから はみ出すので まんなか よりに する
-      px = p.x < 0.3 ? 0.3 : (p.x > 0.7 ? 0.7 : p.x);
-      zbBigText(g, p.text, px * zbW, cy - zbH * 0.20 - (1 - p.life) * zbH * 0.1,
-                zbH * 0.05, p.color, "#ffffff");
+      // ことばが ばんから はみ出さない ように、はばを はかって 中に おさめる
+      half = zbWidth(g, p.text, zbH * 0.05) / 2;
+      if (half > zbW * 0.47) half = zbW * 0.47;
+      px = p.x * zbW;
+      if (px < half + zbW * 0.03) px = half + zbW * 0.03;
+      if (px > zbW - half - zbW * 0.03) px = zbW - half - zbW * 0.03;
+      zbFitText(g, p.text, px, cy - zbH * 0.20 - (1 - p.life) * zbH * 0.1 - p.up * zbH * 0.06,
+                zbH * 0.05, zbW * 0.94, p.color, "#ffffff");
       g.globalAlpha = 1;
+    }
+
+    if (zbPaused && !zbOver) {                   // ほかの タブから もどった ところ
+      g.fillStyle = "rgba(255,255,255,.62)";
+      g.fillRect(0, 0, zbW, zbH);
+      zbBigText(g, "さわると つづきから", zbW * 0.5, zbH * 0.45, zbH * 0.06, "#2f2a24", "#ffffff");
     }
   }
 
@@ -4825,7 +5099,8 @@
           zbN -= loss;
           zbThrough++;
           zbLostTo += loss;
-          zbPop("−" + moComma(loss) + "にん", "#c0392b");
+          zbPop("−" + zbNum(loss) + "にん", "#c0392b");
+          zbFlash = -1;
           soundAgain();
           if (zbN <= 0) {
             zbN = 0;
@@ -4873,6 +5148,9 @@
       zbPops[i].life -= 0.016 * dt;
       if (zbPops[i].life <= 0) zbPops.splice(i, 1);
     }
+    if (zbFlash > 0) { zbFlash -= 0.07 * dt; if (zbFlash < 0) zbFlash = 0; }
+    else if (zbFlash < 0) { zbFlash += 0.07 * dt; if (zbFlash > 0) zbFlash = 0; }
+    if (zbTold && zbTold.life > 0) zbTold.life -= dt / 330;   // 5びょう あまり 見せる
     zbTick += dt;
   }
 
@@ -4898,9 +5176,9 @@
     var w = zbComing(), kindWord = w && w.of ? ZB_WORD[w.of] : "";
     // 「いまの ちから」と「むかって くる おばけ」を ならべる。
     // しゅるいも ここに 出す。かたい なら ぶき、ふつう なら 人数 が こたえに なる
-    var txt = "ちから <b>" + moComma(Math.round(zbDamage(zbN, zbP, w ? w.of : "", w ? w.armour : 0))) +
-      "</b>　" + kindWord + "おばけ <b>" + moComma(w ? Math.ceil(w.hp) : 0) + "</b>　なかま <b>" +
-      moComma(zbN) + "</b>　ぶき <b>" + zbP + "</b>　<b>" + zbCleared + "</b>/" + ZB_GOAL + "かい";
+    var txt = "ちから <b>" + zbNum(zbDamage(zbN, zbP, w ? w.of : "", w ? w.armour : 0)) +
+      "</b>　" + kindWord + "おばけ <b>" + zbNum(w ? Math.ceil(w.hp) : 0) + "</b>　なかま <b>" +
+      zbNum(zbN) + "</b>　ぶき <b>" + zbP + "</b>　<b>" + zbCleared + "</b>/" + ZB_GOAL + "かい";
     if (txt !== zbBandWas) {
       zbBandWas = txt;
       zbStageEl.innerHTML = txt;
@@ -4916,13 +5194,27 @@
     if (zbOver) return;
     zbOver = true;
     var isBest = zbCleared > zbWas;
-    var win = zbCleared >= ZB_GOAL;
+    var win = zbCleared >= ZB_GOAL, i, okN = 0, missN = 0, rev = "";
     var label = rankLabelOf(zbCleared, ZB_RANKS);
     var text = win
       ? "さいごまで いきました！ おばけ " + ZB_GOAL + " かい ぜんぶ のりこえました！"
       : why + " おばけを " + zbCleared + " / " + ZB_GOAL + " かい のりこえました！";
     if (label) text += " " + label;
     if (isBest) text += " さいこう きろく！";
+    zbLive = false;
+    zbOverT = 0;
+    // もんだいが 何もん あって 何もん あたったか。まちがえた ものは
+    // こたえと わけを 下に ならべる (あそんで いる あいだは 読む ひまが ない)
+    for (i = 0; i < zbQuizLog.length; i++) {
+      if (zbQuizLog[i].ok) { okN++; continue; }
+      if (missN < 6) {
+        rev += "✕ " + zbQuizLog[i].q + " → <b>" + zbQuizLog[i].ans + "</b>" +
+               (zbQuizLog[i].why ? "（" + zbQuizLog[i].why + "）" : "") + "<br>";
+      }
+      missN++;
+    }
+    if (zbQuizLog.length) text += " もんだいは " + zbQuizLog.length + "もん中 " + okN + "もん せいかい。";
+    zbReviewEl.innerHTML = rev ? "<b>まちがえた もんだい</b><br>" + rev : "";
     zbPaint();
     if (label) {
       celebrate(zbMsgEl, text);
@@ -4937,18 +5229,24 @@
     if (!zbCtx) return;
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
-    var w = Math.min(vw - 30, 425);
+    var top = zbCanvas.parentNode.offsetTop;
+    var room = top > 0 ? vh - top - ZB_BELOW : 9999;   // 下に 「もういちど」ぶん のこす
+    // iPad では ばんを 大きく つかう (前は どこでも 425 どまりで、字が 小さかった)。
+    // たかさが 足りない ときは はばも つめて、たてなが の かたちを たもつ
+    var w = Math.min(vw - 38, 560);
+    if (w > room / 1.3) w = Math.floor(room / 1.3);
     if (w < 240) w = 240;
     var h = Math.round(w * 1.35);
-    var top = zbCanvas.parentNode.offsetTop;
-    if (top > 0) {
-      var room = vh - top - ZB_BELOW;            // 下に 「もういちど」ぶん のこす
-      if (h > room) h = room;
-    }
+    if (h > room) h = room;
     if (h < 260) h = 260;
+    // 画そ数は ふやさない (よこ 850 どまり)。大きく しても 描く 重さは かわらない
+    var dpr = window.devicePixelRatio > 1 ? 2 : 1;
+    if (w * dpr > 850) dpr = 850 / w;
+    // かわって いなければ canvas を 作りなおさない (作りなおすと 中身が きえて 重い)
+    if (w === zbW && h === zbH && dpr === zbDpr && zbCanvas.width > 0) { zbDraw(); return; }
     zbW = w;
     zbH = h;
-    zbDpr = window.devicePixelRatio > 1 ? 2 : 1;
+    zbDpr = dpr;
     zbCanvas.style.width = zbW + "px";
     zbCanvas.style.height = zbH + "px";
     zbCanvas.width = Math.round(zbW * zbDpr);
@@ -4963,10 +5261,45 @@
     zbLast = now;
     if (dt < 0.2) dt = 0.2;
     if (dt > 3) dt = 3;
+    // ほかの タブや アプリから もどった ところ。さわる まで うごかさない
+    if (zbPaused) { zbDraw(); zbRaf = null; return; }
     zbStep(dt);
     zbDraw();
-    if (!zbOver) zbPaint();                      // おばけの かずは けずれて いく
+    if (!zbOver) {
+      zbPaint();                                 // おばけの かずは けずれて いく
+    } else {
+      // おわった あと、ことばが きえたら 止める (止めないと ずっと 描きつづける)
+      zbOverT += dt;
+      if (zbOverT > 150) { zbRunning = false; zbRaf = null; return; }
+    }
     zbRaf = anRequest(zbFrame);
+  }
+
+  // とちゅうで 止めた ところから。さわった ときに よぶ
+  function zbWake() {
+    if (!zbPaused) return;
+    zbPaused = false;
+    if (zbRunning && zbRaf === null) { zbLast = 0; zbFrame(); }
+  }
+
+  // タブを もどした とき、とちゅうなら そのまま のこして true を かえす。
+  // いきなり うごき出すと こまるので、さわる まで 止めて おく
+  function zbResume() {
+    if (!zbLive || zbOver) return false;
+    zbStop();
+    zbPaused = true;
+    zbResize();
+    zbRunning = true;
+    zbLast = 0;
+    zbFrame();
+    return true;
+  }
+
+  // ホームボタンで アプリを はなれた ときも、もどったら 止まって いる ように
+  if (document.addEventListener) {
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden && zbRunning && zbLive && !zbOver) zbPaused = true;
+    }, false);
   }
 
   function zbBuildSpeeds() {
@@ -5006,6 +5339,13 @@
     zbCleared = 0;
     zbThrough = 0;
     zbLostTo = 0;
+    zbQuizLog = [];
+    zbTold = null;
+    zbFlash = 0;
+    zbPaused = false;
+    zbOverT = 0;
+    zbLive = true;
+    zbReviewEl.innerHTML = "";
     zbOver = false;
     zbBest = Number(load(zbKey(), "0")) || 0;
     zbWas = zbBest;
@@ -5031,10 +5371,11 @@
   function zbAimAt(clientX) {
     if (!zbW) return;
     var rect = zbCanvas.getBoundingClientRect();
-    var x = (clientX - rect.left) / (rect.right - rect.left);
+    var x = (clientX - rect.left - (zbCanvas.clientLeft || 0)) / zbW;   // 枠の ぶんを ひく
     if (x < 0) x = 0;
     if (x > 1) x = 1;
     zbAim = x;
+    zbWake();
   }
 
   // ばんの 上に ある ゆびを つかう。touches[0] は「画面の どこかに さいしょに
@@ -5104,7 +5445,9 @@
     return {
       n: zbN, p: zbP, power: zbPower(), cleared: zbCleared, over: zbOver, running: zbRunning,
       x: zbX, pos: zbPos, shots: zbShots.length, gates: zbGates,
-      through: zbThrough, lostTo: zbLostTo,
+      through: zbThrough, lostTo: zbLostTo, quizLog: zbQuizLog, paused: zbPaused,
+      told: zbTold ? { ok: zbTold.ok, ans: zbTold.ans, why: zbTold.why, life: zbTold.life } : null,
+      w: zbW, h: zbH, items: zbItems.length,
       ws: zbComing() ? Math.ceil(zbComing().hp) : zbStrength(zbGates + ZB_GATES, zbKindOf(zbWaveNo + 1)),
       wof: zbComing() ? (zbComing().of || "") : zbKindOf(zbWaveNo + 1),
       warm: zbComing() ? (zbComing().armour || 0) : (zbPat ? zbPat.armour : 0),
@@ -5113,7 +5456,9 @@
                      boss: !!next.boss, of: next.of || "", live: !!next.live,
                      opts: next.opts ? zbOptInfo(next.opts) : null,
                      colx: zbLiveX(next),
-                     quiz: next.quiz ? next.quiz.q : null } : null,
+                     quiz: next.quiz ? next.quiz.q : null,
+                     quizC: next.quiz ? next.quiz.c : -1,
+                     quizA: next.quiz ? next.quiz.a : null } : null,
       box: box ? { y: box.y, x: box.x, hp: box.hp, hp0: box.hp0, label: box.prize.label } : null
     };
   };
@@ -5131,9 +5476,9 @@
     { key: "memory", tab: "tab-memory", pane: "game-memory", show: meStart, hide: meStop, resume: meResume, resize: meResize },
     { key: "odd",    tab: "tab-odd",    pane: "game-odd",    show: odStart, hide: odStop, resume: odResume, resize: odResize },
     { key: "beads",  tab: "tab-beads",  pane: "game-beads",  show: beStart, hide: beStop, resume: beResume, resize: beResize },
-    { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop, resize: anResize },
+    { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop, resume: anResume, resize: anResize },
     { key: "jenga",  tab: "tab-jenga",  pane: "game-jenga",  show: jgStart, hide: jgStop, resize: jgResize },
-    { key: "zombie", tab: "tab-zombie", pane: "game-zombie", show: zbStart, hide: zbStop, resize: zbResize }
+    { key: "zombie", tab: "tab-zombie", pane: "game-zombie", show: zbStart, hide: zbStop, resume: zbResume, resize: zbResize }
   ];
 
   var curTab = "";
