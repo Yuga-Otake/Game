@@ -378,6 +378,7 @@
   .dex .yet { opacity: .45; }
   #animal-wrap { margin: 0 auto; }
   #animal-canvas {
+    box-sizing: content-box;       /* 枠の ぶんだけ 絵が ちぢまない ように */
     display: block;
     margin: 0 auto;
     background: #fffaf0;
@@ -390,6 +391,7 @@
   /* ---- ジェンガ ---- */
   #jenga-wrap { margin: 0 auto; }
   #jenga-canvas {
+    box-sizing: content-box;       /* 枠の ぶんだけ 絵が ちぢまない ように */
     display: block;
     margin: 0 auto;
     background: #e8f0f6;
@@ -2671,8 +2673,12 @@
     anRankShown = now;
   }
   var anNext = 0, anOver = false, anOverCount = 0, anBiggestSeen = false;
-  var anRaf = null, anRunning = false, anCooldown = 0;
+  var anRaf = null, anRunning = false, anCooldown = 0, anDrawnCount = 0;
   var anStarted = false;         // はじまる まえの 書きかえで しょうごうを しらせない ための めじるし
+  var anAimX = -1;               // ゆびの いち (はこの なかの x)。-1 なら さわっていない
+  var anDirty = true;            // true なら つぎの コマで かならず 描きなおす
+  var anSpriteKey = "";          // いまの えが 何で 作った ものか。かわった ときだけ 作りなおす
+  var anTouchAt = 0;             // さいごに ゆびで さわった じかん。このあとの click は むしする
 
   function anRadius(type) { return anRadii[type]; }
 
@@ -2783,6 +2789,11 @@
 
   // どうぶつの絵は まいかい 描くと 重いので、いちど 画像にしてから 使いまわす
   function anBuildSprites() {
+    // 大きさ・倍率・どうぶつの しゅるいが おなじなら 作りなおさない。
+    // ふるい iPad は 使い終わった canvas の かいほうが おそく、作りすぎると おちる
+    var key = anW + "|" + anDpr + "|" + anTheme.key;
+    if (key === anSpriteKey && anSprites.length) return;
+    anSpriteKey = key;
     anRadii = [];
     anSprites = [];
     var frac = AN_BASE;
@@ -2823,7 +2834,6 @@
     //   0.88 → 🐘 が 69%。クリア まんなか 10% / ばらまき 0%（まだ きびしい）
     //   0.94 → 🐘 が 65%。クリア まんなか 25% / ばらまき 5%
     var h = Math.round(w * 0.94);
-    var changed = (w !== anW);
 
     anW = w;
     anH = h;
@@ -2837,7 +2847,9 @@
     anBuildSprites();
     // 幅が変わったら、いまの どうぶつの 大きさも 合わせる
     for (var i = 0; i < anBodies.length; i++) anBodies[i].r = anRadius(anBodies[i].type);
-    if (changed) anDraw();
+    // canvas の はばを 入れると 絵が きえる。おしまいの あとは 描く ループが
+    // 止まっているので、いつも ここで 描きなおす
+    anDraw();
   }
 
   function anAdd(type, x, y, vx, vy) {
@@ -2856,13 +2868,21 @@
     anNextEl.innerHTML = anFaces()[anNext];
   }
 
-  function anDrop(x) {
-    if (anOver || !anRunning || anCooldown > 0) return;
+  // かべに めり込まない ように はこの なかに おさめる。おとす ときも
+  // ゆびの めやすを 見せる ときも おなじ きまりを 使う
+  function anClampX(x) {
     var r = anRadius(anNext);
     if (x < r + 2) x = r + 2;
     if (x > anW - r - 2) x = anW - r - 2;
-    anAdd(anNext, x, r + 4, 0, 0);
+    return x;
+  }
+
+  function anDrop(x) {
+    if (anOver || !anRunning || anCooldown > 0) return;
+    var r = anRadius(anNext);
+    anAdd(anNext, anClampX(x), r + 4, 0, 0);
     anCooldown = 22;
+    anDirty = true;
     soundFlip();
     anPickNext();
   }
@@ -3037,6 +3057,8 @@
   function anFinish() {
     anOver = true;
     anRunning = false;
+    anAimX = -1;                                 // めやすを けして 最後の 絵を 描きなおす
+    anDirty = true;
 
     var best = anScore > anBest && anScore > 0;
     if (best) {
@@ -3067,17 +3089,15 @@
     g.setTransform(anDpr, 0, 0, anDpr, 0, 0);
     g.clearRect(0, 0, anW, anH);
 
-    // おしまいの めやすの線
-    var lineY = anH * AN_LINE;
-    g.strokeStyle = "#e6d7b6";
-    g.lineWidth = 2;
-    g.beginPath();
-    g.moveTo(0, lineY);
-    g.lineTo(anW, lineY);
-    g.stroke();
+    // おしまいの めやすの線。うすい ベージュだと 見えないので ほんのり 赤い てんせんに する。
+    // setLineDash は ふるい iPad に ないので、みじかい 四角を ならべる
+    var lineY = Math.round(anH * AN_LINE);
+    g.fillStyle = "rgba(214,96,96,.55)";
+    for (var dx = 0; dx < anW; dx += 14) g.fillRect(dx, lineY - 1, 8, 3);
 
     for (var i = 0; i < anBodies.length; i++) {
       var b = anBodies[i];
+      b.lx = b.x; b.ly = b.y; b.la = b.a;       // いま 描いた いち。うごいたか しらべる ために おぼえる
       var sp = anSprites[b.type];
       if (!sp) continue;
       g.save();
@@ -3086,12 +3106,39 @@
       g.drawImage(sp, -b.r, -b.r, b.r * 2, b.r * 2);
       g.restore();
     }
+
+    // ゆびの 上に 次の どうぶつを うすく 見せて、まっすぐ 下に 線を ひく
+    anDrawnCount = anBodies.length;
+    anDirty = false;
+    if (anAimX >= 0 && !anOver && anRunning) {
+      var psp = anSprites[anNext];
+      if (psp) {
+        var pr = anRadius(anNext), px = anClampX(anAimX);
+        g.fillStyle = "rgba(120,100,70,.22)";
+        g.fillRect(Math.round(px) - 1, pr * 2 + 4, 2, anH - pr * 2 - 4);
+        g.globalAlpha = 0.5;
+        g.drawImage(psp, px - pr, 4, pr * 2, pr * 2);
+        g.globalAlpha = 1;
+      }
+    }
+  }
+
+  // 前に 描いた ときから うごいた どうぶつが いるか。いなければ 描きなおさない
+  // (NaN は「まだ 描いて いない」ので うごいた ことに する)
+  function anMoved() {
+    if (anBodies.length !== anDrawnCount) return true;
+    for (var i = 0; i < anBodies.length; i++) {
+      var b = anBodies[i];
+      if (!(Math.abs(b.x - b.lx) < 0.02 && Math.abs(b.y - b.ly) < 0.02 &&
+            Math.abs(b.a - b.la) < 0.001)) return true;
+    }
+    return false;
   }
 
   function anFrame() {
     if (!anRunning) { anRaf = null; return; }
     anStep();
-    anDraw();
+    if (anDirty || anMoved()) anDraw();
     anRaf = anRequest(anFrame);
   }
 
@@ -3116,6 +3163,7 @@
     anOverCount = 0;
     anBiggestSeen = false;
     anCooldown = 0;
+    anAimX = -1;
     anStarted = false;
     anRankShown = anRankIndex(0);
     anPaintScore();
@@ -3126,13 +3174,28 @@
     anPaintDex();
     anResize();
     anPickNext();
+    anDirty = true;
     anRunning = true;
     anFrame();
   }
 
   function anStop() {
     anRunning = false;
+    anAimX = -1;                                 // ゆびを のせた まま タブを かえても めやすを のこさない
     if (anRaf !== null) { anCancel(anRaf); anRaf = null; }
+  }
+
+  // タブを また ひらいた とき。ラウンドの とちゅうなら ぬりなおして
+  // つづきから うごかす (true)。そうでなければ なにもしない (false)。
+  // うごきは コマ数で すすむので、止めて いた あいだに すすむ ことは ない
+  function anResume() {
+    if (!anStarted || anOver || !anCtx) return false;
+    anStop();
+    anResize();
+    anDirty = true;
+    anRunning = true;
+    anFrame();
+    return true;
   }
 
   (function () {
@@ -3143,16 +3206,62 @@
     anBuildThemeButtons();
   })();
 
+  // 画面の x を はこの なかの x に なおす。枠(border)の ぶんを ひく
+  function anLocalX(clientX) {
+    var rect = anCanvas.getBoundingClientRect();
+    return clientX - rect.left - (anCanvas.clientLeft || 0);
+  }
+
+  function anAim(x) {
+    anAimX = x;
+    anDirty = true;
+  }
+
+  // ゆびで おす ときは、はなした ところに おとす。さわって いる あいだは
+  // おとす ばしょの めやすを 見せる (ゆびが ぶれても やりなおせる ように)
   if (anCtx) {
-    onTap(anCanvas, function (e) {
+    anCanvas.ontouchstart = anCanvas.ontouchmove = function (e) {
+      anTouchAt = new Date().getTime();
+      if (e.touches && e.touches.length) anAim(anLocalX(e.touches[0].clientX));
+      if (e.preventDefault) e.preventDefault();  // スクロールや ズームを はじめさせない
+      return false;
+    };
+    anCanvas.ontouchend = function (e) {
+      anTouchAt = new Date().getTime();
+      var x = anAimX;
+      if (e.changedTouches && e.changedTouches.length) x = anLocalX(e.changedTouches[0].clientX);
+      anAim(-1);
+      if (x >= 0 || (e.changedTouches && e.changedTouches.length)) anDrop(x);
+      if (e.preventDefault) e.preventDefault();  // あとから click が 来て 2かい おちない ように
+      return false;
+    };
+    anCanvas.ontouchcancel = function (e) {
+      anTouchAt = new Date().getTime();
+      anAim(-1);
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    };
+    anCanvas.onmousemove = function (e) {
+      if (new Date().getTime() - anTouchAt < 800) return;
       e = e || window.event;
-      var rect = anCanvas.getBoundingClientRect();
-      var cx = (e.clientX !== undefined ? e.clientX : 0) - rect.left;
-      anDrop(cx);
-    });
+      anAim(anLocalX(e.clientX !== undefined ? e.clientX : 0));
+    };
+    anCanvas.onmouseout = function () { if (anAimX >= 0) anAim(-1); };
+    anCanvas.onclick = function (e) {
+      // ゆびの あとに 来る click は もう おとして いるので むしする
+      if (new Date().getTime() - anTouchAt < 800) return;
+      e = e || window.event;
+      anDrop(anLocalX(e.clientX !== undefined ? e.clientX : 0));
+    };
   }
 
   onTap($("animal-reset"), anStart);
+
+  // しらべる ための 窓。よむ だけで、ここから さわる ことは できない
+  window.anState = function () {
+    return { bodies: anBodies.length, running: anRunning, over: anOver,
+             started: anStarted, next: anNext, aimX: anAimX, w: anW, score: anScore };
+  };
 
 
   // ============================================================
@@ -3457,7 +3566,12 @@
     if (dt < 0.2) dt = 0.2;
     if (dt > 3) dt = 3;
     jgStep(dt);
+    // おしまいの あと、かけらが 落ちきって カメラも 止まったら ループを 止める。
+    // 止めた あとも、画面の かきなおしは jgResize / jgStart が する
+    var settled = jgOver && !jgFalls.length && Math.abs(jgCamAim() - jgCam) < 0.3;
+    if (settled) jgCam = jgCamAim();
     jgDraw();
+    if (settled) { jgRunning = false; jgRaf = null; return; }
     jgRaf = anRequest(jgFrame);
   }
 
