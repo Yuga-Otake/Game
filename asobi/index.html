@@ -285,39 +285,136 @@
   .facecv { position: absolute; left: 0; top: 0; }
   .card, .pick { position: relative; }
   .card .face, .pick .face { position: absolute; left: 0; right: 0; top: 0; text-align: center; }
+  /* 穴は 土の くろい 口と くさの ふち。いきものは 穴の 中から せりあがる。
+     穴の まるで きりとって、下から うえへ 動かす だけ (見た目だけで、
+     たたける 時間には かかわらない) */
   .hole {
-    background: #cbbb95;
+    background: #4a3320;
+    background: -webkit-radial-gradient(50% 35%, circle cover, #24150a 0%, #4a3320 62%, #6b4a2c 100%);
+    background: radial-gradient(circle at 50% 35%, #24150a 0%, #4a3320 62%, #6b4a2c 100%);
+    box-shadow: inset 0 12px 20px rgba(0, 0, 0, .55), 0 4px 0 #4f8a3a;
+    -webkit-box-shadow: inset 0 12px 20px rgba(0, 0, 0, .55), 0 4px 0 #4f8a3a;
     overflow: hidden;         /* 中身がはみ出しても まるの大きさを変えない */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);   /* 古い iPad で うごく 絵が まるから はみ出す のを とめる */
     white-space: nowrap;
     border-radius: 50%;
     text-align: center;
     vertical-align: middle;
     cursor: pointer;
     position: relative;
-    border: 5px solid #b5a279;
+    border: 5px solid #9bd36b;
   }
   /* 絵は 字では なく 絵として 描く。faceSprite を 見てください */
-  .hole .mole, .hole .face { visibility: hidden; position: absolute; left: 0; top: 0; }
-  .hole .face { right: 0; text-align: center; }
-  .hole.up .face { visibility: visible; }
-  .hole.up .mole { visibility: visible; }
-  .hole.up { background: #d9c8a0; }
-  .hole.gold { background: #ffdf7a; border-color: #d99a12; }
-  /* てんすうの ひくい ものは うすい いろ。🐍 は みどり */
-  .hole.low { background: #eae2cd; }
-  .hole.snake { background: #d3e5cc; border-color: #8cc094; }
-  .hole .pop {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 2px;
-    color: #3f8f4f;
-    color: var(--good);
-    font-weight: 700;
-    visibility: hidden;
+  .hole .mole, .hole .face {
+    visibility: hidden; position: absolute; left: 0; top: 0;
+    -webkit-transform: translateY(104%); transform: translateY(104%);
+    -webkit-transform-origin: 50% 100%; transform-origin: 50% 100%;
+    -webkit-transition: -webkit-transform .14s ease-in, visibility 0s linear .14s;
+    transition: transform .14s ease-in, visibility 0s linear .14s;
   }
-  .hole.hit { background: #dff0dd; border-color: #8cc094; }
-  .hole.hit .pop { visibility: visible; }
+  .hole .face { right: 0; text-align: center; }
+  .hole.up .face, .hole.up .mole {
+    visibility: visible;
+    -webkit-transform: translateY(0); transform: translateY(0);
+    -webkit-transition: -webkit-transform .12s ease-out, visibility 0s;
+    transition: transform .12s ease-out, visibility 0s;
+  }
+  /* 手前の くさ。いきものの 足もとを かくして 穴から 出て いるように 見せる */
+  .hole:after {
+    content: ""; position: absolute; z-index: 2; left: -8%; right: -8%; bottom: -12%; height: 34%;
+    background: #6fb84d;
+    background: -webkit-linear-gradient(top, #8fd163, #5b9e3e);
+    background: linear-gradient(to bottom, #8fd163, #5b9e3e);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    pointer-events: none;
+  }
+  .hole .mole, .hole .face { z-index: 1; }
+  .hole:before {
+    content: "✦ ✦"; position: absolute; z-index: 3; left: 0; right: 0; top: 14%;
+    font-size: 26px; line-height: 1; letter-spacing: 8px; color: #fff3a0;
+    text-shadow: 0 0 8px #ffb300; opacity: 0; pointer-events: none;
+  }
+  /* きんいろ: あたたかい 金の 穴と ひかり。ちかちか する のは すこしだけ */
+  .hole.gold {
+    background: #c98f1a;
+    background: -webkit-radial-gradient(50% 40%, circle cover, #ffe27a 0%, #e3a52a 60%, #a8700f 100%);
+    background: radial-gradient(circle at 50% 40%, #ffe27a 0%, #e3a52a 60%, #a8700f 100%);
+    border-color: #ffd23f;
+    box-shadow: inset 0 8px 16px rgba(120, 70, 0, .45), 0 0 12px 3px rgba(255, 205, 50, .95);
+    -webkit-box-shadow: inset 0 8px 16px rgba(120, 70, 0, .45), 0 0 12px 3px rgba(255, 205, 50, .95);
+  }
+  .hole.up.gold:before {
+    -webkit-animation: motwinkle .7s ease-in-out infinite alternate; animation: motwinkle .7s ease-in-out infinite alternate;
+  }
+  /* てんすうの ひくい ものは うすい 穴。🐍 は みどりの 穴 */
+  .hole.low {
+    background: #8a7a62;
+    background: -webkit-radial-gradient(50% 35%, circle cover, #6f604a 0%, #94846a 65%, #b3a384 100%);
+    background: radial-gradient(circle at 50% 35%, #6f604a 0%, #94846a 65%, #b3a384 100%);
+    border-color: #d9cfae;
+  }
+  .hole.snake {
+    background: #2f6b3c;
+    background: -webkit-radial-gradient(50% 35%, circle cover, #173d22 0%, #2f6b3c 65%, #4b8d55 100%);
+    background: radial-gradient(circle at 50% 35%, #173d22 0%, #2f6b3c 65%, #4b8d55 100%);
+    border-color: #4fb06a;
+  }
+  .hole .pop {
+    position: absolute; left: 0; right: 0; top: 2%; z-index: 4;
+    color: #fff35c;
+    font-weight: 900;
+    text-shadow: 0 3px 0 #8a3a00, 3px 0 0 #8a3a00, -3px 0 0 #8a3a00, 0 -3px 0 #8a3a00, 0 0 10px #ff9a00;
+    visibility: hidden; opacity: 0;
+  }
+  .hole.gold .pop { color: #fff; }
+  .hole.hit .pop { visibility: visible; -webkit-animation: mopop .5s ease-out forwards; animation: mopop .5s ease-out forwards; }
+  .hole.hit.hit2 .pop { -webkit-animation-name: mopop2; animation-name: mopop2; }
+  .hole.hit .mole, .hole.hit .face { -webkit-animation: mobonk .28s ease-out; animation: mobonk .28s ease-out; }
+  .hole.hit.hit2 .mole, .hole.hit.hit2 .face { -webkit-animation-name: mobonk2; animation-name: mobonk2; }
+  .hole.hit.up:before { content: "★ ✦ ★"; letter-spacing: 12px; font-size: 30px; -webkit-animation: moburst .34s ease-out forwards; animation: moburst .34s ease-out forwards; }
+  .hole.hit.hit2.up:before { -webkit-animation-name: moburst2; animation-name: moburst2; }
+  /* たたいた ときは 2つの なまえで こうごに 出す。おなじ なまえだと れんだで やりなおしに ならない */
+  @-webkit-keyframes mobonk { 0% { -webkit-transform: scale(1.22, .72); } 45% { -webkit-transform: scale(.92, 1.1); } 100% { -webkit-transform: scale(1, 1); } }
+  @keyframes mobonk { 0% { transform: scale(1.22, .72); } 45% { transform: scale(.92, 1.1); } 100% { transform: scale(1, 1); } }
+  @-webkit-keyframes mobonk2 { 0% { -webkit-transform: scale(1.22, .72); } 45% { -webkit-transform: scale(.92, 1.1); } 100% { -webkit-transform: scale(1, 1); } }
+  @keyframes mobonk2 { 0% { transform: scale(1.22, .72); } 45% { transform: scale(.92, 1.1); } 100% { transform: scale(1, 1); } }
+  @-webkit-keyframes mopop { 0% { opacity: 0; -webkit-transform: translateY(40%) scale(.5); } 22% { opacity: 1; -webkit-transform: translateY(0) scale(1.3); } 60% { opacity: 1; -webkit-transform: translateY(-14%) scale(1); } 100% { opacity: 0; -webkit-transform: translateY(-34%) scale(1); } }
+  @keyframes mopop { 0% { opacity: 0; transform: translateY(40%) scale(.5); } 22% { opacity: 1; transform: translateY(0) scale(1.3); } 60% { opacity: 1; transform: translateY(-14%) scale(1); } 100% { opacity: 0; transform: translateY(-34%) scale(1); } }
+  @-webkit-keyframes mopop2 { 0% { opacity: 0; -webkit-transform: translateY(40%) scale(.5); } 22% { opacity: 1; -webkit-transform: translateY(0) scale(1.3); } 60% { opacity: 1; -webkit-transform: translateY(-14%) scale(1); } 100% { opacity: 0; -webkit-transform: translateY(-34%) scale(1); } }
+  @keyframes mopop2 { 0% { opacity: 0; transform: translateY(40%) scale(.5); } 22% { opacity: 1; transform: translateY(0) scale(1.3); } 60% { opacity: 1; transform: translateY(-14%) scale(1); } 100% { opacity: 0; transform: translateY(-34%) scale(1); } }
+  @-webkit-keyframes moburst { 0% { opacity: 1; -webkit-transform: scale(.4); } 100% { opacity: 0; -webkit-transform: scale(1.7); } }
+  @keyframes moburst { 0% { opacity: 1; transform: scale(.4); } 100% { opacity: 0; transform: scale(1.7); } }
+  @-webkit-keyframes moburst2 { 0% { opacity: 1; -webkit-transform: scale(.4); } 100% { opacity: 0; -webkit-transform: scale(1.7); } }
+  @keyframes moburst2 { 0% { opacity: 1; transform: scale(.4); } 100% { opacity: 0; transform: scale(1.7); } }
+  @-webkit-keyframes motwinkle { from { opacity: .15; } to { opacity: 1; } }
+  @keyframes motwinkle { from { opacity: .15; } to { opacity: 1; } }
+
+  /* 草はらの ばん。ボーナス中は きんいろに ひかる */
+  #mogura-board {
+    background: #8ccf68;
+    background: -webkit-linear-gradient(top, #9ad874, #78c05a);
+    background: linear-gradient(to bottom, #9ad874, #78c05a);
+    border-radius: 26px;
+    box-shadow: inset 0 0 0 4px #6aad4e, 0 3px 0 #5a9a40;
+    -webkit-box-shadow: inset 0 0 0 4px #6aad4e, 0 3px 0 #5a9a40;
+  }
+  table.board#mogura-board.bonus {
+    background: #ffe98a;
+    background: -webkit-linear-gradient(top, #fff0a0, #d9d95a);
+    background: linear-gradient(to bottom, #fff0a0, #d9d95a);
+    box-shadow: inset 0 0 0 4px #ffcf3a, 0 0 22px 6px rgba(255, 205, 50, .85);
+    -webkit-box-shadow: inset 0 0 0 4px #ffcf3a, 0 0 22px 6px rgba(255, 205, 50, .85);
+  }
+  #mogura-msg { margin: 10px 0 6px; font-size: 22px; line-height: 1.3; }   /* ばんの 下を つめて 画面に まとめる */
+  /* のこり時間の おび。かさは 1びょう ごとに へる */
+  .tbar { height: 14px; margin: 0 auto 8px; max-width: 92%; background: #e6dcc3; border-radius: 7px; overflow: hidden; }
+  .tbar i {
+    display: block; height: 100%; width: 100%; background: #4fae4a; border-radius: 7px;
+    -webkit-transform-origin: 0 50%; transform-origin: 0 50%;
+    -webkit-transition: -webkit-transform .9s linear, background-color .3s; transition: transform .9s linear, background-color .3s;
+  }
+  .tbar.warn i { background: #f0932b; }
+  .tbar.danger i { background: #d63a2f; }
 
   /* ---- しんけいすいじゃく ---- */
   .card {
@@ -614,6 +711,7 @@
        見るので、ばんの すぐ 上に おく。目を はなさずに よこ目で 読める。
        せまい 画面では .wide の ことばを けして みじかくする -->
   <p class="stage" id="mogura-stage">⏱<span class="wide"> のこり</span> <b id="mogura-time">30</b><span class="wide"> びょう</span><span id="mogura-now"></span><span id="mogura-extra"></span></p>
+  <div class="tbar" id="mogura-bar"><i id="mogura-barfill"></i></div>
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
@@ -1496,7 +1594,18 @@
     moFitBand();
   }
 
-  function moPaintClock() { moTimeEl.innerHTML = String(moLeft); moFitBand(); }
+  // のこり時間の おび。1びょう ごとに 1かい だけ。ふえても いっぱいで とめる
+  var moBarEl = $("mogura-bar"), moBarFill = $("mogura-barfill");
+  function moPaintBar() {
+    var r = moLeft / MO_TIME;
+    if (r > 1) r = 1;
+    if (r < 0) r = 0;
+    var t = "scaleX(" + r + ")";
+    moBarFill.style.webkitTransform = t;
+    moBarFill.style.transform = t;
+    moBarEl.className = "tbar" + (moLeft <= 5 ? " danger" : (moLeft <= 10 ? " warn" : ""));
+  }
+  function moPaintClock() { moTimeEl.innerHTML = String(moLeft); moPaintBar(); moFitBand(); }
 
   function moStartClock() {
     moBeganAt = new Date().getTime();
@@ -1600,7 +1709,7 @@
   // まえは どちらも 140px で 止めて いたので、iPad では ばんが 画面の 45〜60% しか
   // つかわず、95% つかう iPhone より 絵が 小さく 見えて いた (ます自体は 140 と 105)。
   // ひろい 画面では たてに 入る かぎり 大きく する。せまい 画面では これまで どおり。
-  var MO_BELOW = 150;            // ばんの 下に のこす ぶん (ことばと ボタン)
+  var MO_BELOW = 128;            // ばんの 下に のこす ぶん (ことばと ボタン)
   var MO_CELL_MAX = 260;
   var MO_FACE = 0.62;            // 穴の 大きさに たいする 絵の 大きさ
 
@@ -1624,12 +1733,13 @@
       if (big > s) s = big;
     }
     moBoard.style.width = (MO_COLS * s + (MO_COLS + 1) * sp) + "px";
+    moBarEl.style.width = (MO_COLS * s + (MO_COLS + 1) * sp - 40) + "px";   // ばんより すこし せまく
     var inner = s - 10;                      // ふちの 5px ぶんを のぞいた 中身
     var dpr = window.devicePixelRatio > 1 ? 2 : 1;
     for (var i = 0; i < moHoles.length; i++) {
       var cv = moHoles[i].getElementsByTagName("canvas")[0];
       moHoles[i].style.height = s + "px";
-      moPopEl[i].style.fontSize = Math.round(s * 0.2) + "px";
+      moPopEl[i].style.fontSize = Math.round(s * 0.24) + "px";
       moFaceEl[i].style.fontSize = Math.round(s * MO_FACE) + "px";
       moFaceEl[i].style.lineHeight = inner + "px";
       cv.style.width = inner + "px";
@@ -1789,8 +1899,10 @@
 
     // いきものは ひっこまない。たたけたことが わかるよう 一しゅん 光らせる
     moPopEl[i].innerHTML = "＋" + got;
-    el.className = st.cls + " hit";
-    st.popUntil = new Date().getTime() + 160;
+    // おなじ 穴を つづけて たたくと 動きが やりなおしに なるよう 2つの なまえを かわるがわる つかう
+    st.flip = !st.flip;
+    el.className = st.cls + (st.flip ? " hit" : " hit hit2");
+    st.popUntil = new Date().getTime() + 520;
   }
 
   // 30びょう たったら おしまい。てんすうと しょうごうを だす
@@ -1822,6 +1934,12 @@
     var text = (moTheme.endless ? lasted : MO_TIME) + "びょうで " + moScore + "かい・" + moPoints + "てん！";
     var label = moLabelOf(moPoints);
     if (label) text += " " + label;
+    // つぎの しょうごうまで あと すこし。いちばん うえなら 出さない
+    var ri = rankIndexOf(moPoints, moTheme.ranks);
+    if (ri + 1 < moTheme.ranks.length) {
+      text += " あと " + (moTheme.ranks[ri + 1] - moPoints) + "てんで " +
+        RANK_MARKS[ri + 1].mark + " " + RANK_MARKS[ri + 1].name + "。";
+    }
     if (moTheme.endless && moComboBest > 1) text += " いちばん ながい れんさ " + moComboBest + "！";
     if (best) text += " さいこう きろく！";
     if (opened && next) text += " " + safeFace(next.icon) + " " + next.name + " が あきました！";
