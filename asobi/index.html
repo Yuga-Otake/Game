@@ -52,40 +52,37 @@
   }
   body {
     text-align: center;
-    padding: 14px 12px 40px;
-    padding-top: calc(14px + constant(safe-area-inset-top));
-    padding-top: calc(14px + env(safe-area-inset-top));
+    padding: 4px 12px 40px;
+    padding-top: calc(4px + constant(safe-area-inset-top));
+    padding-top: calc(4px + env(safe-area-inset-top));
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
   }
 
-  /* 右上の音ボタンに文字がかぶらないよう、左右に同じ余白をとる */
-  h1 { font-size: 24px; margin: 2px 0 12px; padding: 0 70px; font-weight: 700; letter-spacing: .04em; }
   /* せまい 画面では おびの ことばを けずる。きれて しまうので。
      区切りや ことばを けずる JS の さかいめ (moNarrow) と 同じ 700px に そろえる */
   @media (max-width: 699px) {
     .stage .wide { display: none; }
   }
-  @media (max-width: 380px) {
-    h1 { font-size: 20px; padding: 0 64px; }
-    #sound { width: 56px; height: 52px; font-size: 21px; }
-  }
 
-  /* ---- 音のオン・オフ ---- */
-  #sound {
-    position: absolute;
-    right: 12px;
-    top: 10px;
-    top: calc(10px + constant(safe-area-inset-top));
-    top: calc(10px + env(safe-area-inset-top));
+  /* ---- いちばん 上の 1行 (きろく・はなまる・おと) ---- */
+  .topbar { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0; margin: 0 0 2px; }
+  .topbar td { padding: 0; vertical-align: middle; }
+  .topbar .tb-l { width: 116px; text-align: left; }
+  .topbar .tb-r { width: 72px; text-align: right; }
+  .topbar .tb-c { padding: 0 6px; }
+  .topbtn {
+    display: inline-block;
     font-family: inherit;
-    font-size: 24px;
+    font-size: 17px;
+    font-weight: 700;
     line-height: 1;
-    width: 62px;
-    height: 56px;
+    height: 48px;
     padding: 0;
+    color: #2f2a24;
+    color: var(--text);
     background: #ffffff;
     background: var(--panel);
     border: 3px solid #d9cdb2;
@@ -93,14 +90,23 @@
     border-radius: 14px;
     cursor: pointer;
   }
+  .topbtn:active { background: #f0e6cd; }
+  #rec-open { width: 112px; }
+  #sound { width: 64px; font-size: 24px; }
+  @media (max-width: 380px) {
+    .topbar .tb-l { width: 90px; }
+    .topbar .tb-r { width: 56px; }
+    .topbar .tb-c { padding: 0 3px; }
+    #rec-open { width: 88px; font-size: 14px; }
+    #sound { width: 54px; font-size: 21px; }
+  }
 
-  /* ---- タブ ---- */
-  .tabs { margin: 0 0 10px; }
+  /* ---- タブ (1行・7つ) ---- */
+  .tabs { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0; margin: 0 0 4px; }
+  .tabs td { padding: 0 2px; vertical-align: top; }
   .tab {
-    display: inline-block;
+    display: block;
     font-family: inherit;
-    font-size: 18px;
-    font-weight: 700;
     color: #6d6355;
     color: var(--sub);
     background: #ffffff;
@@ -108,19 +114,16 @@
     border: 3px solid #d9cdb2;
     border: 3px solid var(--line);
     border-radius: 14px;
-    /* ゲームが 7つに なって iPad で 3行に なったので、
-       1行あたり 8px つめて ある。それでも 58px あるので 指で おしやすい */
-    padding: 10px 10px;
-    margin: 0 4px 6px;
-    width: 236px;
-    max-width: 100%;
-    min-height: 58px;
-    vertical-align: middle;
+    width: 100%;
+    height: 56px;
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
     cursor: pointer;
   }
-  @media (max-width: 480px) {
-    .tab { width: 100%; margin-left: 0; margin-right: 0; }
-  }
+  .tab .ti { display: block; font-size: 28px; line-height: 30px; }
+  .tab .tl { display: block; font-size: 14px; line-height: 16px; font-weight: 700; white-space: nowrap; }
+  .tab:active { background: #f0e6cd; }
   .tab.active {
     background: #e07a2f;
     background: var(--accent);
@@ -128,17 +131,38 @@
     border-color: var(--accent);
     color: #fff;
   }
+  @media (max-width: 480px) {
+    .tabs td { padding: 0 1px; }
+    .tab { border-width: 2px; border-radius: 10px; height: 56px; }
+    .tab .ti { font-size: 24px; line-height: 30px; }
+    .tab .tl { font-size: 10px; letter-spacing: -.03em; }
+  }
+  @media (max-width: 380px) {
+    .tab { border-radius: 8px; }
+    .tab .ti { font-size: 21px; }
+    .tab .tl { font-size: 9px; letter-spacing: -.05em; }
+  }
 
   /* ---- はなまるの記録 ---- */
-  .stamps .ver { font-size: 12px; font-style: normal; opacity: .45; }
+  .stamps .ver { font-size: 12px; font-style: normal; opacity: .7; }
   .stamps {
-    font-size: 17px;
+    font-size: 15px;
+    line-height: 1.25;
     color: #6d6355;
     color: var(--sub);
-    margin: 0 0 14px;
-    min-height: 26px;
+    margin: 0;
+    text-align: center;
   }
-  .stamps .marks { font-size: 22px; letter-spacing: .06em; }
+  .stamps .marks { font-size: 20px; letter-spacing: .02em; }
+  @media (max-width: 480px) {
+    .stamps { font-size: 12px; }
+    .stamps .marks { font-size: 14px; letter-spacing: 0; }
+    .stamps .ver { font-size: 10px; }
+  }
+  /* いちばん せまい 画面では はなまるの 絵を けして、かずの ことばだけ 見せる */
+  @media (max-width: 380px) {
+    .stamps .marks { display: none; }
+  }
 
   /* ---- 共通パーツ ---- */
   .score {
@@ -180,6 +204,7 @@
     cursor: pointer;
   }
   .big:active { background: #f0e6cd; }
+  .big.on:active { background: #c4611a; border-color: #c4611a; }
   .big.on {
     background: #e07a2f;
     background: var(--accent);
@@ -189,9 +214,16 @@
   }
   .big.icon { font-size: 28px; padding: 10px 18px; min-width: 76px; }
   .big.theme { font-size: 17px; padding: 9px 12px; min-height: 48px; margin-bottom: 4px; }
-  .big.theme.locked { color: #7a6e5a; background: #efe8d6; }
+  .big.theme.locked { color: #6d6355; background: #efe8d6; }
 
-  .ctrl { margin: 0 0 10px; }
+  /* えらぶ ボタンは うすい 台の 上に まとめる。もういちどと 同じ 組に 見える */
+  .ctrl {
+    margin: 0 auto 10px;
+    max-width: 640px;
+    padding: 6px 6px 2px;
+    background: #efe6cf;
+    border-radius: 16px;
+  }
   .ctrl .label {
     display: inline-block;
     font-size: 17px;
@@ -201,7 +233,41 @@
     vertical-align: middle;
   }
   .ctrl .big { margin-top: 0; margin-bottom: 6px; vertical-align: middle; }
-  .note { font-size: 16px; color: #6d6355; color: var(--sub); margin: 18px 0 0; line-height: 1.7; }
+  /* あそびかた。ふだんは たたんで おく (ばんの 下なので ばんは うごかない) */
+  .how { margin: 16px auto 0; max-width: 640px; }
+  .howbtn {
+    font-family: inherit; font-size: 18px; font-weight: 700;
+    color: #2f2a24; color: var(--text);
+    background: #ffffff; background: var(--panel);
+    border: 3px solid #d9cdb2; border: 3px solid var(--line);
+    border-radius: 14px; padding: 8px 22px; min-height: 52px; cursor: pointer;
+  }
+  .howbtn:active { background: #f0e6cd; }
+  .how.open .howbtn { background: #fdeccd; border-color: #e07a2f; border-color: var(--accent); }
+  .how .note { display: none; }
+  .how.open .note { display: block; }
+  .note {
+    font-size: 17px; color: #4f463a; margin: 12px 0 0; line-height: 1.8; text-align: left;
+    background: #fffaf0; border-radius: 14px; padding: 12px 16px;
+  }
+
+  /* ---- きろくの いちらん ---- */
+  .rec {
+    position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 60;
+    background: rgba(47, 42, 36, .6);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 14px 12px 24px;
+  }
+  .rec-box {
+    max-width: 620px; margin: 0 auto; padding: 14px 16px 18px;
+    background: #fffaf0; border-radius: 18px; text-align: left;
+  }
+  .rec-box h2 { font-size: 26px; margin: 0 0 10px; text-align: center; }
+  .rec-g { margin: 0 0 12px; padding: 10px 14px; background: #ffffff; border: 2px solid #d9cdb2; border-radius: 14px; }
+  .rec-g h3 { font-size: 21px; margin: 0 0 4px; }
+  .rec-g p { font-size: 19px; line-height: 1.6; margin: 0; color: #2f2a24; }
+  .rec-g p.none { color: #6d6355; }
+  .rec-box .big { display: block; width: 100%; margin: 6px 0 0; }
 
   table.board {
     table-layout: fixed;      /* 列幅を詰められて歪むのを防ぐ */
@@ -379,7 +445,7 @@
   .dex { margin: 0 auto 2px; max-width: 620px; line-height: 1.4; }
   .dex b { white-space: nowrap; font-weight: normal; }   /* 行のあたまが 矢印だけに ならないように */
   .dex span { font-size: 25px; vertical-align: middle; }
-  .dex i { font-size: 15px; color: #7a6e5a; font-style: normal; vertical-align: middle; }
+  .dex i { font-size: 15px; color: #6d6355; font-style: normal; vertical-align: middle; }
   .dex .yet { opacity: .45; }
   #animal-wrap { margin: 0 auto; }
   #animal-canvas {
@@ -427,21 +493,23 @@
 </head>
 <body>
 
-<button type="button" id="sound" title="おと">🔊</button>
+<!-- いちばん 上の 1行。きろく・はなまる・おと。ひろい 画面を ゲームに あげる ため 1行に まとめた -->
+<table class="topbar" id="topbar"><tbody><tr>
+  <td class="tb-l"><button type="button" class="topbtn" id="rec-open">🏆 きろく</button></td>
+  <td class="tb-c"><p class="stamps" id="stamps"></p></td>
+  <td class="tb-r"><button type="button" class="topbtn" id="sound" title="おと">🔊</button></td>
+</tr></tbody></table>
 
-<h1>かんたん ゲーム</h1>
-
-<div class="tabs" id="tabs">
-  <button type="button" class="tab active" id="tab-mogura">🐹 もぐらたたき</button>
-  <button type="button" class="tab" id="tab-memory">🎴 しんけいすいじゃく</button>
-  <button type="button" class="tab" id="tab-odd">🔍 なかまはずれ</button>
-  <button type="button" class="tab" id="tab-beads">🔵 ビーズ</button>
-  <button type="button" class="tab" id="tab-animal">🐻 くっつけゲーム</button>
-  <button type="button" class="tab" id="tab-jenga">🧱 ジェンガ</button>
-  <button type="button" class="tab" id="tab-zombie">👻 おばけたいじ</button>
-</div>
-
-<p class="stamps" id="stamps"></p>
+<!-- タブは 1行。字は 下に 小さく 添えて、7つ ならべても 指で おせる 幅を のこす -->
+<table class="tabs" id="tabs"><tbody><tr>
+  <td><button type="button" class="tab active" id="tab-mogura"><span class="ti">🐹</span><span class="tl">もぐら</span></button></td>
+  <td><button type="button" class="tab" id="tab-memory"><span class="ti">🎴</span><span class="tl">しんけい</span></button></td>
+  <td><button type="button" class="tab" id="tab-odd"><span class="ti">🔍</span><span class="tl">なかま</span></button></td>
+  <td><button type="button" class="tab" id="tab-beads"><span class="ti">🔵</span><span class="tl">ビーズ</span></button></td>
+  <td><button type="button" class="tab" id="tab-animal"><span class="ti">🐻</span><span class="tl">くっつけ</span></button></td>
+  <td><button type="button" class="tab" id="tab-jenga"><span class="ti">🧱</span><span class="tl">ジェンガ</span></button></td>
+  <td><button type="button" class="tab" id="tab-zombie"><span class="ti">👻</span><span class="tl">おばけ</span></button></td>
+</tr></tbody></table>
 
 <!-- もぐらたたき -->
 <div id="game-mogura">
@@ -456,7 +524,7 @@
   <table class="board" id="mogura-board"><tbody id="mogura-body"></tbody></table>
   <p class="msg" id="mogura-msg"></p>
   <button type="button" class="big" id="mogura-reset">もういちど</button>
-  <p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます（真・ドラゴンだけは 👑 めいじん）。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。<br>同時に 出ている ものを <b>まとめて しとめる</b> と <b>🐲 ドラゴンフィーバー</b>。2ひきで ＋1びょう、3びきで ＋2.5びょうと 3びょうの きんいろ。<b>あとの だんかいほど 大きく</b> なります（さいだい 2.5ばい）。<br>出てすぐ しとめるのを 5かい つづけると <b>⚡ はやうち</b>。＋2びょう もらえます。</p>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note"><b>30びょうで なんかい たたけるか</b> の ゲームです。<br>でてきたら ゆびで さわってください。はやく さわれるほど てんすうが 高く なります。<br><b>でている あいだは なんども たたけます</b>（1たたき 4てん）。<br>おそくても てんすうは へりません。<br>ときどき <b>きんいろ</b> が でてきます（てんすうが 3ばい）。<br>ちいさい いきものや <b>🐍</b> も まざって でてきます。たたいても そんは しませんが てんすうは すくないです。<br>ときどき <b>✨ ボーナスタイム</b>（5びょう）が きます。そのあいだは ぜんぶ きんいろです。<br>ワニから さきは <b>2ひき・3びきが いちどに</b> でます。出る ときも ひっこむ ときも ばらばらです。<br>🏅 たつじん まで とると つぎの いきものが あきます（真・ドラゴンだけは 👑 めいじん）。あとの ものほど はやいです。<br><b>🔥 真・ドラゴン</b> は たたくたびに <b>じかんが のびます</b>。20びょう ごとに はやくなり、てんすうの ばいりつも 上がります。とりこぼすと じかんが へるので、つづく かぎり どこまでも あそべます。<br>つづけて たたけた かずが <b>れんさ</b> です。のばすほど てんすうが 上がります（さいだい 2.5ばい）。手を とめて しまうと 0に もどります（いそがしくて 手が まわらなかった ぶんは きれません）。<br>同時に 出ている ものを <b>まとめて しとめる</b> と <b>🐲 ドラゴンフィーバー</b>。2ひきで ＋1びょう、3びきで ＋2.5びょうと 3びょうの きんいろ。<b>あとの だんかいほど 大きく</b> なります（さいだい 2.5ばい）。<br>出てすぐ しとめるのを 5かい つづけると <b>⚡ はやうち</b>。＋2びょう もらえます。</p></div>
 </div>
 
 <!-- しんけいすいじゃく -->
@@ -468,7 +536,7 @@
   <table class="board" id="memory-board"><tbody id="memory-body"></tbody></table>
   <p class="msg" id="memory-msg"></p>
   <button type="button" class="big" id="memory-reset">もういちど</button>
-  <p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。<br>はやく そろえるほど、むだな めくりが 少ないほど<br>てんすうが 高く なります。</p>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。<br>はやく そろえるほど、むだな めくりが 少ないほど<br>てんすうが 高く なります。</p></div>
 </div>
 
 <!-- なかまはずれさがし -->
@@ -478,7 +546,7 @@
   <table class="board" id="odd-board"><tbody id="odd-body"></tbody></table>
   <p class="msg" id="odd-msg"></p>
   <button type="button" class="big" id="odd-reset">もういちど</button>
-  <p class="note">ひとつだけ ちがう えが あります。<br>それを さわってください。<br>まちがえても なんども えらべます。</p>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">ひとつだけ ちがう えが あります。<br>それを さわってください。<br>まちがえても なんども えらべます。</p></div>
 </div>
 
 <!-- ビーズ -->
@@ -493,7 +561,7 @@
   <button type="button" class="big" id="beads-reset">もういちど</button>
   <div class="ctrl"><span class="label">ずあん</span><span id="beads-pics"></span></div>
   <div class="ctrl"><span class="label">むずかしさ</span><span id="beads-levels"></span></div>
-  <p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。</p>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。</p></div>
 </div>
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
@@ -505,7 +573,7 @@
   <div id="animal-wrap"><canvas id="animal-canvas"></canvas></div>
   <p class="msg" id="animal-msg"></p>
   <button type="button" class="big" id="animal-reset">もういちど</button>
-  <p class="note">おとしたい ところを さわると、おちてきます。<br>おなじ もの どうしが くっつくと、大きく なります。<br>いちばん 大きいものを つくると 100てん。それが クリアで、<br>つぎの ゲームが あそべるように なります。<br>いっぱいに なったら おしまいです。まけでは ありません。</p>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">おとしたい ところを さわると、おちてきます。<br>おなじ もの どうしが くっつくと、大きく なります。<br>いちばん 大きいものを つくると 100てん。それが クリアで、<br>つぎの ゲームが あそべるように なります。<br>いっぱいに なったら おしまいです。まけでは ありません。</p></div>
 </div>
 
 <!-- ジェンガ (よこに うごく いたを つみ上げる) -->
@@ -518,7 +586,7 @@
   <p class="msg" id="jenga-msg"></p>
   <button type="button" class="big" id="jenga-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="jenga-speeds"></span></div>
-  <p class="note">いたが よこに うごいて います。<br>さわると そこで とまって、つみ上がります。<br>はみ出した ぶんは おちて、いたが ほそく なります。<br>たての せんに あうと いたが 光ります。そこで さわると <b>ぴったり</b>で、ほそく なりません。<br>3かい つづけて ぴったりだと、いたが すこし ふとります。</p>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">いたが よこに うごいて います。<br>さわると そこで とまって、つみ上がります。<br>はみ出した ぶんは おちて、いたが ほそく なります。<br>たての せんに あうと いたが 光ります。そこで さわると <b>ぴったり</b>で、ほそく なりません。<br>3かい つづけて ぴったりだと、いたが すこし ふとります。</p></div>
 </div>
 
 <!-- おばけたいじ (なかまを あつめて すすむ) -->
@@ -530,7 +598,16 @@
   <button type="button" class="big" id="zombie-reset">もういちど</button>
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
   <div class="review" id="zombie-review"></div>
-  <p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>だから <b>いる ところの まうえが いちばん よく けずれます</b>。左右に うごいて 掃くように たおすと はやいです。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br><b>ちから</b> が おばけの かず いじょう なら たおしきれます。とどいた ぶんだけ なかまが へります。<br>おばけには しゅるいが あります。<b>かたい</b>（はがねいろ）は <b>ぶき</b> が ないと ほとんど 通りません。<b>はやい</b>（きいろ）は はやく とどきます。4かいに 1ど <b>大おばけ</b>。<br>つぎに 来る しゅるいは ばんの 上の おびに 出ます。<b>かたい なら ぶき、ふつう なら 人数</b> が こたえです。<br><b>たからばこ</b> は おばけの すぐ 手前。はこの れつに 入ると たまは はこへ いきます。その あいだ おばけは けずれません。<br><b>あおい もん</b> は もんだいです。<b>こたえの ほうを とおります</b>。けいさんと「◯か ✕か」「どっち？」が 出ます。といは <b>ばんの 下の しろい おび</b>に かならず 出ます。とおった あと、<b>こたえと わけ</b>が おなじ おびに 出ます。<br>ばんの 上に ならんだ 丸は 15かいぶんの おばけです。<b>はいいろは かたい、きいろは はやい、赤は 大おばけ</b>。のりこえると みどりに なります。<br><b>おばけ 15かいで クリア</b>。<b>まいかい いちばん よい もんを とおれば かならず さいごまで いけます</b>。<br><b>シビア</b> は はやくて、<b>ほとんど まいかい もんだい</b>が 出ます。とどかれた ときに へる 人数も <b>3ばい</b>なので、まちがえると すぐ へります。左右に 掃くと とどかれる かずが はんぶんに なります。</p>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>だから <b>いる ところの まうえが いちばん よく けずれます</b>。左右に うごいて 掃くように たおすと はやいです。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br><b>ちから</b> が おばけの かず いじょう なら たおしきれます。とどいた ぶんだけ なかまが へります。<br>おばけには しゅるいが あります。<b>かたい</b>（はがねいろ）は <b>ぶき</b> が ないと ほとんど 通りません。<b>はやい</b>（きいろ）は はやく とどきます。4かいに 1ど <b>大おばけ</b>。<br>つぎに 来る しゅるいは ばんの 上の おびに 出ます。<b>かたい なら ぶき、ふつう なら 人数</b> が こたえです。<br><b>たからばこ</b> は おばけの すぐ 手前。はこの れつに 入ると たまは はこへ いきます。その あいだ おばけは けずれません。<br><b>あおい もん</b> は もんだいです。<b>こたえの ほうを とおります</b>。けいさんと「◯か ✕か」「どっち？」が 出ます。といは <b>ばんの 下の しろい おび</b>に かならず 出ます。とおった あと、<b>こたえと わけ</b>が おなじ おびに 出ます。<br>ばんの 上に ならんだ 丸は 15かいぶんの おばけです。<b>はいいろは かたい、きいろは はやい、赤は 大おばけ</b>。のりこえると みどりに なります。<br><b>おばけ 15かいで クリア</b>。<b>まいかい いちばん よい もんを とおれば かならず さいごまで いけます</b>。<br><b>シビア</b> は はやくて、<b>ほとんど まいかい もんだい</b>が 出ます。とどかれた ときに へる 人数も <b>3ばい</b>なので、まちがえると すぐ へります。左右に 掃くと とどかれる かずが はんぶんに なります。</p></div>
+</div>
+
+<!-- きろくの いちらん。ゲームの 上に かぶせる。くらい ところを さわっても とじる -->
+<div id="rec" class="rec" style="display:none">
+  <div class="rec-box">
+    <h2>🏆 きろく</h2>
+    <div id="rec-list"></div>
+    <button type="button" class="big" id="rec-close">とじる</button>
+  </div>
 </div>
 
 <div id="confetti"></div>
@@ -3541,7 +3618,8 @@
     if (!jgCtx) return;
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
-    var w = Math.min(vw - 30, 425);
+    // いたの いちは ぜんぶ はばに たいする わりあい なので、ひろい 画面では 520 まで 大きくする
+    var w = Math.min(vw - 30, 520);
     if (w < 240) w = 240;
     var h = Math.round(w * 1.2);
     // ばんの 下に 「もういちど」の ボタンまで 見えるように する
@@ -5513,6 +5591,134 @@
     for (var i = 0; i < TABS.length; i++) {
       if (TABS[i].key === curTab && TABS[i].resize) TABS[i].resize();
     }
+  };
+
+  // ---- あそびかた (たたんで おく) ----
+  // ゲームの 中には さわらない。ばんの 下に あるので ばんの 場所も かわらない
+  (function () {
+    var divs = document.getElementsByTagName("div"), list = [], i;
+    for (i = 0; i < divs.length; i++) if (divs[i].className === "how") list.push(divs[i]);
+    function wire(box) {
+      var btn = box.getElementsByTagName("button")[0];
+      onTap(btn, function () {
+        var closed = box.className === "how";
+        box.className = closed ? "how open" : "how";
+        btn.innerHTML = closed ? "❓ あそびかたを とじる" : "❓ あそびかた";
+      });
+    }
+    for (i = 0; i < list.length; i++) wire(list[i]);
+  })();
+
+  // ---- きろくの いちらん ----
+  // 保存の 場所は ゲームと おなじ load() から 読む。ゲームの 中の 変数は つかわない
+  // (ひらいて いない ゲームの ぶんも 見せる ため)
+  var recEl = $("rec"), recListEl = $("rec-list"), recOpened = false;
+
+  function recGroup(icon, name, lines) {
+    var h = '<div class="rec-g"><h3>' + icon + " " + name + "</h3>";
+    if (!lines.length) return h + '<p class="none">まだ ありません</p></div>';
+    for (var i = 0; i < lines.length; i++) h += "<p>" + lines[i] + "</p>";
+    return h + "</div>";
+  }
+  function recNum(key) { return Number(load(key, "0")) || 0; }
+  function recRank(score, ranks) {
+    var r = rankLabelOf(score, ranks);
+    return r ? "　" + r : "";
+  }
+
+  function recBuild() {
+    var out = "", lines, i, j, v, t, sup, parts, big;
+    var anMins = [];
+    for (i = 0; i < AN_RANKS.length; i++) anMins.push(AN_RANKS[i].min);
+
+    lines = [];
+    for (i = 0; i < MO_THEMES.length; i++) {
+      t = MO_THEMES[i];
+      v = recNum("mo-" + t.key + "-best");
+      if (v <= 0) continue;
+      sup = moSuperIndex(v);
+      lines.push(t.icon + " " + t.name + "　<b>" + moComma(v) + "</b> てん" + recRank(v, t.ranks) +
+        (sup >= 0 ? " " + MO_SUPER[sup].mark + " " + MO_SUPER[sup].name : ""));
+    }
+    out += recGroup("🐹", "もぐらたたき", lines);
+
+    lines = [];
+    v = recNum("memory-best");
+    if (v > 0) lines.push("<b>" + v + "</b> てん" + recRank(v, ME_RANKS));
+    out += recGroup("🎴", "しんけいすいじゃく", lines);
+
+    out += '<div class="rec-g"><h3>🔍 なかまはずれ</h3><p class="none">きろくは ありません</p></div>';
+
+    lines = [];
+    for (i = 0; i < BE_PICS.length; i++) {
+      parts = [];
+      for (j = 0; j < BE_LEVELS.length; j++) {
+        v = recNum("be-" + BE_PICS[i].key + "-" + BE_LEVELS[j].key);
+        if (v > 0) parts.push(BE_LEVELS[j].label + " <b>" + v + "</b> びょう");
+      }
+      if (parts.length) lines.push(BE_PICS[i].label + "　" + parts.join("　"));
+    }
+    out += recGroup("🔵", "ビーズ", lines);
+
+    lines = [];
+    for (i = 0; i < AN_THEMES.length; i++) {
+      t = AN_THEMES[i];
+      v = recNum("m-" + t.key + "-best");
+      if (v <= 0) continue;
+      big = recNum("m-" + t.key + "-big");
+      lines.push(t.icon + " " + t.name + "　<b>" + v + "</b> てん" + recRank(v, anMins) +
+        (big > 0 ? "　" + t.faces[t.faces.length - 1] + " " + big + "こ" : ""));
+    }
+    out += recGroup("🐻", "くっつけゲーム", lines);
+
+    lines = [];
+    for (i = 0; i < JG_SPEEDS.length; i++) {
+      v = recNum("jg-" + JG_SPEEDS[i].key);
+      if (v > 0) lines.push(JG_SPEEDS[i].label + "　<b>" + v + "</b> だん" + recRank(v, JG_SPEEDS[i].ranks));
+    }
+    out += recGroup("🧱", "ジェンガ", lines);
+
+    lines = [];
+    for (i = 0; i < ZB_SPEEDS.length; i++) {
+      v = recNum("zb-" + ZB_SPEEDS[i].key);
+      if (v > 0) lines.push(ZB_SPEEDS[i].label + "　<b>" + v + "</b> / " + ZB_GOAL + " かい" + recRank(v, ZB_RANKS));
+    }
+    out += recGroup("👻", "おばけたいじ", lines);
+
+    recListEl.innerHTML = out;
+  }
+
+  function curDef() {
+    for (var i = 0; i < TABS.length; i++) if (TABS[i].key === curTab) return TABS[i];
+    return null;
+  }
+
+  // ひらく あいだは タブを きりかえた ときと おなじに ゲームを とめ、
+  // とじたら タブに もどった ときと おなじに つづける (resume が なければ はじめから)
+  function recOpen() {
+    if (recOpened) return;
+    var d = curDef();
+    recOpened = true;
+    if (d && d.hide) d.hide();
+    recBuild();
+    recEl.style.display = "";
+    recEl.scrollTop = 0;
+  }
+  function recClose() {
+    if (!recOpened) return;
+    var d = curDef();
+    recOpened = false;
+    recEl.style.display = "none";
+    if (!d) return;
+    if (d.resume && d.resume()) return;
+    d.show();
+  }
+  onTap($("rec-open"), recOpen);
+  onTap($("rec-close"), recClose);
+  recEl.onclick = function (e) {
+    e = e || window.event;
+    var el = e.target || e.srcElement;
+    if (el === recEl) recClose();
   };
 
   // ---- 起動 ----
