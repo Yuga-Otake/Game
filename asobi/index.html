@@ -497,20 +497,126 @@
   @keyframes mewave { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-14px) scale(1.1); } }
 
   /* ---- なかまはずれさがし ---- */
+  #game-odd .score { margin: 0 0 4px; height: auto; white-space: nowrap; font-size: 22px; line-height: 34px; }
+  #game-odd .score b { font-size: 28px; }
+  /* 10この まるが すすみぐあい。できたら うまり、いまの もんだいは ふちが おおきい */
+  .odtrail { margin: 0 0 10px; height: 34px; line-height: 34px; font-size: 0; }
+  .odtrail i {
+    display: inline-block; width: 26px; height: 26px; margin: 4px 5px; vertical-align: top;
+    box-sizing: border-box; border-radius: 50%;
+    background: #e6dcc3; border: 3px solid #d9cdb2;
+  }
+  .odtrail i.done { background: #e07a2f; border-color: #e07a2f; }
+  .odtrail i.now {
+    background: #ffffff; border-color: #e07a2f;
+    -webkit-transform: scale(1.3); transform: scale(1.3);
+  }
+  @media (max-width: 480px) {
+    .odtrail i { width: 20px; height: 20px; margin: 7px 4px; border-width: 2px; }
+    #game-odd .score { font-size: 19px; }
+    #game-odd .score b { font-size: 24px; }
+    #odd-msg { font-size: 20px; }
+  }
+  .odtrail i.pop {
+    -webkit-animation: odpop .6s ease-out; animation: odpop .6s ease-out;
+  }
+  @-webkit-keyframes odpop {
+    0% { -webkit-transform: scale(.5); }
+    55% { -webkit-transform: scale(1.5); }
+    100% { -webkit-transform: scale(1); }
+  }
+  @keyframes odpop {
+    0% { transform: scale(.5); }
+    55% { transform: scale(1.5); }
+    100% { transform: scale(1); }
+  }
+  /* ばんの かわりめは そっと ふわっと 出す */
+  .odstage.odin {
+    -webkit-animation: odin .4s ease-out; animation: odin .4s ease-out;
+  }
+  @-webkit-keyframes odin {
+    0% { opacity: 0; -webkit-transform: translateY(16px); }
+    100% { opacity: 1; -webkit-transform: translateY(0); }
+  }
+  @keyframes odin {
+    0% { opacity: 0; transform: translateY(16px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  #odd-board { border-spacing: 10px; background: #efe6cf; border-radius: 26px; }
+  #odd-msg { margin: 8px 0 4px; font-size: 24px; line-height: 1.3; height: 64px; overflow: hidden; }
   .pick {
     background: #ffffff;
     background: var(--panel);
     border: 5px solid #d9cdb2;
     border: 5px solid var(--line);
-    border-radius: 18px;
+    border-radius: 20px;
     overflow: hidden;
     white-space: nowrap;
     text-align: center;
     vertical-align: middle;
     cursor: pointer;
   }
+  #odd-board .pick .facecv, #odd-board .pick .face {
+    -webkit-transition: opacity .35s; transition: opacity .35s;
+  }
   .pick.right { background: #dff0dd; border-color: #8cc094; }
-  .pick.wrong { background: #f3e2d2; border-color: #d9a77a; }
+  /* ただしい ものを ぽんと はねさせ、ほかは うすく して めが いくように */
+  #odd-board.found .pick .facecv, #odd-board.found .pick .face { opacity: .35; }
+  #odd-board.found .pick.right .facecv, #odd-board.found .pick.right .face {
+    opacity: 1;
+    -webkit-animation: odhop .7s ease-out; animation: odhop .7s ease-out;
+  }
+  @-webkit-keyframes odhop {
+    0% { -webkit-transform: scale(1); }
+    30% { -webkit-transform: translateY(-12%) scale(1.18); }
+    55% { -webkit-transform: translateY(0) scale(.95); }
+    75% { -webkit-transform: translateY(-4%) scale(1.06); }
+    100% { -webkit-transform: translateY(0) scale(1); }
+  }
+  @keyframes odhop {
+    0% { transform: scale(1); }
+    30% { transform: translateY(-12%) scale(1.18); }
+    55% { transform: translateY(0) scale(.95); }
+    75% { transform: translateY(-4%) scale(1.06); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  /* まるい わと きらきらが ひろがる */
+  .pick.right:after {
+    content: ""; position: absolute; left: 12%; top: 12%; width: 76%; height: 76%;
+    border: 5px solid #f2b53a; border-radius: 50%; box-sizing: border-box;
+    -webkit-animation: odring .8s ease-out; animation: odring .8s ease-out;
+    opacity: 0;
+  }
+  .pick.right:before {
+    content: "\2728"; position: absolute; right: 8%; top: 4%; font-size: 26px; line-height: 1; z-index: 1;
+    -webkit-animation: odring .9s ease-out; animation: odring .9s ease-out;
+    opacity: 0;
+  }
+  @-webkit-keyframes odring {
+    0% { opacity: 1; -webkit-transform: scale(.55); }
+    100% { opacity: 0; -webkit-transform: scale(1.25); }
+  }
+  @keyframes odring {
+    0% { opacity: 1; transform: scale(.55); }
+    100% { opacity: 0; transform: scale(1.25); }
+  }
+  /* まちがいは しからない。ちいさく ふるえて もどる だけ */
+  .pick.wrong { background: #f6ecdc; border-color: #e3c9a5; }
+  .pick.wrong .facecv, .pick.wrong .face {
+    -webkit-animation: odshake .5s ease-in-out; animation: odshake .5s ease-in-out;
+  }
+  @-webkit-keyframes odshake {
+    0%, 100% { -webkit-transform: translateX(0); }
+    20% { -webkit-transform: translateX(-7%); }
+    45% { -webkit-transform: translateX(6%); }
+    70% { -webkit-transform: translateX(-3%); }
+  }
+  @keyframes odshake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-7%); }
+    45% { transform: translateX(6%); }
+    70% { transform: translateX(-3%); }
+  }
   /* 2かい まちがえたら、ただしい ところを やさしく ひからせる */
   .pick.hint {
     -webkit-animation: odhint 1s ease-in-out infinite;
@@ -794,10 +900,11 @@
 <!-- なかまはずれさがし -->
 <div id="game-odd" style="display:none">
   <p class="score">できた もんだい　<b id="odd-score">0</b> / 10</p>
-  <div class="ctrl"><span class="label">えのかず</span><span id="odd-sizes"></span></div>
-  <table class="board" id="odd-board"><tbody id="odd-body"></tbody></table>
+  <p class="odtrail" id="odd-trail"></p>
+  <div class="odstage" id="odd-stage"><table class="board" id="odd-board"><tbody id="odd-body"></tbody></table></div>
   <p class="msg" id="odd-msg"></p>
   <button type="button" class="big" id="odd-reset">もういちど</button>
+  <div class="ctrl"><span class="label">えのかず</span><span id="odd-sizes"></span></div>
   <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">ひとつだけ ちがう えが あります。<br>それを さわってください。<br>まちがえても なんども えらべます。</p></div>
 </div>
 
@@ -2379,24 +2486,39 @@
   // ============================================================
   // なかまはずれさがし
   // ============================================================
-  // なかまと なかまはずれ。ひと目で ちがいが わかる 組み合わせにする
+  // なかまと なかまはずれ。3だんかいに わけ、やさしい ものから そっくりな ものへ
+  //   0 = ひと目で ちがう  1 = おなじ なかまで すこし ちがう  2 = よく にている
+  // ぜんぶ 2010年までに できた 絵文字 (ふるい iPad でも 出る もの)
   var ODD_PAIRS = [
-    ["🌸", "🌻"], ["🐱", "🐶"], ["🍎", "🍌"], ["⭐", "❤️"], ["🚗", "✈️"],
-    ["🐟", "🐦"], ["🍵", "🍰"], ["☀️", "☂️"], ["🌷", "🍄"], ["🐰", "🐢"],
-    ["🍊", "🍇"], ["⛄", "🎈"], ["🦋", "🐞"], ["🍁", "🌰"], ["🎁", "🔔"]
+    ["🌸", "🌻", 0], ["🐱", "🐶", 0], ["🍎", "🍌", 0], ["⭐", "❤️", 0], ["🚗", "✈️", 0],
+    ["🐟", "🐦", 0], ["🍵", "🍰", 0], ["☀️", "☂️", 0], ["🌷", "🍄", 0], ["🐰", "🐢", 0],
+    ["🍊", "🍇", 0], ["⛄", "🎈", 0], ["🦋", "🐞", 0], ["🍁", "🌰", 0], ["🎁", "🔔", 0],
+    ["🐘", "🍓", 0], ["🌙", "🍎", 0], ["🐸", "🎁", 0], ["🍉", "🐧", 0], ["🌹", "🐙", 0],
+    ["🚌", "🌻", 0], ["🐳", "🍋", 0], ["🏠", "🐭", 0], ["🍙", "🐔", 0],
+    ["🐶", "🐷", 1], ["🍎", "🍊", 1], ["🐟", "🐬", 1], ["🍓", "🍒", 1], ["🐻", "🐼", 1],
+    ["🐔", "🐧", 1], ["🍩", "🍪", 1], ["⚽", "🎾", 1], ["🌙", "⭐", 1], ["🐱", "🐭", 1],
+    ["🍇", "🍅", 1],
+    ["🍊", "🍑", 2], ["🍎", "🍅", 2], ["🐤", "🐥", 2], ["🌷", "🌹", 2], ["⭐", "🌟", 2],
+    ["🐭", "🐹", 2], ["🍋", "🍌", 2], ["🌕", "🌝", 2], ["🐱", "🐯", 2], ["🐻", "🐨", 2],
+    ["🍇", "🍆", 2], ["🌺", "🌸", 2], ["🐵", "🐒", 2], ["🐰", "🐇", 2], ["🌻", "🌼", 2]
   ];
+  // 1かいの 10もんの ならび: やさしい 4 → すこし 3 → にている 3
+  var ODD_TIERS = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2];
   var ODD_SIZES = [
     { key: "4", label: "4つ", count: 4, cols: 2 },
     { key: "6", label: "6つ", count: 6, cols: 3 },
     { key: "9", label: "9つ", count: 9, cols: 3 }
   ];
   var ODD_GOAL = 10;
+  var ODD_BELOW = 235;    // ばんの 下の もじ・ボタン・えらぶ ぶんの たかさ
 
   var odBoard = $("odd-board"), odBody = $("odd-body"), odFaces = [];
+  var odStage = $("odd-stage"), odTrail = $("odd-trail"), odDots = [];
   var odScoreEl = $("odd-score"), odMsgEl = $("odd-msg");
   var odCells = [], odScore = 0, odTarget = -1, odBusy = false, odNextTimer = null;
   var odSize = ODD_SIZES[1], odCols = 3;
   var odLive = false, odPending = false, odWrong = 0;   // とちゅうか / つぎの もんだいを まっているか / まちがえた かず
+  var odPlan = [], odFirst = 0;                         // 10もんの くみあわせ / 1かいで あてた かず
 
   (function () {
     var key = load("odd", "6");
@@ -2404,6 +2526,12 @@
   })();
 
   function odBuild() {
+    for (var i = 0; i < ODD_GOAL; i++) {
+      var d = document.createElement("i");
+      odTrail.appendChild(d);
+      odDots.push(d);
+    }
+    odPaint(-1);
     buildPicker($("odd-sizes"), ODD_SIZES, function (c) { return c === odSize; }, "big", function (cfg) {
       odSize = cfg;
       save("odd", cfg.key);
@@ -2411,10 +2539,42 @@
     });
   }
 
+  // すすみぐあいの まる。popIdx は いま できた ばかりの まる (ぽんと ふくらむ)
+  function odPaint(popIdx) {
+    for (var i = 0; i < odDots.length; i++) {
+      var cls = i < odScore ? "done" : (i === odScore && odLive ? "now" : "");
+      if (i === popIdx) cls += " pop";
+      odDots[i].className = cls;
+    }
+  }
+
+  function odShuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // 10もんぶんの 組を さきに きめる。おなじ 組は 1かいに 1どだけ
+  function odMakePlan() {
+    var pool = [[], [], []], i;
+    for (i = 0; i < ODD_PAIRS.length; i++) pool[ODD_PAIRS[i][2]].push(ODD_PAIRS[i]);
+    for (i = 0; i < 3; i++) odShuffle(pool[i]);
+    var used = [0, 0, 0];
+    odPlan = [];
+    for (i = 0; i < ODD_TIERS.length; i++) {
+      var t = ODD_TIERS[i];
+      odPlan.push(pool[t][used[t]++ % pool[t].length]);
+    }
+  }
+
   function odStart() {
     if (odNextTimer !== null) { clearTimeout(odNextTimer); odNextTimer = null; }
     odBusy = false;
     odScore = 0;
+    odFirst = 0;
+    odMakePlan();
     odScoreEl.innerHTML = "0";
     odMsgEl.innerHTML = "";
     odMsgEl.className = "msg";
@@ -2437,8 +2597,8 @@
   }
 
   function odQuestion() {
-    var pair = ODD_PAIRS[Math.floor(Math.random() * ODD_PAIRS.length)];
-    pair = [safeFace(pair[0]), safeFace(pair[1])];
+    var pr = odPlan[odScore < odPlan.length ? odScore : 0];
+    var pair = [safeFace(pr[0]), safeFace(pr[1])];
     odWrong = 0;
     odPending = false;
     // どちらを なかまはずれに するかも 入れ替える
@@ -2448,37 +2608,71 @@
     var n = odSize.count;
     odCols = odSize.cols;
     odTarget = Math.floor(Math.random() * n);
-
-    while (odBody.firstChild) odBody.removeChild(odBody.firstChild);
-    odCells = [];
     odFaces = [];
-    var rows = Math.ceil(n / odCols);
-    for (var r = 0; r < rows; r++) {
-      var tr = document.createElement("tr");
-      for (var c = 0; c < odCols; c++) {
-        var i = r * odCols + c;
-        if (i >= n) break;
-        var td = document.createElement("td");
-        td.className = "pick";
-        td.innerHTML = faceCellHTML();
-        odFaces.push(i === odTarget ? odd : same);
-        (function (i2) { onTap(td, function () { odPick(i2); }); })(i);
-        odCells.push(td);
-        tr.appendChild(td);
+    for (var k = 0; k < n; k++) odFaces.push(k === odTarget ? odd : same);
+
+    if (odCells.length !== n) {
+      // かずが かわった ときだけ 作りなおす。ふるい iPad は すてた canvas の かいほうが おそい
+      while (odBody.firstChild) odBody.removeChild(odBody.firstChild);
+      odCells = [];
+      var rows = Math.ceil(n / odCols);
+      for (var r = 0; r < rows; r++) {
+        var tr = document.createElement("tr");
+        for (var c = 0; c < odCols; c++) {
+          var i = r * odCols + c;
+          if (i >= n) break;
+          var td = document.createElement("td");
+          td.className = "pick";
+          td.innerHTML = faceCellHTML();
+          (function (i2) { onTap(td, function () { odPick(i2); }); })(i);
+          odCells.push(td);
+          tr.appendChild(td);
+        }
+        odBody.appendChild(tr);
       }
-      odBody.appendChild(tr);
+    } else {
+      for (var j = 0; j < n; j++) odCells[j].className = "pick";
     }
+    // ふわっと あらわれる。いちど はずして 計りなおすと また うごく
+    odStage.className = "odstage";
+    odBoard.className = "board";
     odResize();
+    void odStage.offsetWidth;
+    odStage.className = "odstage odin";
+    odPaint(-1);
+  }
+
+  // ばんの 上の たかさ (ずらし中の うごきは ふくまない)
+  function odTop() {
+    var y = 0, e = odStage;
+    while (e) { y += e.offsetTop || 0; e = e.offsetParent; }
+    return y;
+  }
+
+  // よこはばと たてはば (もじ・ボタンが 見える ぶん) の せまい ほうに あわせる
+  function odCellSize() {
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var s = Math.floor((Math.min(vw - 20, 700) - (odCols + 1) * 10) / odCols);
+    var cap = odCols === 2 ? 300 : 240;
+    if (s > cap) s = cap;
+    if (s < 54) s = 54;
+    var rows = Math.ceil(odCells.length / odCols);
+    var top = odTop();
+    if (top < 60) top = 230;
+    var vh = window.innerHeight || 1024;
+    var h = Math.floor((vh - top - ODD_BELOW - (rows + 1) * 10) / rows);
+    if (h < 110) h = 110;      // よこむきで せまい ときは すこし スクロール
+    return h < s ? h : s;
   }
 
   function odResize() {
     if (!odCells.length) return;
-    var s = fitSize(odCols, 150, 10);
+    var s = odCellSize();
     odBoard.style.width = (odCols * s + (odCols + 1) * 10) + "px";
     var inner = s - 10;
     for (var i = 0; i < odCells.length; i++) {
       odCells[i].style.height = s + "px";
-      faceCellDraw(odCells[i], odFaces[i], inner, 0.66);
+      faceCellDraw(odCells[i], odFaces[i], inner, 0.7);
     }
   }
 
@@ -2487,13 +2681,13 @@
 
     if (i !== odTarget) {
       // まちがえても へらない。やさしく もういちど
-      odCells[i].className = "pick wrong";
+      var cell = odCells[i];
+      if (cell.className === "pick wrong") { cell.className = "pick"; void cell.offsetWidth; }
+      if (cell.className === "pick") cell.className = "pick wrong";
       odMsgEl.className = "msg again";
       odMsgEl.innerHTML = "ちがうみたい。もういちど さがしてみて";
       soundAgain();
-      (function (cell) {
-        setTimeout(function () { if (cell.className === "pick wrong") cell.className = "pick"; }, 700);
-      })(odCells[i]);
+      setTimeout(function () { if (cell.className === "pick wrong") cell.className = "pick"; }, 700);
       // 2かい まちがえたら、ただしい ところを やさしく ひからせる (てんすうは へらさない)
       odWrong++;
       if (odWrong >= 2 && odCells[odTarget].className === "pick") odCells[odTarget].className = "pick hint";
@@ -2502,13 +2696,19 @@
 
     odBusy = true;
     odCells[i].className = "pick right";
+    odBoard.className = "board found";
+    if (odWrong === 0) odFirst++;
     odScore++;
     odScoreEl.innerHTML = String(odScore);
+    odPaint(odScore - 1);
     soundMatch();
 
     if (odScore >= ODD_GOAL) {
-      celebrate(odMsgEl, "10もん できました！");
+      var tail = odFirst >= ODD_GOAL ? "ぜんぶ 1かいで 見つけました。" :
+                 ODD_GOAL + "もん中 " + odFirst + "もんは 1かいで 見つけました。";
+      celebrate(odMsgEl, "10もん できました！<br>" + tail);
       odLive = false;
+      odPaint(-1);
       return;                       // odBusy は ひらかない。「もういちど」(odStart) まで 固定
     }
 
