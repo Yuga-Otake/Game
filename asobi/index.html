@@ -4143,9 +4143,18 @@
   var JG_ROWS = 10;              // 画面に 見える だんの かず
   var JG_RAMP = 0.02;            // 1だんごとに はやく なる わりあい
   var JG_RAMP_MAX = 2.0;         // はやさの 上げどまり (はじめの なんばいまでか)
-  var JG_TONES = ["#cfa066", "#bd8947"];
-  var JG_MOV_TONE = "#dfb075";
-  var JG_SNAP_TONE = "#f3d08a";  // ぴったりの いちに 来た ときの 色
+  var JG_TONES = ["#d3a56a", "#c2934f"];   // だんごとに ちかい 2いろ
+  var JG_MOV_TONE = "#ebc48c";
+  var JG_SNAP_TONE = "#f8dc94";  // ぴったりの いちに 来た ときの 色
+  var JG_FX_MAX = 48;            // こうかの かず の うわげん
+  // そらの いろ [うえ, した]。だんが ふえるほど ふかい あおから よるに
+  var JG_SKIES = [
+    ["#9fd2f2", "#eaf6fc"],
+    ["#5fa3dd", "#c2e2f6"],
+    ["#4a62a8", "#d3b4cf"],
+    ["#141c44", "#3d4c8c"]
+  ];
+  var JG_SKY_AT = [0, 12, 26, 42];   // その そらに なる だんすう
 
   var jgCanvas = $("jenga-canvas");
   var jgCtx = (jgCanvas && jgCanvas.getContext) ? jgCanvas.getContext("2d") : null;
@@ -4156,6 +4165,11 @@
   var jgRows = 0, jgCombo = 0, jgBestCombo = 0, jgBest = 0, jgWas = 0;
   var jgOver = false, jgRunning = false, jgRaf = null, jgLast = 0;
   var jgSpeed = JG_SPEEDS[1], jgBuilt = false;
+  var jgFx = [], jgPerfects = 0, jgPassed = false, jgSkyLv = 0;
+  var jgSkyG = [], jgStarX = [], jgStarY = [];
+  var jgFsL = 24, jgFsM = 17, jgFsS = 14;
+  var jgFontL = "bold 24px sans-serif", jgFontM = "bold 17px sans-serif", jgFontS = "bold 14px sans-serif";
+  var jgHudStr = "", jgHudTw = 0;
 
   function jgKey() { return "jg-" + jgSpeed.key; }
 
@@ -4170,17 +4184,26 @@
     return aim < 0 ? 0 : aim;
   }
 
-  // いた 1まいを 描く。上を あかるく、下を くらく するだけで 木に 見える
-  function jgPlank(g, x, y, w, h, tone, glow) {
-    var lip = Math.max(2, Math.round(h * 0.2));
+  // いた 1まいを 描く。上を あかるく 下を くらく、きめを 3本 ひく。
+  // きめは だん ばんごうから きめる (毎回 かわると ちらつく ので)
+  function jgPlank(g, x, y, w, h, tone, row, glow) {
+    var lip = Math.max(2, Math.round(h * 0.16)), i, gx, gl, gy, gh = Math.max(1, Math.round(h * 0.05));
     g.fillStyle = tone;
     g.fillRect(x, y, w, h);
-    g.fillStyle = "rgba(255,255,255,.22)";
+    g.fillStyle = "rgba(255,255,255,.3)";
     g.fillRect(x, y, w, lip);
-    g.fillStyle = "rgba(0,0,0,.15)";
+    g.fillStyle = "rgba(70,34,0,.24)";
     g.fillRect(x, y + h - lip, w, lip);
-    g.strokeStyle = glow ? "#8a5a12" : "rgba(92,62,26,.5)";
-    g.lineWidth = glow ? 4 : 2;
+    g.fillStyle = "rgba(120,70,20,.22)";
+    for (i = 0; i < 3; i++) {
+      gx = x + w * (((row * 13 + i * 29) % 40) / 100);
+      gl = w * (0.3 + ((row * 7 + i * 11) % 30) / 100);
+      if (gx + gl > x + w - 2) gl = x + w - 2 - gx;
+      gy = y + lip + (h - lip * 2) * (0.15 + 0.3 * i);
+      if (gl > 2) g.fillRect(gx, gy, gl, gh);
+    }
+    g.strokeStyle = glow ? "#1c8a4c" : "rgba(86,50,14,.62)";
+    g.lineWidth = glow ? 4 : 1.5;
     g.strokeRect(x + 1, y + 1, w - 2 > 0 ? w - 2 : 1, h - 2);
   }
 
@@ -4192,10 +4215,10 @@
       g.save();
       g.translate(x + w / 2, y + jgBh / 2);
       g.rotate(f.a);
-      jgPlank(g, -w / 2, -jgBh / 2, w, jgBh, JG_TONES[f.row % 2]);
+      jgPlank(g, -w / 2, -jgBh / 2, w, jgBh, JG_TONES[f.row % 2], f.row, false);
       g.restore();
     } else {
-      jgPlank(g, x, y, w, jgBh, JG_TONES[f.row % 2]);
+      jgPlank(g, x, y, w, jgBh, JG_TONES[f.row % 2], f.row, false);
     }
   }
 
@@ -4204,16 +4227,22 @@
   function jgCloud(g, x, y, r) {
     if (!g.beginPath) return;
     g.beginPath();
+    g.moveTo(x + r * 0.62, y);                   // 円ごとに 点を うつす (つなぎ線が 出ない ように)
     g.arc(x, y, r * 0.62, 0, Math.PI * 2, false);
+    g.moveTo(x + r * 1.26, y - r * 0.2);
     g.arc(x + r * 0.78, y - r * 0.2, r * 0.48, 0, Math.PI * 2, false);
+    g.moveTo(x - r * 0.3, y + r * 0.08);
     g.arc(x - r * 0.72, y + r * 0.08, r * 0.42, 0, Math.PI * 2, false);
     g.fill();
   }
 
   function jgClouds(g) {
-    var span = jgBh * 6, i, sy, cx;
+    var span = jgBh * 6, i, sy, cx, a = 0.85;
     var first = Math.floor((jgCam - jgBh) / span);
-    g.fillStyle = "rgba(255,255,255,.8)";
+    if (jgSkyLv > 26) a = 0.85 - (jgSkyLv - 26) / 16 * 0.7;   // よるは うすく
+    if (a < 0.15) a = 0.15;
+    g.globalAlpha = a;
+    g.fillStyle = "#ffffff";
     for (i = first; i < first + 6; i++) {
       if (i < 1) continue;                       // じめんの あたりには 出さない
       sy = jgSY(i * span);
@@ -4221,26 +4250,238 @@
       cx = (((i * 37) % 100) / 100) * (jgW - 110) + 55;
       jgCloud(g, cx, sy, jgBh * 0.8);
     }
+    g.globalAlpha = 1;
+  }
+
+  // そら。2まいの グラデーションを かさねて ゆっくり かえる
+  function jgSky(g) {
+    var lv = jgSkyLv, i = 0, n = JG_SKY_AT.length - 1, f = 0, a, sy, s;
+    while (i < n && lv >= JG_SKY_AT[i + 1]) i++;
+    if (i < n) f = (lv - JG_SKY_AT[i]) / (JG_SKY_AT[i + 1] - JG_SKY_AT[i]);
+    g.fillStyle = jgSkyG.length ? jgSkyG[i] : "#bfe0f5";
+    g.fillRect(0, 0, jgW, jgH);
+    if (f > 0.01 && jgSkyG.length) {
+      g.globalAlpha = f;
+      g.fillStyle = jgSkyG[i + 1];
+      g.fillRect(0, 0, jgW, jgH);
+      g.globalAlpha = 1;
+    }
+    a = (lv - 28) / 12;                          // ほしは たかい ところだけ
+    if (a > 0) {
+      if (a > 1) a = 1;
+      g.globalAlpha = a * 0.9;
+      g.fillStyle = "#fff8d8";
+      for (i = 0; i < jgStarX.length; i++) {
+        sy = (jgStarY[i] * jgH + jgCam * 0.1) % jgH;
+        s = (i % 3 === 0) ? 3 : 2;
+        g.fillRect(jgStarX[i] * jgW, sy, s, s);
+      }
+      g.globalAlpha = 1;
+    }
+  }
+
+  // じめん。くさと つちと、とおくの おか
+  function jgGround(g) {
+    var gy = jgSY(0), r = jgW * 0.34, hh = Math.max(8, Math.round(jgBh * 0.2));
+    if (gy >= jgH + 2) return;
+    if (g.beginPath && gy > -r) {
+      g.fillStyle = "#b9dc9c";
+      g.beginPath();
+      g.arc(jgW * 0.2, gy + r * 0.6, r, 0, Math.PI * 2, false);
+      g.fill();
+      g.fillStyle = "#a2cf84";
+      g.beginPath();
+      g.arc(jgW * 0.82, gy + r * 0.72, r * 0.9, 0, Math.PI * 2, false);
+      g.fill();
+    }
+    g.fillStyle = "#bd9c6c";
+    g.fillRect(0, gy, jgW, jgH - gy + 2);
+    g.fillStyle = "#7fbc60";
+    g.fillRect(0, gy, jgW, hh);
+    g.fillStyle = "#97cf74";
+    g.fillRect(0, gy, jgW, Math.max(2, hh * 0.35));
+  }
+
+  function jgText(g, str, x, y, fill) {
+    g.lineWidth = 5;
+    g.strokeStyle = "rgba(255,255,255,.92)";
+    g.strokeText(str, x, y);
+    g.fillStyle = fill;
+    g.fillText(str, x, y);
+  }
+
+  // きろくの たかさの せん。しろい ふちの うえに きいろの だんせん
+  function jgMarker(g) {
+    if (jgWas <= 0) return;
+    var sy = jgSY((jgWas + 1) * jgBh), x;
+    if (sy < 0 || sy > jgH + 4) return;
+    g.globalAlpha = 0.65;
+    g.fillStyle = "#ffffff";
+    g.fillRect(0, sy - 3, jgW, 6);
+    g.globalAlpha = 1;
+    g.fillStyle = jgPassed ? "#1fae5f" : "#e59a0a";
+    for (x = 0; x < jgW; x += 24) g.fillRect(x, sy - 1.5, 14, 3);
+  }
+
+  // 「さいこう n だん」の ふだ。いたの うえに 重ねて 見えなく ならない ように あとで 描く
+  function jgMarkerLabel(g) {
+    if (jgWas <= 0) return;
+    var sy = jgSY((jgWas + 1) * jgBh), txt, tw, py, ph = jgFsS + 10;
+    if (sy > jgH + 4) return;
+    txt = jgPassed ? "★ さいこう " + jgWas + " だん こえた！" : "さいこう " + jgWas + " だん";
+    g.font = jgFontS;
+    g.textAlign = "left";
+    g.textBaseline = "middle";
+    if (sy < 0) {                                // 上に はみ出して いる ときは すみに ひょうじ
+      txt = "▲ " + txt;
+      tw = g.measureText(txt).width + 16;
+      g.fillStyle = "rgba(255,250,235,.92)";
+      g.fillRect(jgW - tw - 6, 6, tw, ph);
+      g.fillStyle = "#8a4e08";
+      g.fillText(txt, jgW - tw + 2, 6 + ph / 2);
+      return;
+    }
+    tw = g.measureText(txt).width + 16;
+    py = sy - ph - 4;
+    if (py < 2) py = sy + 4;
+    g.fillStyle = "rgba(255,250,235,.94)";
+    g.fillRect(jgW - tw - 4, py, tw, ph);
+    g.fillStyle = jgPassed ? "#16783f" : "#8a4e08";
+    g.fillText(txt, jgW - tw + 4, py + ph / 2);
+  }
+
+  // いまの だんを おおきく。ぴったりの つづきぐあいは まるで しめす
+  function jgHud(g) {
+    var n = jgRows - 1, str = n + " だん", w, h, i, c;
+    g.font = jgFontL;
+    if (str !== jgHudStr) {
+      jgHudStr = str;
+      jgHudTw = g.measureText(str).width;
+    }
+    w = jgHudTw + 20;
+    h = jgFsL + 12;
+    g.fillStyle = "rgba(255,250,235,.9)";
+    g.fillRect(8, 8, w, h);
+    g.textAlign = "left";
+    g.textBaseline = "middle";
+    g.fillStyle = "#6b3f10";
+    g.fillText(str, 18, 8 + h / 2 + 1);
+    if (jgCombo > 0 && g.beginPath) {
+      c = jgCombo % JG_GROW_AT;
+      for (i = 0; i < JG_GROW_AT; i++) {
+        g.beginPath();
+        g.arc(16 + i * 16, 8 + h + 11, 5.5, 0, Math.PI * 2, false);
+        g.fillStyle = i < c ? "#f0b400" : "rgba(255,250,235,.8)";
+        g.fill();
+        g.strokeStyle = "#a8780a";
+        g.lineWidth = 1.5;
+        g.stroke();
+      }
+    }
+  }
+
+  // あわせる めじるし。ずれが ちいさい ほど あかるい いろに かわる
+  function jgGuide(g, x, sy, lvl) {
+    if (!g.beginPath) return;
+    var y0 = sy - jgBh * 0.6, y1 = sy + jgBh * 2, tr = jgBh * 0.26;
+    var col = lvl === 2 ? "#17a35a" : (lvl === 1 ? "#f08a0a" : "#a65f18");
+    g.beginPath();
+    g.moveTo(x, y0);
+    g.lineTo(x, y1);
+    g.strokeStyle = "rgba(255,255,255,.75)";
+    g.lineWidth = 7;
+    g.stroke();
+    g.strokeStyle = col;
+    g.lineWidth = lvl === 2 ? 4 : 2.5;
+    g.stroke();
+    g.fillStyle = col;
+    g.beginPath();
+    g.moveTo(x - tr, y0 - tr * 0.9);
+    g.lineTo(x + tr, y0 - tr * 0.9);
+    g.lineTo(x, y0 + tr * 0.5);
+    g.closePath();
+    g.fill();
+  }
+
+  // こうか (ひかり・きらきら・もじ) を 描く
+  function jgDrawFx(g) {
+    var i, f, p, x, y, w, e, s, bx0, bx1, sx, k, ty;
+    for (i = 0; i < jgFx.length; i++) {
+      f = jgFx[i];
+      p = f.age / f.life;
+      if (p > 1) p = 1;
+      if (f.k === "f") {
+        x = f.x * jgW; w = f.w * jgW; y = jgSY((f.row + 1) * jgBh);
+        g.globalAlpha = (1 - p) * 0.8;
+        g.fillStyle = f.gold ? "#fff1a8" : "#ffffff";
+        g.fillRect(x, y, w, jgBh);
+        sx = x - w * 0.3 + w * 1.3 * p;          // ひかりが よこぎる
+        bx0 = sx > x ? sx : x;
+        bx1 = sx + w * 0.25 < x + w ? sx + w * 0.25 : x + w;
+        if (bx1 > bx0) {
+          g.globalAlpha = 1 - p;
+          g.fillStyle = "#fffbe0";
+          g.fillRect(bx0, y, bx1 - bx0, jgBh);
+        }
+        e = p * jgBh * (f.gold ? 1.1 : 0.6);
+        g.globalAlpha = (1 - p) * 0.9;
+        g.strokeStyle = f.gold ? "#f0b400" : "#ffd84a";
+        g.lineWidth = f.gold ? 5 : 3;
+        g.strokeRect(x - e, y - e, w + e * 2, jgBh + e * 2);
+        g.globalAlpha = 1;
+      } else if (f.k === "s" && g.beginPath) {
+        x = f.x * jgW; y = jgSY(f.y);
+        s = f.size * (1 - p * 0.5);
+        g.globalAlpha = 1 - p * p;
+        g.fillStyle = f.col;
+        g.beginPath();
+        g.moveTo(x, y - s * 1.5);
+        g.lineTo(x + s * 0.6, y);
+        g.lineTo(x, y + s * 1.5);
+        g.lineTo(x - s * 0.6, y);
+        g.closePath();
+        g.fill();
+        g.beginPath();
+        g.moveTo(x - s * 1.5, y);
+        g.lineTo(x, y + s * 0.6);
+        g.lineTo(x + s * 1.5, y);
+        g.lineTo(x, y - s * 0.6);
+        g.closePath();
+        g.fill();
+        g.globalAlpha = 1;
+      } else if (f.k === "t") {
+        x = f.x * jgW;
+        if (x < jgW * 0.4) x = jgW * 0.4;
+        if (x > jgW * 0.7) x = jgW * 0.7;
+        g.globalAlpha = p < 0.65 ? 1 : (1 - p) / 0.35;
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        ty = jgH * 0.2 - p * jgH * 0.03;
+        for (k = f.lines.length - 1; k >= 0; k--) {
+          g.font = k === 0 ? jgFontL : jgFontM;
+          jgText(g, f.lines[k], x, ty, f.cols[k]);
+          ty -= jgFsL * 1.1;
+        }
+        g.globalAlpha = 1;
+      }
+    }
   }
 
   function jgDraw() {
     if (!jgCtx || !jgW) return;
-    var g = jgCtx, i, b, sy, t, off, glow;
+    var g = jgCtx, i, b, sy, t, off, glow, lvl, l, r;
     g.setTransform(jgDpr, 0, 0, jgDpr, 0, 0);
     g.clearRect(0, 0, jgW, jgH);
+    jgSky(g);
     jgClouds(g);
-
-    var gy = jgSY(0);                            // じめん
-    if (gy < jgH) {
-      g.fillStyle = "#cdbb96";
-      g.fillRect(0, gy, jgW, jgH - gy);
-    }
+    jgGround(g);
+    jgMarker(g);
 
     for (i = 0; i < jgStack.length; i++) {
       b = jgStack[i];
       sy = jgSY((i + 1) * jgBh);
       if (sy > jgH || sy + jgBh < 0) continue;   // 画面の そとは 描かない
-      jgPlank(g, b.x * jgW, sy, b.w * jgW, jgBh, JG_TONES[i % 2]);
+      jgPlank(g, b.x * jgW, sy, b.w * jgW, jgBh, JG_TONES[i % 2], i, false);
     }
 
     for (i = 0; i < jgFalls.length; i++) jgPlankSpin(g, jgFalls[i]);
@@ -4249,27 +4490,43 @@
       t = jgStack[jgStack.length - 1];
       off = Math.abs(jgMov.x - t.x);
       glow = off <= JG_SNAP;                     // ぴったりの いちに 来て いる
+      lvl = glow ? 2 : (off <= JG_SNAP * 3 ? 1 : 0);
       sy = jgSY((jgRows + 1) * jgBh);
-      // 下の いたの はしを たてせんで 見せる。これが あうと ぴったり
-      g.strokeStyle = glow ? "rgba(180,120,20,.85)" : "rgba(70,55,30,.25)";
-      g.lineWidth = 2;
-      jgGuide(g, t.x * jgW, sy);
-      jgGuide(g, (t.x + t.w) * jgW, sy);
+      // おちる ところの かげ。したの いたの うえに おとす
+      l = Math.max(jgMov.x, t.x);
+      r = Math.min(jgMov.x + jgMov.w, t.x + t.w);
+      if (r > l) {
+        g.fillStyle = "rgba(40,20,0,.22)";
+        g.fillRect(l * jgW, sy + jgBh, (r - l) * jgW, jgBh * 0.45);
+        g.fillStyle = "rgba(40,20,0,.12)";
+        g.fillRect(l * jgW, sy + jgBh * 1.45, (r - l) * jgW, jgBh * 0.25);
+      }
+      // したの いたの はしを たてせんで 見せる。これが あうと ぴったり
+      jgGuide(g, t.x * jgW, sy, lvl);
+      jgGuide(g, (t.x + t.w) * jgW, sy, lvl);
+      if (glow) {                                // ひかって いる あいだに おす
+        g.globalAlpha = 0.45;
+        g.fillStyle = "#fff6b0";
+        g.fillRect(jgMov.x * jgW - 5, sy - 5, jgMov.w * jgW + 10, jgBh + 10);
+        g.globalAlpha = 1;
+      }
       jgPlank(g, jgMov.x * jgW, sy, jgMov.w * jgW, jgBh,
-              glow ? JG_SNAP_TONE : JG_MOV_TONE, glow);
+              glow ? JG_SNAP_TONE : JG_MOV_TONE, jgRows, glow);
+      if (glow) {
+        g.font = jgFontM;
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        jgText(g, "いま！", (jgMov.x + jgMov.w / 2) * jgW, sy + jgBh / 2, "#12803f");
+      }
     }
-  }
 
-  function jgGuide(g, x, sy) {
-    if (!g.beginPath) return;
-    g.beginPath();
-    g.moveTo(x, sy - jgBh * 0.7);
-    g.lineTo(x, sy + jgBh * 1.7);
-    g.stroke();
+    jgMarkerLabel(g);
+    jgDrawFx(g);
+    jgHud(g);
   }
 
   function jgStep(dt) {
-    var i, f, grav = jgBh * 0.035;
+    var i, f, grav = jgBh * 0.02;               // ゆっくりめに おとして 見えやすく
     if (!jgOver && jgMov) {
       jgMov.x += jgMov.v * jgMov.dir * dt;
       if (jgMov.x <= 0) { jgMov.x = 0; jgMov.dir = 1; }
@@ -4281,16 +4538,67 @@
       f.y += f.vy * dt;
       f.x += f.vx * dt;
       f.a += f.va * dt;
-      if (f.y < jgCam - jgH) jgFalls.splice(i, 1);
+      if (f.y + jgBh < jgCam - jgBh) jgFalls.splice(i, 1);   // 画面の 下に きえたら おわり
+    }
+    for (i = jgFx.length - 1; i >= 0; i--) {
+      f = jgFx[i];
+      f.age += dt;
+      if (f.k === "s") {
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
+        f.vy -= jgBh * 0.0016 * dt;
+      }
+      if (f.age >= f.life) jgFx.splice(i, 1);
     }
     var k = 0.14 * dt;
     jgCam += (jgCamAim() - jgCam) * (k > 1 ? 1 : k);
+    k = 0.05 * dt;                                // そらの いろは さらに ゆっくり
+    jgSkyLv += (jgRows - 1 - jgSkyLv) * (k > 1 ? 1 : k);
   }
 
   function jgFallPiece(x, w, row, dir) {
     jgFalls.push({ x: x, w: w, row: row, y: row * jgBh,
-                   vx: dir * 0.004, vy: jgBh * 0.06,
-                   a: 0, va: dir * 0.035 });
+                   vx: dir * 0.0035, vy: jgBh * 0.1,
+                   a: 0, va: dir * 0.05 });
+  }
+
+  // ---- こうか。ぜんぶ 見た目と 音だけで、つみ上げには かかわらない ----
+  function jgFxAdd(o) {
+    if (o.k !== "t" && jgFx.length >= JG_FX_MAX) return;   // きらきらは かずを おさえる
+    o.age = 0;
+    jgFx.push(o);
+  }
+
+  // 画面の うえの ほうに ういて 消える もじ
+  function jgFxText(x, lines, cols) {
+    for (var i = jgFx.length - 1; i >= 0; i--) if (jgFx[i].k === "t") jgFx.splice(i, 1);   // 重ならない ように ひとつだけ
+    jgFxAdd({ k: "t", x: x, lines: lines, cols: cols, life: 75 });
+  }
+
+  function jgFxSparks(x, w, wy, n, big) {
+    var j, cols = ["#fff3a8", "#ffc83a", "#ffffff"];
+    for (j = 0; j < n; j++) {
+      jgFxAdd({ k: "s", x: x + w * (j + 0.5) / n, y: wy,
+                vx: (((j * 7) % 5) - 2) * 0.0014, vy: jgBh * (0.03 + ((j * 3) % 4) * 0.012),
+                size: (big ? 4.5 : 3) + (j % 3), col: cols[j % 3],
+                life: 34 + (j % 4) * 7 });
+    }
+  }
+
+  function jgFxPerfect(x, w, row, combo, grew) {
+    var lines = ["ぴったり！"], cols = ["#d9730a"];
+    jgFxAdd({ k: "f", x: x, w: w, row: row, gold: grew, life: grew ? 34 : 22 });
+    jgFxSparks(x, w, (row + 0.8) * jgBh, grew ? 14 : 7, grew);
+    if (combo > 1) { lines.push(combo + " れんぞく！"); cols.push("#b85a00"); }
+    if (grew) { lines.push("ふとった！"); cols.push("#12803f"); }
+    jgFxText(x + w / 2, lines, cols);
+  }
+
+  // れんぞくが ふえる ほど たかい おと (8かいで うわげん)
+  function jgSoundPerfect(c, grew) {
+    var s = Math.pow(1.0595, (c > 8 ? 8 : c - 1) * 2), b = 660 * s;
+    if (grew) play([b, b * 1.25, b * 1.5, b * 2], 0.09, "sine", 0.15);
+    else play([b, b * 1.5], 0.08, "sine", 0.13);
   }
 
   function jgNext() {
@@ -4311,10 +4619,12 @@
     var r = Math.min(jgMov.x + jgMov.w, top.x + top.w);
     var ov = r - l;
     var off = Math.abs(jgMov.x - top.x);
-    var row = jgRows, rr = jgMov.x + jgMov.w, nw, b;
+    var row = jgRows, rr = jgMov.x + jgMov.w, nw, b, grew;
 
     if (ov < JG_DEAD) {                          // のる ところが ない。たおれる
       jgFallPiece(jgMov.x, jgMov.w, row, jgMov.x < top.x ? -1 : 1);
+      jgFxText(jgMov.x + jgMov.w / 2, ["あっ！"], ["#c0561a"]);
+      play([330, 247], 0.13, "sine", 0.12);      // やさしく さがる おと
       jgMov = null;
       jgEnd();
       return;
@@ -4323,6 +4633,8 @@
     if (off <= JG_SNAP) {                        // ぴったり。ほそく ならない
       jgStack.push({ x: top.x, w: top.w });
       jgCombo++;
+      jgPerfects++;
+      grew = false;
       if (jgCombo > jgBestCombo) jgBestCombo = jgCombo;
       if (jgCombo % JG_GROW_AT === 0 && top.w < JG_BW) {
         // ごほうびに すこし ふとる。ずっと あそんで いても じり貧に ならない
@@ -4333,8 +4645,11 @@
         b.w = nw;
         if (b.x < 0) b.x = 0;
         if (b.x + b.w > 1) b.x = 1 - b.w;
+        grew = true;
       }
-      soundGold();
+      b = jgStack[jgStack.length - 1];
+      jgFxPerfect(b.x, b.w, row, jgCombo, grew);
+      jgSoundPerfect(jgCombo, grew);
     } else {                                     // はみ出した ぶんを きりおとす
       if (jgMov.x < l) jgFallPiece(jgMov.x, l - jgMov.x, row, -1);
       if (rr > r) jgFallPiece(r, rr - r, row, 1);
@@ -4346,6 +4661,13 @@
     jgRows++;
     // きろくは つむ たびに のこす。とちゅうで iPad が ねむっても きえない
     if (jgRows - 1 > jgBest) { jgBest = jgRows - 1; save(jgKey(), jgBest); }
+    // きろくの せんを こえた しゅんかん
+    if (!jgPassed && jgWas > 0 && jgRows - 1 > jgWas) {
+      jgPassed = true;
+      jgFxText(0.5, ["きろく こうしん！", "さいこうを こえた！"], ["#12803f", "#12803f"]);
+      jgFxSparks(0.05, 0.9, jgRows * jgBh, 14, true);
+      play([784, 988, 1175, 1568], 0.12, "sine", 0.16);
+    }
     jgNext();
     jgPaint();
   }
@@ -4363,10 +4685,11 @@
     var n = jgRows - 1;
     var isBest = n > jgWas;                      // この ラウンドを はじめた ときの きろくと くらべる
     var label = rankLabelOf(n, jgSpeed.ranks);
-    var text = n + " だん つめました！";
+    var text = "おちました。 " + n + " だん つめました！";
     if (label) text += " " + label;
-    if (jgBestCombo > 1) text += " ぴったり " + jgBestCombo + "れんぞく！";
+    if (jgPerfects > 0) text += " ぴったり " + jgPerfects + "かい";
     if (isBest) text += " さいこう きろく！";
+    else if (jgWas > 0) text += n < jgWas ? " さいこうまで あと " + (jgWas - n) + " だん" : " さいこうと おなじ！";
     jgPaint();
     // はなまるは しょうごうが ついた ときだけ。すぐ たおれた ぶんは かぞえない
     if (label) {
@@ -4376,6 +4699,36 @@
       jgMsgEl.innerHTML = text + " もういちど どうぞ";
       soundAgain();
     }
+  }
+
+  // おおきさが きまる たびに、そらの グラデーション・ほし・もじの おおきさを つくりなおす。
+  // 毎こま つくると 古い iPad では おもいので ここだけ
+  function jgBuildLook() {
+    var i, g, gr, seed = 7;
+    jgSkyG = [];
+    if (jgCtx.createLinearGradient) {
+      for (i = 0; i < JG_SKIES.length; i++) {
+        gr = jgCtx.createLinearGradient(0, 0, 0, jgH);
+        gr.addColorStop(0, JG_SKIES[i][0]);
+        gr.addColorStop(1, JG_SKIES[i][1]);
+        jgSkyG.push(gr);
+      }
+    }
+    jgStarX = [];
+    jgStarY = [];
+    for (i = 0; i < 30; i++) {
+      seed = (seed * 75 + 74) % 65537;
+      jgStarX.push(seed / 65537);
+      seed = (seed * 75 + 74) % 65537;
+      jgStarY.push(seed / 65537);
+    }
+    jgFsL = Math.round(Math.min(34, Math.max(20, jgBh * 0.55)));
+    jgFsM = Math.round(jgFsL * 0.72);
+    jgFsS = Math.max(13, Math.round(jgFsL * 0.6));
+    jgFontL = "bold " + jgFsL + "px sans-serif";
+    jgFontM = "bold " + jgFsM + "px sans-serif";
+    jgFontS = "bold " + jgFsS + "px sans-serif";
+    jgHudStr = "";
   }
 
   function jgResize() {
@@ -4402,6 +4755,7 @@
     jgCanvas.style.height = jgH + "px";
     jgCanvas.width = Math.round(jgW * jgDpr);
     jgCanvas.height = Math.round(jgH * jgDpr);
+    jgBuildLook();
     jgDraw();
   }
 
@@ -4417,8 +4771,9 @@
     jgStep(dt);
     // おしまいの あと、かけらが 落ちきって カメラも 止まったら ループを 止める。
     // 止めた あとも、画面の かきなおしは jgResize / jgStart が する
-    var settled = jgOver && !jgFalls.length && Math.abs(jgCamAim() - jgCam) < 0.3;
-    if (settled) jgCam = jgCamAim();
+    var settled = jgOver && !jgFalls.length && !jgFx.length &&
+                  Math.abs(jgCamAim() - jgCam) < 0.3 && Math.abs(jgRows - 1 - jgSkyLv) < 0.02;
+    if (settled) { jgCam = jgCamAim(); jgSkyLv = jgRows - 1; }
     jgDraw();
     if (settled) { jgRunning = false; jgRaf = null; return; }
     jgRaf = anRequest(jgFrame);
@@ -4441,6 +4796,10 @@
     if (!jgBuilt) jgBuildSpeeds();
     jgStack = [{ x: (1 - JG_BW) / 2, w: JG_BW }];
     jgFalls = [];
+    jgFx = [];
+    jgPerfects = 0;
+    jgPassed = false;
+    jgSkyLv = 0;
     jgRows = 1;
     jgCombo = 0;
     jgBestCombo = 0;
@@ -4472,7 +4831,8 @@
     var t = jgStack.length ? jgStack[jgStack.length - 1] : null;
     return { rows: jgRows - 1, over: jgOver, running: jgRunning,
              x: jgMov ? jgMov.x : -1, w: jgMov ? jgMov.w : 0,
-             tx: t ? t.x : -1, tw: t ? t.w : 0, snap: JG_SNAP };
+             tx: t ? t.x : -1, tw: t ? t.w : 0, snap: JG_SNAP,
+             fx: jgFx.length, perfects: jgPerfects, passed: jgPassed, combo: jgCombo };
   };
 
 
