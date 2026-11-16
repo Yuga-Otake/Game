@@ -496,6 +496,93 @@
   @-webkit-keyframes mewave { 0%, 100% { -webkit-transform: translateY(0) scale(1); } 40% { -webkit-transform: translateY(-14px) scale(1.1); } }
   @keyframes mewave { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-14px) scale(1.1); } }
 
+  /* ---- しんけいすいじゃく: ねこと / ふたりで ---- */
+  /* ひとりで の ときは とくてん ひょうを かくす。ねこ・ふたりでは とけいと てんすうを かくす */
+  #game-memory .mesb, #game-memory .meturn, #game-memory .mewins, #game-memory #memory-lvbox { display: none; }
+  #game-memory.me-cat .score, #game-memory.me-two .score,
+  #game-memory.me-cat .best, #game-memory.me-two .best,
+  #game-memory.me-cat .meprog, #game-memory.me-two .meprog { display: none; }
+  #game-memory.me-cat .mesb, #game-memory.me-two .mesb { display: block; }
+  #game-memory.me-cat .meturn, #game-memory.me-two .meturn { display: block; }
+  #game-memory.me-cat .mewins { display: block; }
+  #game-memory.me-cat #memory-lvbox { display: block; }
+  .mesb { margin: 0 auto 2px; max-width: 640px; text-align: center; }
+  /* 2まいの ぱねる。だれの ばんかは いろの こい ほうで わかる */
+  .mep {
+    display: inline-block; width: 46%; margin: 0 1%; padding: 3px 4px 5px; vertical-align: top;
+    border: 4px solid #e0d6bd; border-radius: 18px; background: #f3ecda; color: #8a7f6b;
+    line-height: 1.15;
+  }
+  .mep .men { font-size: 20px; font-weight: 700; }
+  .mep b { font-size: 34px; }
+  .mep .meu { font-size: 16px; font-weight: 700; }
+  .mep.on {
+    color: #ffffff;
+    -webkit-transform: scale(1.05); transform: scale(1.05);
+  }
+  .mep0.on { background: #e0523a; border-color: #a8321f; box-shadow: 0 4px 0 #a8321f, 0 0 14px 3px rgba(224, 82, 58, .55); -webkit-box-shadow: 0 4px 0 #a8321f, 0 0 14px 3px rgba(224, 82, 58, .55); }
+  .mep1.on { background: #3b78d1; border-color: #244f93; box-shadow: 0 4px 0 #244f93, 0 0 14px 3px rgba(59, 120, 209, .55); -webkit-box-shadow: 0 4px 0 #244f93, 0 0 14px 3px rgba(59, 120, 209, .55); }
+  .meturn {
+    margin: 8px 0 8px; height: 40px; line-height: 40px; font-size: 30px; font-weight: 700;
+    white-space: nowrap; overflow: hidden;
+  }
+  .meturn.t0 { color: #d2422a; }
+  .meturn.t1 { color: #2f68bd; }
+  .meturn.t2 { color: #6d6355; }
+  .mewins { margin: 6px 0 8px; font-size: 17px; font-weight: 700; color: #6d6355; line-height: 24px; }
+  .mewins b { color: #3f8f4f; font-size: 20px; }
+  #memory-msg.streak { font-size: 28px; color: #c2691f; }
+  /* とったぺあは もちぬしの いろ。ばんの 上で だれが とったか わかる */
+  .card.done.own0 .ci {
+    background: #ffe0d8; border-color: #e0523a;
+    box-shadow: 0 3px 0 #b8402b, 0 0 12px 3px rgba(224, 82, 58, .5);
+    -webkit-box-shadow: 0 3px 0 #b8402b, 0 0 12px 3px rgba(224, 82, 58, .5);
+  }
+  .card.done.own1 .ci {
+    background: #d9e8fb; border-color: #3b78d1;
+    box-shadow: 0 3px 0 #2a5ba6, 0 0 12px 3px rgba(59, 120, 209, .5);
+    -webkit-box-shadow: 0 3px 0 #2a5ba6, 0 0 12px 3px rgba(59, 120, 209, .5);
+  }
+  .card.done.own0 .ci::after, .card.done.own1 .ci::after { font-size: 15px; }
+  .card.done.own0 .ci::after { background: #e0523a; content: "\3042"; }
+  .card.done.own1 .ci::after { background: #3b78d1; content: "\304A"; }
+  #game-memory.me-cat .card.done.own0 .ci::after { content: "\3042"; }
+  #game-memory.me-cat .card.done.own1 .ci::after { content: "\1F431"; font-size: 14px; }
+  /* れんぞくの ときは すこし 大きく はねて きらきらも 大きい */
+  .card.done .ci.pop.pop2 { -webkit-animation: mepop2 .75s ease-out; animation: mepop2 .75s ease-out; }
+  .card.done .ci.pop.pop2::before {
+    font-size: 38px; line-height: 40px; left: 0; top: -4px;
+    -webkit-animation: mespark2 .95s ease-out; animation: mespark2 .95s ease-out;
+  }
+  @-webkit-keyframes mepop2 { 0% { -webkit-transform: scale(1); } 30% { -webkit-transform: scale(1.3); } 55% { -webkit-transform: scale(.93); } 75% { -webkit-transform: scale(1.1); } 100% { -webkit-transform: scale(1); } }
+  @keyframes mepop2 { 0% { transform: scale(1); } 30% { transform: scale(1.3); } 55% { transform: scale(.93); } 75% { transform: scale(1.1); } 100% { transform: scale(1); } }
+  @-webkit-keyframes mespark2 { 0% { opacity: 0; -webkit-transform: scale(.3); } 30% { opacity: 1; -webkit-transform: scale(1.5); } 100% { opacity: 0; -webkit-transform: translateY(-14px) scale(1.1); } }
+  @keyframes mespark2 { 0% { opacity: 0; transform: scale(.3); } 30% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; transform: translateY(-14px) scale(1.1); } }
+  /* はじめに 見せる あいだの のこりの おび (だんだん みじかく なる) */
+  .mepbar { width: 70%; max-width: 420px; height: 12px; margin: 4px auto 0; background: #e6dcc3; border-radius: 6px; overflow: hidden; }
+  .mepbar i {
+    display: block; height: 100%; background: #e07a2f; border-radius: 6px;
+    -webkit-transform-origin: 0 50%; transform-origin: 0 50%;
+    -webkit-animation-name: mepbar; animation-name: mepbar;
+    -webkit-animation-timing-function: linear; animation-timing-function: linear;
+    -webkit-animation-fill-mode: forwards; animation-fill-mode: forwards;
+  }
+  @-webkit-keyframes mepbar { 0% { -webkit-transform: scaleX(1); } 100% { -webkit-transform: scaleX(0); } }
+  @keyframes mepbar { 0% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+  /* えらぶ ボタンが ふえたので すこし 小さく して 行を みじかく する */
+  #memory-with .big, #memory-lv .big, #memory-sizes .big, #memory-peekpick .big {
+    font-size: 19px; padding: 8px 14px; min-height: 50px;
+  }
+  @media (max-width: 380px) {
+    /* ちいさい カードでは もちぬしの しるしも ちいさく (絵に かさならない ように) */
+    .card.done.own0 .ci::after, .card.done.own1 .ci::after { width: 20px; height: 20px; line-height: 20px; font-size: 12px; right: 2px; top: 2px; }
+    #game-memory.me-cat .card.done.own1 .ci::after { font-size: 11px; }
+    .meturn { font-size: 25px; }
+    .mep .men { font-size: 17px; }
+    .mep b { font-size: 30px; }
+    #memory-with .big, #memory-lv .big, #memory-sizes .big, #memory-peekpick .big { font-size: 17px; padding: 8px 10px; }
+  }
+
   /* ---- なかまはずれさがし ---- */
   #game-odd .score { margin: 0 0 2px; height: auto; white-space: normal; font-size: 22px; line-height: 32px; }
   #game-odd .score b { font-size: 28px; }
@@ -896,17 +983,27 @@
 </div>
 
 <!-- しんけいすいじゃく -->
-<div id="game-memory" style="display:none">
+<div id="game-memory" class="me-solo" style="display:none">
   <p class="score">めくった かいすう　<b id="memory-score">0</b>　　⏱ <b id="memory-time">0</b> びょう</p>
   <p class="best" id="memory-best"></p>
   <p class="meprog" id="memory-prog"></p>
+  <!-- ねこ・ふたりで の ときの とくてん ひょうと、だれの ばんか -->
+  <div class="mesb" id="memory-sb">
+    <div class="mep mep0" id="memory-p0"><span class="men" id="memory-n0"></span><br><b id="memory-c0">0</b><span class="meu"> くみ</span></div>
+    <div class="mep mep1" id="memory-p1"><span class="men" id="memory-n1"></span><br><b id="memory-c1">0</b><span class="meu"> くみ</span></div>
+  </div>
+  <p class="meturn" id="memory-turn"></p>
   <table class="board" id="memory-board"><tbody id="memory-body"></tbody></table>
   <p class="msg" id="memory-msg"></p>
   <button type="button" class="big" id="memory-reset">もういちど</button>
-  <!-- まいすうと えがらは あそぶ まえに えらぶ もの。ばんを 大きく するため 下に おく -->
+  <p class="mewins" id="memory-wins"></p>
+  <!-- だれと・まいすう・えがらは あそぶ まえに えらぶ もの。ばんを 大きく するため 下に おく -->
+  <div class="ctrl"><span class="label">だれと</span><span id="memory-with"></span></div>
+  <div class="ctrl" id="memory-lvbox"><span class="label">ねこの つよさ</span><span id="memory-lv"></span></div>
   <div class="ctrl"><span class="label">まいすう</span><span id="memory-sizes"></span></div>
   <div class="ctrl"><span class="label">えがら</span><span id="memory-themes"></span></div>
-  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。<br>はやく そろえるほど、むだな めくりが 少ないほど<br>てんすうが 高く なります。</p></div>
+  <div class="ctrl"><span class="label">はじめに 見せる</span><span id="memory-peekpick"></span></div>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。<br>はやく そろえるほど、むだな めくりが 少ないほど<br>てんすうが 高く なります。<br>つづけて そろえると <b>れんぞく</b>。ひとりの ときは てんすうが ふえます。<br><b>だれと</b>：<b>ねこと</b> か <b>ふたりで</b> を えらぶと、かわりばんこ です。<br>そろえたら もう1かい できます。ちがったら あいての ばんです。<br>ペアが おおい ほうが かち。じかんと てんすうは ありません。<br><b>ねこの つよさ</b>：つよいほど よく おぼえて います。<br>ふたりで の ときは <b>あか</b> と <b>あお</b> です。<br><b>はじめに 見せる</b>：<b>する</b> にすると、はじめに ぜんぶの カードが 見えます。<br>おぼえて ください。（ひとりの きろくは べつに のこります）<br>まいすうは 16まい も えらべます。</p></div>
 </div>
 
 <!-- なかまはずれさがし -->
@@ -1336,7 +1433,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v70";
+  var APP_VER = "v71";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -2206,15 +2303,33 @@
   // しんけいすいじゃく
   // ============================================================
   var MEM_THEMES = [
-    { key: "hana", label: "🌸", faces: ["🌸", "🌻", "🌷", "🌹", "🍀", "🌼"] },
-    { key: "animal", label: "🐱", faces: ["🐱", "🐶", "🐰", "🐼", "🐤", "🐸"] },
-    { key: "fruit", label: "🍎", faces: ["🍎", "🍓", "🍇", "🍊", "🍑", "🍉"] }
+    { key: "hana", label: "🌸", faces: ["🌸", "🌻", "🌷", "🌹", "🍀", "🌼", "🌺", "💐"] },
+    { key: "animal", label: "🐱", faces: ["🐱", "🐶", "🐰", "🐼", "🐤", "🐸", "🐯", "🐵"] },
+    { key: "fruit", label: "🍎", faces: ["🍎", "🍓", "🍇", "🍊", "🍑", "🍉", "🍌", "🍒"] }
   ];
   var MEM_SIZES = [
     { key: "4",  label: "4まい",  cards: 4,  cols: 2 },
     { key: "8",  label: "8まい",  cards: 8,  cols: 4 },
-    { key: "12", label: "12まい", cards: 12, cols: 4 }
+    { key: "12", label: "12まい", cards: 12, cols: 4 },
+    { key: "16", label: "16まい", cards: 16, cols: 4 }
   ];
+  // だれと あそぶか / ねこの おぼえやすさ (p = 1まい 見る たびに おぼえる かくりつ) / はじめに 見せるか
+  var ME_WITHS = [
+    { key: "solo", label: "ひとりで" },
+    { key: "cat",  label: "🐱 ねこと" },
+    { key: "two",  label: "ふたりで" }
+  ];
+  var ME_LEVELS = [
+    { key: "weak",   label: "よわい", p: 0.35 },
+    { key: "normal", label: "ふつう", p: 0.6 },
+    { key: "strong", label: "つよい", p: 0.9 }
+  ];
+  var ME_PEEKS = [
+    { key: "1", label: "する" },
+    { key: "0", label: "しない" }
+  ];
+  // ねこの ペース (ミリびょう)。ゆっくり 読める ように ながめに とる
+  var ME_CAT_FIRST = 900, ME_CAT_SECOND = 900, ME_CAT_MISS = 1600, ME_CAT_MATCH = 800;
 
   var meBoard = $("memory-board"), meBody = $("memory-body");
   var meScoreEl = $("memory-score"), meMsgEl = $("memory-msg");
@@ -2223,6 +2338,9 @@
   // (そうしないと 12まいを えらぶだけで 点が 高く なってしまう)。
   // 人が かんぺきに あそんで 212てん あたりなので、👑 は その へんに おく。
   //   ふつう 137 / じょうず 185 / かんぺき 212
+  // 16まいも 同じ: かんぺきな おぼえ方で めくった かずを しらべると
+  // 12まいで 189てん、16まいで 189てん (1びょう半で めくる ばあい)。ほぼ おなじなので
+  // ひとりでも 16まいを だして よい (かず ごとに ランクを かえない)。
   var ME_RANKS = [60, 100, 140, 180, 210];
   var ME_PAIR_POINT = 20;        // とちゅう けいかの めやす (1ペアごと)
   var ME_DONE_POINT = 100;       // ぜんぶ そろえた ぶん
@@ -2236,13 +2354,20 @@
   var meFlips = 0, meBusy = false, meBackTimer = null;
   var meBeganAt = 0, meSeconds = 0, meClockTimer = null;
   var meBest = Number(load("memory-best", "0")) || 0;
+  var meBestPeek = Number(load("memory-best-peek", "0")) || 0;   // はじめに 見せた ときは べつに ためる
   var meTimeEl = $("memory-time"), meBestEl = $("memory-best");
+  var meMode = "solo", meLv = ME_LEVELS[1], mePeek = false;
+  var meTurn = 0, mePairs = [0, 0], meOwner = [], meKnown = {};   // ばん / くみの かず / もちぬし / ねこが おぼえた カード
+  var meStreak = 0, meStreakPts = 0;
+  var mePhase = "play";                                          // "peek" | "play" | "over"
+  var mePeekTimer = null, meCatTimer = null;
 
   // しょうごうは さいごの てんすう (final) の ときだけ。とちゅうの めやすの てんすうに
   // 🌱 などが つくと、まだ おわって いないのに 順位が きまった ように 見える
   function mePaintBest(now, final) {
     var cur = now > 0 ? "てんすう " + now + (final ? " " + rankLabelOf(now, ME_RANKS) : "") : "";
-    var best = meBest > 0 ? "（さいこう " + meBest + "てん " + rankLabelOf(meBest, ME_RANKS) + "）" : "";
+    var b = mePeek ? meBestPeek : meBest;
+    var best = b > 0 ? "（" + (mePeek ? "はじめに 見せる とき " : "") + "さいこう " + b + "てん " + rankLabelOf(b, ME_RANKS) + "）" : "";
     meBestEl.innerHTML = cur + (cur && best ? "　" : "") + best;
   }
 
@@ -2266,6 +2391,12 @@
       meClockTimer = null;
     }
   }
+  // 「もどす」まち・はじめの 見せる まち・ねこの まちを ぜんぶ 止める
+  function meClearTimers() {
+    if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
+    if (mePeekTimer !== null) { clearTimeout(mePeekTimer); mePeekTimer = null; }
+    if (meCatTimer !== null) { clearTimeout(meCatTimer); meCatTimer = null; }
+  }
 
   // ぜんぶ そろえた ぶん + はやさ + むだの 少なさ。
   // はやさも むだの 少なさも 「めやすに 対する わりあい」 なので、
@@ -2285,9 +2416,41 @@
     for (var i = 0; i < MEM_SIZES.length; i++) if (MEM_SIZES[i].key === cards) meSize = MEM_SIZES[i];
     var theme = load("theme", "hana");
     for (var j = 0; j < MEM_THEMES.length; j++) if (MEM_THEMES[j].key === theme) meTheme = MEM_THEMES[j];
+    var w = load("memory-with", "solo");
+    for (var k = 0; k < ME_WITHS.length; k++) if (ME_WITHS[k].key === w) meMode = w;
+    var lv = load("memory-cat", "normal");
+    for (var m = 0; m < ME_LEVELS.length; m++) if (ME_LEVELS[m].key === lv) meLv = ME_LEVELS[m];
+    mePeek = load("memory-peek", "0") === "1";
   })();
 
+  function meWinsKey(lv) { return "memory-cat-" + lv.key + "-wins"; }
+
+  // ねこに かった かずを つよさ ごとに 見せる
+  function mePaintWins() {
+    var h = "ねこに かった かいすう　";
+    for (var i = 0; i < ME_LEVELS.length; i++) {
+      h += (i ? "　" : "") + ME_LEVELS[i].label + " <b>" + (Number(load(meWinsKey(ME_LEVELS[i]), "0")) || 0) + "</b>";
+    }
+    $("memory-wins").innerHTML = h;
+  }
+
+  function meApplyMode() {
+    $("game-memory").className = "me-" + meMode;
+    mePaintWins();
+  }
+
   function meBuild() {
+    buildPicker($("memory-with"), ME_WITHS, function (c) { return c.key === meMode; }, "big", function (cfg) {
+      meMode = cfg.key;
+      save("memory-with", cfg.key);
+      meApplyMode();
+      meStart();
+    });
+    buildPicker($("memory-lv"), ME_LEVELS, function (c) { return c === meLv; }, "big", function (cfg) {
+      meLv = cfg;
+      save("memory-cat", cfg.key);
+      meStart();
+    });
     buildPicker($("memory-sizes"), MEM_SIZES, function (c) { return c === meSize; }, "big", function (cfg) {
       meSize = cfg;
       save("cards", cfg.key);
@@ -2298,6 +2461,12 @@
       save("theme", cfg.key);
       meStart();
     });
+    buildPicker($("memory-peekpick"), ME_PEEKS, function (c) { return (c.key === "1") === mePeek; }, "big", function (cfg) {
+      mePeek = cfg.key === "1";
+      save("memory-peek", cfg.key);
+      meStart();
+    });
+    meApplyMode();
   }
 
   // みつけた くみの かずを 字と まるで 見せる
@@ -2311,22 +2480,82 @@
     }
   }
 
+  // ねこ・ふたりで: くみの かずと、だれの ばんかを 見せる。ばんを おしても 高さは かわらない
+  function mePaintSB() {
+    if (meMode === "solo") return;
+    var cat = meMode === "cat";
+    $("memory-n0").innerHTML = cat ? "😊 あなた" : "🔴 あか";
+    $("memory-n1").innerHTML = cat ? "🐱 ねこ" : "🔵 あお";
+    $("memory-c0").innerHTML = String(mePairs[0]);
+    $("memory-c1").innerHTML = String(mePairs[1]);
+    var live = mePhase === "play";
+    $("memory-p0").className = "mep mep0" + (live && meTurn === 0 ? " on" : "");
+    $("memory-p1").className = "mep mep1" + (live && meTurn === 1 ? " on" : "");
+    var t = $("memory-turn");
+    if (mePhase === "over") { t.className = "meturn t2"; t.innerHTML = "おしまい"; return; }
+    if (mePhase === "peek") { t.className = "meturn t2"; t.innerHTML = "もうすぐ はじまるよ"; return; }
+    t.className = "meturn t" + meTurn;
+    t.innerHTML = cat ? (meTurn === 0 ? "あなたの ばん" : "🐱 ねこの ばん")
+                      : (meTurn === 0 ? "あかの ひとの ばん" : "あおの ひとの ばん");
+  }
+
   // カードを ふせる。ふせる ときは うごかさず すぐ もどす
   function meDown(i) {
     meCells[i].className = "card";
     meCis[i].className = "ci";
   }
 
+  // ねこは カードを 見る たびに、つよさに おうじた かくりつで おぼえる (はじめの 見せるは はんぶん)
+  function meSee(i, scale) {
+    if (meMode !== "cat" || meKnown[i]) return;
+    if (Math.random() < meLv.p * scale) meKnown[i] = true;
+  }
+
+  // はじめに ぜんぶ 見せる。まちが とちゅうで 止まったら ここから やりなおす
+  function meBeginPeek() {
+    var sec = meSize.cards <= 4 ? 2 : (meSize.cards <= 8 ? 3 : 4);
+    mePhase = "peek";
+    for (var i = 0; i < meCells.length; i++) {
+      if (meDone[i]) continue;
+      meCells[i].className = "card open";
+      meCis[i].className = "ci";
+      meSee(i, 0.5);
+    }
+    meMsgEl.className = "msg";
+    meMsgEl.innerHTML = 'おぼえて ください<div class="mepbar"><i style="-webkit-animation-duration:' + sec +
+      's;animation-duration:' + sec + 's"></i></div>';
+    if (mePeekTimer !== null) clearTimeout(mePeekTimer);
+    mePeekTimer = setTimeout(meEndPeek, sec * 1000);
+    mePaintSB();
+  }
+  function meEndPeek() {
+    mePeekTimer = null;
+    for (var i = 0; i < meCells.length; i++) if (!meDone[i]) meDown(i);
+    mePhase = "play";
+    meMsgEl.className = "msg";
+    meMsgEl.innerHTML = "";
+    if (meMode === "solo") meStartClock();    // とけいは 見せる おわってから
+    mePaintSB();
+  }
+
   function meStart() {
-    if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
+    meClearTimers();
+    if (meClockTimer !== null) { clearInterval(meClockTimer); meClockTimer = null; }
     meBusy = false;
     meFlips = 0;
     meOpen = [];
+    meTurn = 0;
+    mePairs = [0, 0];
+    meOwner = [];
+    meKnown = {};
+    meStreak = 0;
+    meStreakPts = 0;
+    mePhase = "play";
     meScoreEl.innerHTML = "0";
+    meTimeEl.innerHTML = "0";
     meMsgEl.innerHTML = "";
     meMsgEl.className = "msg";
     mePaintBest(0);
-    meStartClock();
 
     var pairs = meSize.cards / 2;
     meCols = meSize.cols;
@@ -2342,7 +2571,7 @@
     }
 
     meDone = [];
-    for (var d = 0; d < meFaces.length; d++) meDone.push(false);
+    for (var d = 0; d < meFaces.length; d++) { meDone.push(false); meOwner.push(-1); }
 
     while (meBody.firstChild) meBody.removeChild(meBody.firstChild);
     meCells = [];
@@ -2364,23 +2593,39 @@
       meBody.appendChild(tr);
     }
     holdStill(meBoard);
-    meResize();
-    mePaintProg(0);
     meLive = true;
+    mePaintProg(0);
+    mePaintSB();
+    meResize();
+    if (mePeek) meBeginPeek();
+    else if (meMode === "solo") meStartClock();
   }
 
   // タブを もどした とき、とちゅうなら ばんを そのまま のこす。
-  // ほかの タブに いく とき meStop が 時計と 「もどす」まちを 止めて いるので、
-  // ひらいた ままの ちがう 2まいは ここで ふせて、時計は つづきから うごかす
+  // ほかの タブに いく とき meStop が 時計と まちを ぜんぶ 止めて いるので、
+  // ひらいた ままの ちがう 2まいは ここで ふせて、時計は つづきから うごかす。
+  // ねこの ばんなら ねこが また はじめから (すこし まって) うごく
   function meResume() {
     if (!meLive || !meCells.length) return false;
+    meClearTimers();
+    if (mePhase === "peek") {
+      meBeginPeek();
+      meResize();
+      return true;
+    }
     if (meOpen.length >= 2) {
       meDown(meOpen[0]);
       meDown(meOpen[1]);
       meOpen = [];
+      if (meMode !== "solo") { meTurn = 1 - meTurn; meStreak = 0; }   // ちがって いたので ばんは かわる
+    } else if (meMode === "cat" && meTurn === 1 && meOpen.length === 1) {
+      meDown(meOpen[0]);
+      meOpen = [];
     }
     meBusy = false;
-    meStartClock(meSpent);
+    if (meMode === "solo") meStartClock(meSpent);
+    mePaintSB();
+    if (meMode === "cat" && meTurn === 1) meCatSchedule(ME_CAT_FIRST);
     meResize();
     return true;
   }
@@ -2412,69 +2657,221 @@
   }
 
   // ちがった 2まいを ふせる。2びょう たった ときと、まっている あいだに
-  // どれかを さわった ときの どちらでも ここを とおる
+  // どれかを さわった ときの どちらでも ここを とおる。
+  // ねこ・ふたりで なら ここで ばんが かわる
   function meFlipBack() {
     if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
-    if (meOpen.length >= 2) {
+    var pair = meOpen.length >= 2;
+    if (pair) {
       meDown(meOpen[0]);
       meDown(meOpen[1]);
       meOpen = [];
     }
     meBusy = false;
+    if (pair && meMode !== "solo") meNextTurn();
   }
 
-  function meFlip(i) {
-    if (meBusy) meFlipBack();       // さわった ことは むだに せず、すぐ ふせて つづける
-    if (meDone[i]) return;
-    if (meOpen.length && meOpen[0] === i) return;   // 同じカードの 2度めくりは無効
+  function meNextTurn() {
+    meTurn = 1 - meTurn;
+    meStreak = 0;
+    meMsgEl.className = "msg";
+    meMsgEl.innerHTML = "";
+    mePaintSB();
+    if (meMode === "cat" && meTurn === 1) meCatSchedule(ME_CAT_FIRST);
+  }
 
+  // 1まい ひらく。ひとも ねこも ここを とおる。2まい そろったら はんてい
+  function meShow(i) {
     meCells[i].className = "card open";
     meCis[i].className = "ci";
     soundFlip();
     meFlips++;
     meScoreEl.innerHTML = String(meFlips);
     meOpen.push(i);
+    meSee(i, 1);
+    if (meOpen.length === 2) meJudge();
+  }
 
-    if (meOpen.length < 2) return;
+  function meFlip(i) {
+    if (mePhase !== "play") return;                          // 見せる 中と おわった あとは むし
+    if (meMode === "cat" && meTurn === 1) return;            // ねこの ばんは さわっても なにも おきない
+    if (meBusy) {
+      meFlipBack();       // さわった ことは むだに せず、すぐ ふせて つづける
+      if (meMode !== "solo") return;   // ばんが かわった あとは あらためて さわって もらう
+    }
+    if (meDone[i]) return;
+    if (meOpen.length && meOpen[0] === i) return;   // 同じカードの 2度めくりは無効
+    meShow(i);
+  }
 
+  function meJudge() {
     var a = meOpen[0], b = meOpen[1];
+    var side = meTurn;
     if (meFaces[a] === meFaces[b]) {
+      meStreak++;
+      var bonus = 0;
+      if (meMode === "solo" && meStreak >= 2) {
+        bonus = Math.min(3 * (meStreak - 1), 9);      // 2くみめ +3、3くみめ +6、4くみめから +9
+        meStreakPts += bonus;
+      }
       meDone[a] = true;
       meDone[b] = true;
-      meCells[a].className = "card done";
-      meCells[b].className = "card done";
-      meCis[a].className = "ci pop";
-      meCis[b].className = "ci pop";
+      meOwner[a] = side;
+      meOwner[b] = side;
+      delete meKnown[a];
+      delete meKnown[b];
+      var own = meMode === "solo" ? "" : " own" + side;
+      meCells[a].className = "card done" + own;
+      meCells[b].className = "card done" + own;
+      var pc = meStreak >= 2 ? "ci pop pop2" : "ci pop";
+      meCis[a].className = pc;
+      meCis[b].className = pc;
       meOpen = [];
-      soundMatch();
+      mePairs[side]++;
+      if (meMode === "cat" && side === 1) meSoundNya();
+      else if (meStreak >= 2) meSoundStreak(meStreak);
+      else soundMatch();
 
       // いま までに そろえた ぶんだけ 見せる (はやさの ボーナスは さいごに つく)
-      var pairsDone = 0;
-      for (var d2 = 0; d2 < meDone.length; d2++) if (meDone[d2]) pairsDone++;
-      mePaintBest((pairsDone / 2) * ME_PAIR_POINT);
-      mePaintProg(pairsDone / 2);
-
-      for (var k = 0; k < meDone.length; k++) {
-        if (!meDone[k]) { meMsgEl.className = "msg"; meMsgEl.innerHTML = "そろった！"; return; }
+      var pairsDone = mePairs[0] + mePairs[1];
+      if (meMode === "solo") {
+        mePaintBest(pairsDone * ME_PAIR_POINT + meStreakPts);
+        mePaintProg(pairsDone);
+      } else {
+        mePaintSB();
       }
 
-      meStopClock();
-      var pts = meFinalScore();
-      var isBest = pts > meBest;
-      var gap = meBest - pts;                       // ほぞんする まえの さいこうと くらべる
-      var hadBest = meBest > 0;
-      if (isBest) { meBest = pts; save("memory-best", meBest); }
-      meLive = false;
-      mePaintBest(pts, true);
-      meWave();
-      var cmp = isBest ? " さいこう きろく！" : (!hadBest ? "" : (gap > 0 ? " さいこうまで あと " + gap + "てん" : " さいこうと おなじ！"));
-      celebrate(meMsgEl, meSeconds + "びょうで " + pts + "てん！" + cmp);
+      var left = false;
+      for (var k = 0; k < meDone.length; k++) if (!meDone[k]) { left = true; break; }
+      if (left) {
+        meMsgEl.className = "msg";
+        if (meStreak >= 2) {
+          meMsgEl.className = "msg streak";
+          meMsgEl.innerHTML = (meMode === "cat" && side === 1 ? "🐱 " : "") + meStreak + "れんぞく！" +
+            (bonus ? " +" + bonus + "てん" : "");
+        } else {
+          meMsgEl.innerHTML = meMode === "cat" && side === 1 ? "🐱 ねこが そろえた！" : "そろった！";
+        }
+        if (meMode === "cat" && side === 1) meCatSchedule(ME_CAT_MATCH);
+        return;
+      }
+      meFinish(bonus);
     } else {
+      meStreak = 0;
       meCis[a].className = "ci bad";
       meCis[b].className = "ci bad";
       meBusy = true;
-      meBackTimer = setTimeout(meFlipBack, 2000);   // ゆっくり 読む 人の ために 2びょう
+      if (meMode !== "solo") {
+        meMsgEl.className = "msg again";
+        meMsgEl.innerHTML = meMode === "cat" && side === 1 ? "🐱 ねこは ちがった！" : "ざんねん！ ばんが かわります";
+      }
+      // ゆっくり 読む 人の ために 2びょう (ねこの ときは もっと ながく)
+      meBackTimer = setTimeout(meFlipBack, meMode === "cat" && side === 1 ? ME_CAT_MISS : 2000);
     }
+  }
+
+  function meFinish(bonus) {
+    meStopClock();
+    mePhase = "over";
+    meLive = false;
+    meBusy = false;
+    meClearTimers();
+    if (meMode === "solo") {
+      var pts = meFinalScore() + meStreakPts;
+      var cur = mePeek ? meBestPeek : meBest;
+      var isBest = pts > cur;
+      var gap = cur - pts;                       // ほぞんする まえの さいこうと くらべる
+      var hadBest = cur > 0;
+      if (isBest) {
+        if (mePeek) { meBestPeek = pts; save("memory-best-peek", pts); }
+        else { meBest = pts; save("memory-best", pts); }
+      }
+      mePaintBest(pts, true);
+      meWave();
+      var cmp = isBest ? " さいこう きろく！" : (!hadBest ? "" : (gap > 0 ? " さいこうまで あと " + gap + "てん" : " さいこうと おなじ！"));
+      var sb = meStreakPts > 0 ? "（れんぞく +" + meStreakPts + "）" : "";
+      celebrate(meMsgEl, meSeconds + "びょうで " + pts + "てん！" + sb + cmp);
+      return;
+    }
+    var a = mePairs[0], b = mePairs[1];
+    var sc = "（" + a + " たい " + b + "）";
+    mePaintSB();
+    if (meMode === "cat") {
+      if (a > b) {
+        var wk = meWinsKey(meLv);
+        save(wk, (Number(load(wk, "0")) || 0) + 1);
+        mePaintWins();
+        meWave();
+        celebrate(meMsgEl, "あなたの かち！ ねこに かちました！" + sc);
+      } else {
+        meMsgEl.className = "msg again";
+        meMsgEl.innerHTML = (a < b ? "ねこの かち。 おしかった！ もういちど どうぞ" : "ひきわけ！ いい しょうぶ でした。 もういちど どうぞ") + sc;
+      }
+      return;
+    }
+    meWave();
+    celebrate(meMsgEl, (a > b ? "あかの ひとの かち！" : (a < b ? "あおの ひとの かち！" : "ひきわけ！")) + sc);
+  }
+
+  // ねこの ばん: まって → 1まいめ → まって → 2まいめ。ねこは おぼえた カードだけで えらぶ
+  function meCatSchedule(ms) {
+    if (meCatTimer !== null) clearTimeout(meCatTimer);
+    meCatTimer = setTimeout(meCatFirst, ms);
+  }
+  function meCatTurnOk() { return mePhase === "play" && meMode === "cat" && meTurn === 1; }
+
+  // おぼえて いる ふたつの おなじ え (まだ とられて いない ものだけ)
+  function meCatKnownPair() {
+    for (var i = 0; i < meFaces.length; i++) {
+      if (meDone[i] || !meKnown[i]) continue;
+      for (var j = i + 1; j < meFaces.length; j++) {
+        if (!meDone[j] && meKnown[j] && meFaces[j] === meFaces[i]) return [i, j];
+      }
+    }
+    return null;
+  }
+  // ふせて ある カードから むさくいに 1まい。ひらいて いる ものと とられた ものは ださない
+  function meCatRandom(skipKnown, not) {
+    var list = [];
+    for (var i = 0; i < meFaces.length; i++) {
+      if (meDone[i] || i === not) continue;
+      if (meOpen.length && meOpen[0] === i) continue;
+      if (skipKnown && meKnown[i]) continue;
+      list.push(i);
+    }
+    if (!list.length && skipKnown) return meCatRandom(false, not);
+    if (!list.length) return -1;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  function meCatFirst() {
+    meCatTimer = null;
+    if (!meCatTurnOk() || meOpen.length) return;
+    var pair = meCatKnownPair();
+    var first = pair ? pair[0] : meCatRandom(true, -1);
+    if (first < 0) return;
+    meShow(first);
+    meCatTimer = setTimeout(function () { meCatSecond(first, pair); }, ME_CAT_SECOND);
+  }
+  function meCatSecond(first, pair) {
+    meCatTimer = null;
+    if (!meCatTurnOk() || meOpen.length !== 1 || meOpen[0] !== first) return;
+    var second = -1;
+    if (pair) second = pair[1];
+    else {
+      for (var j = 0; j < meFaces.length; j++) {
+        if (j !== first && !meDone[j] && meKnown[j] && meFaces[j] === meFaces[first]) { second = j; break; }
+      }
+      if (second < 0) second = meCatRandom(false, first);
+    }
+    if (second < 0) return;
+    meShow(second);
+  }
+
+  // ねこが とった ときの 「にゃ」(ふたつの おと)。れんぞくの ときは おとが どんどん 高く なる
+  function meSoundNya() { play([700, 540], 0.14, "triangle", 0.2); }
+  function meSoundStreak(n) {
+    var f = 880 * Math.pow(1.12, Math.min(n - 2, 5));
+    play([f, f * 1.26], 0.11, "sine", 0.2);
   }
 
   // さいごの 1くみで ばんの ぜんぶが ひだりうえから じゅんに はねる
@@ -2490,9 +2887,32 @@
 
   function meStop() {
     meStopClock();
-    if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
+    meClearTimers();
     meBusy = false;
   }
+
+  // ホームボタンで アプリを はなれた ときも、ねこが かってに うごかない ように とめる
+  if (document.addEventListener) {
+    document.addEventListener("visibilitychange", function () {
+      if (curTab !== "memory" || recOpened) return;
+      if (document.hidden) meStop();
+      else if (meLive) meResume();
+    }, false);
+  }
+
+  // しらべる ための よみとり (あそびには つかわない)
+  window.meState = function () {
+    var open = [], taken = [0, 0], known = 0, k, i;
+    for (i = 0; i < meOpen.length; i++) open.push(meOpen[i]);
+    for (k in meKnown) if (meKnown.hasOwnProperty(k)) known++;
+    return {
+      mode: meMode, turn: meTurn, pairs: [mePairs[0], mePairs[1]], open: open, streak: meStreak,
+      streakPts: meStreakPts, known: known, peek: mePhase === "peek", phase: mePhase, over: mePhase === "over",
+      busy: meBusy, live: meLive, flips: meFlips, seconds: meSeconds, owner: meOwner.slice(0), done: meDone.slice(0),
+      faces: meFaces.slice(0), timers: meBackTimer !== null || mePeekTimer !== null || meCatTimer !== null || meClockTimer !== null,
+      catTimer: meCatTimer !== null, clock: meClockTimer !== null
+    };
+  };
 
   onTap($("memory-reset"), meStart);
 
@@ -7163,6 +7583,12 @@
     lines = [];
     v = recNum("memory-best");
     if (v > 0) lines.push("<b>" + v + "</b> てん" + recRank(v, ME_RANKS));
+    v = recNum("memory-best-peek");
+    if (v > 0) lines.push("はじめに 見せる　<b>" + v + "</b> てん" + recRank(v, ME_RANKS));
+    for (i = 0; i < ME_LEVELS.length; i++) {
+      v = recNum(meWinsKey(ME_LEVELS[i]));
+      if (v > 0) lines.push("🐱 ねこに かった　" + ME_LEVELS[i].label + "　<b>" + v + "</b> かい");
+    }
     out += recGroup("🎴", "しんけいすいじゃく", lines);
 
     lines = [];
