@@ -417,25 +417,84 @@
   .tbar.danger i { background: #d63a2f; }
 
   /* ---- しんけいすいじゃく ---- */
-  .card {
-    background: #e8a05a;
-    border: 5px solid #cf8842;
-    border-radius: 14px;
-    text-align: center;
-    vertical-align: middle;
-    cursor: pointer;
+  /* ばんは うすい しきもの。カードが ういて 見える */
+  #memory-board {
+    background: #eadfc3;
+    border-radius: 22px;
+    border-spacing: 12px;
+    box-shadow: inset 0 2px 6px rgba(120, 90, 40, .22);
+    -webkit-box-shadow: inset 0 2px 6px rgba(120, 90, 40, .22);
+  }
+  @media (max-width: 380px) {
+    #game-memory .score { font-size: 15px; height: 40px; }
+    #game-memory .score b { font-size: 20px; }
+  }
+  #memory-msg { min-height: 58px; margin: 8px 0 2px; font-size: 24px; line-height: 28px; }
+  /* みつけた くみの かず。まるが 1つずつ ともる */
+  .meprog { margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #6d6355; color: var(--sub); min-height: 26px; line-height: 26px; white-space: nowrap; overflow: hidden; }
+  .meprog b { color: #3f8f4f; color: var(--good); font-size: 24px; }
+  .meprog .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #dfd3b4; margin: 0 3px; vertical-align: middle; }
+  .meprog .dot.on { background: #4fae6a; }
+  .card { background: none; border: 0; padding: 0; text-align: center; vertical-align: middle; cursor: pointer; }
+  /* カードの 本体は td の 中の .ci。td は 場所を とるだけ (うごかしても ばんが ゆれない) */
+  .card .ci {
+    position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+    border: 4px solid #3f72b0;
+    border-radius: 16px;
+    background: #5d93cf;
+    background: -webkit-radial-gradient(50% 50%, circle closest-side, #fff6e0 0, #fff6e0 15%, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0) 30%, #fff6e0 31%, #fff6e0 35%, rgba(0, 0, 0, 0) 36%), -webkit-repeating-linear-gradient(45deg, #6aa0da 0, #6aa0da 11px, #5589c4 11px, #5589c4 22px);
+    background: radial-gradient(circle closest-side at 50% 50%, #fff6e0 0, #fff6e0 15%, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0) 30%, #fff6e0 31%, #fff6e0 35%, rgba(0, 0, 0, 0) 36%), repeating-linear-gradient(45deg, #6aa0da 0, #6aa0da 11px, #5589c4 11px, #5589c4 22px);
+    box-shadow: 0 3px 0 #2f5c94, 0 6px 8px rgba(60, 40, 10, .25);
+    -webkit-box-shadow: 0 3px 0 #2f5c94, 0 6px 8px rgba(60, 40, 10, .25);
   }
   /* ふせて いる あいだは 絵も かくす。canvas にも かけないと 見えて しまう */
   .card .face, .card .facecv { visibility: hidden; }
-  .card.open, .card.done {
+  .card.open .ci {
     background: #ffffff;
     background: var(--panel);
     border-color: #d9cdb2;
     border-color: var(--line);
+    box-shadow: 0 3px 0 #cbbd9a, 0 6px 8px rgba(60, 40, 10, .2);
+    -webkit-box-shadow: 0 3px 0 #cbbd9a, 0 6px 8px rgba(60, 40, 10, .2);
+    -webkit-animation: meturn .15s ease-out; animation: meturn .15s ease-out;
   }
   .card.open .face, .card.done .face,
   .card.open .facecv, .card.done .facecv { visibility: visible; }
-  .card.done { background: #dff0dd; border-color: #8cc094; }
+  /* そろった ぺあは みどりに ひかり、すみに ✓。絵は そのまま 見える */
+  .card.done .ci {
+    background: #e6f4e1;
+    border-color: #7fbf8e;
+    box-shadow: 0 3px 0 #6aa87a, 0 0 12px 3px rgba(110, 190, 130, .55);
+    -webkit-box-shadow: 0 3px 0 #6aa87a, 0 0 12px 3px rgba(110, 190, 130, .55);
+  }
+  .card.done .ci::after {
+    content: "\2713"; position: absolute; right: 3px; top: 3px;
+    width: 24px; height: 24px; line-height: 24px; border-radius: 50%;
+    background: #3f8f4f; color: #fff; font-size: 15px; font-weight: 700; text-align: center;
+  }
+  /* そろった ときの はねる うごきと きらきら */
+  .card.done .ci.pop { -webkit-animation: mepop .55s ease-out; animation: mepop .55s ease-out; }
+  .card.done .ci.pop::before {
+    content: "\2728"; position: absolute; left: 4px; top: 2px; font-size: 24px; line-height: 28px;
+    -webkit-animation: mespark .7s ease-out; animation: mespark .7s ease-out;
+  }
+  /* ちがった とき。めくる うごきの あとで ゆれる (2びょうの まちは かわらない) */
+  .card.open .ci.bad {
+    -webkit-animation: meturn .15s ease-out, meshake .45s ease-in-out .18s;
+    animation: meturn .15s ease-out, meshake .45s ease-in-out .18s;
+  }
+  /* さいごの 1くみで ばん ぜんたいに なみ。おくれは JS で ますごとに いれる */
+  .card.done .ci.wave { -webkit-animation: mewave .6s ease-in-out; animation: mewave .6s ease-in-out; }
+  @-webkit-keyframes meturn { 0% { -webkit-transform: scaleX(.08); } 100% { -webkit-transform: scaleX(1); } }
+  @keyframes meturn { 0% { transform: scaleX(.08); } 100% { transform: scaleX(1); } }
+  @-webkit-keyframes mepop { 0% { -webkit-transform: scale(1); } 35% { -webkit-transform: scale(1.14); } 65% { -webkit-transform: scale(.96); } 100% { -webkit-transform: scale(1); } }
+  @keyframes mepop { 0% { transform: scale(1); } 35% { transform: scale(1.14); } 65% { transform: scale(.96); } 100% { transform: scale(1); } }
+  @-webkit-keyframes mespark { 0% { opacity: 0; -webkit-transform: scale(.3); } 30% { opacity: 1; -webkit-transform: scale(1.3); } 100% { opacity: 0; -webkit-transform: translateY(-10px) scale(1); } }
+  @keyframes mespark { 0% { opacity: 0; transform: scale(.3); } 30% { opacity: 1; transform: scale(1.3); } 100% { opacity: 0; transform: translateY(-10px) scale(1); } }
+  @-webkit-keyframes meshake { 0%, 100% { -webkit-transform: translateX(0); } 20% { -webkit-transform: translateX(-7px); } 40% { -webkit-transform: translateX(7px); } 60% { -webkit-transform: translateX(-4px); } 80% { -webkit-transform: translateX(4px); } }
+  @keyframes meshake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+  @-webkit-keyframes mewave { 0%, 100% { -webkit-transform: translateY(0) scale(1); } 40% { -webkit-transform: translateY(-14px) scale(1.1); } }
+  @keyframes mewave { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-14px) scale(1.1); } }
 
   /* ---- なかまはずれさがし ---- */
   .pick {
@@ -722,11 +781,13 @@
 <div id="game-memory" style="display:none">
   <p class="score">めくった かいすう　<b id="memory-score">0</b>　　⏱ <b id="memory-time">0</b> びょう</p>
   <p class="best" id="memory-best"></p>
-  <div class="ctrl"><span class="label">まいすう</span><span id="memory-sizes"></span></div>
-  <div class="ctrl"><span class="label">えがら</span><span id="memory-themes"></span></div>
+  <p class="meprog" id="memory-prog"></p>
   <table class="board" id="memory-board"><tbody id="memory-body"></tbody></table>
   <p class="msg" id="memory-msg"></p>
   <button type="button" class="big" id="memory-reset">もういちど</button>
+  <!-- まいすうと えがらは あそぶ まえに えらぶ もの。ばんを 大きく するため 下に おく -->
+  <div class="ctrl"><span class="label">まいすう</span><span id="memory-sizes"></span></div>
+  <div class="ctrl"><span class="label">えがら</span><span id="memory-themes"></span></div>
   <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">カードを 2まい めくって、<br>おなじ えを さがしてください。<br>はやく そろえるほど、むだな めくりが 少ないほど<br>てんすうが 高く なります。</p></div>
 </div>
 
@@ -2050,7 +2111,8 @@
   var ME_SEC_PER_CARD = 8;       // このくらいで そろえば 早いほうだ、という めやす
   var ME_FLIP_PER_CARD = 3;      // 1まいあたり これだけ めくれば ふつう
 
-  var meCells = [], meFaces = [], meDone = [], meOpen = [];
+  var meCells = [], meCis = [], meFaces = [], meDone = [], meOpen = [];
+  var meProgEl = $("memory-prog"), meGap = 12;
   var meFlips = 0, meBusy = false, meBackTimer = null;
   var meBeganAt = 0, meSeconds = 0, meClockTimer = null;
   var meBest = Number(load("memory-best", "0")) || 0;
@@ -2118,6 +2180,23 @@
     });
   }
 
+  // みつけた くみの かずを 字と まるで 見せる
+  function mePaintProg(n) {
+    var total = meFaces.length / 2;
+    meProgEl.innerHTML = "みつけた <b>" + n + "</b> / " + total + " くみ　";
+    for (var i = 0; i < total; i++) {
+      var d = document.createElement("i");
+      d.className = i < n ? "dot on" : "dot";
+      meProgEl.appendChild(d);
+    }
+  }
+
+  // カードを ふせる。ふせる ときは うごかさず すぐ もどす
+  function meDown(i) {
+    meCells[i].className = "card";
+    meCis[i].className = "ci";
+  }
+
   function meStart() {
     if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
     meBusy = false;
@@ -2147,6 +2226,7 @@
 
     while (meBody.firstChild) meBody.removeChild(meBody.firstChild);
     meCells = [];
+    meCis = [];
     var rows = Math.ceil(meFaces.length / meCols);
     for (var r = 0; r < rows; r++) {
       var tr = document.createElement("tr");
@@ -2155,7 +2235,8 @@
         if (idx >= meFaces.length) break;
         var td = document.createElement("td");
         td.className = "card";
-        td.innerHTML = faceCellHTML();
+        td.innerHTML = '<div class="ci">' + faceCellHTML() + '</div>';
+        meCis.push(td.firstChild);
         (function (i2) { onTap(td, function () { meFlip(i2); }); })(idx);
         meCells.push(td);
         tr.appendChild(td);
@@ -2164,6 +2245,7 @@
     }
     holdStill(meBoard);
     meResize();
+    mePaintProg(0);
     meLive = true;
   }
 
@@ -2173,8 +2255,8 @@
   function meResume() {
     if (!meLive || !meCells.length) return false;
     if (meOpen.length >= 2) {
-      meCells[meOpen[0]].className = "card";
-      meCells[meOpen[1]].className = "card";
+      meDown(meOpen[0]);
+      meDown(meOpen[1]);
       meOpen = [];
     }
     meBusy = false;
@@ -2183,14 +2265,29 @@
     return true;
   }
 
+  // ばんの 大きさ。よこ はばと、ばんの 下の ことばと ボタンが 画面に のこる
+  // たかさの 小さい ほうに あわせる。ゆびで 押しやすい ように 下限は 60
   function meResize() {
     if (!meCells.length) return;
-    var s = fitSize(meCols, 130, 10);
-    meBoard.style.width = (meCols * s + (meCols + 1) * 10) + "px";
-    var inner = s - 10;                      // ふちの ぶんを のぞく
+    var cols = meCols, rows = Math.ceil(meCells.length / cols);
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+    meGap = vw < 400 ? 8 : 12;               // せまい 画面では すきまを つめて カードを 大きく
+    meBoard.style.borderSpacing = meGap + "px";
+    var wide = Math.min(vw - 12, 744);
+    var sw = Math.floor((wide - (cols + 1) * meGap) / cols);
+    var r = meBoard.getBoundingClientRect();
+    var top = r.top + (window.pageYOffset || 0);
+    var below = $("memory-reset").offsetHeight + meMsgEl.offsetHeight + 24;
+    var sh = Math.floor((vh - top - below - (rows + 1) * meGap) / rows);
+    if (r.width === 0 && r.top === 0) sh = sw;     // 見えて いない ときは よこ はばだけで きめる
+    var s = Math.min(sw, sh, 230);
+    if (s < 60) s = 60;
+    meBoard.style.width = (cols * s + (cols + 1) * meGap) + "px";
+    var inner = s - 8;                       // ふちの ぶんを のぞく
     for (var i = 0; i < meCells.length; i++) {
       meCells[i].style.height = s + "px";
-      faceCellDraw(meCells[i], meFaces[i], inner, 0.62);
+      faceCellDraw(meCells[i], meFaces[i], inner, 0.7);
     }
   }
 
@@ -2199,8 +2296,8 @@
   function meFlipBack() {
     if (meBackTimer !== null) { clearTimeout(meBackTimer); meBackTimer = null; }
     if (meOpen.length >= 2) {
-      meCells[meOpen[0]].className = "card";
-      meCells[meOpen[1]].className = "card";
+      meDown(meOpen[0]);
+      meDown(meOpen[1]);
       meOpen = [];
     }
     meBusy = false;
@@ -2212,6 +2309,7 @@
     if (meOpen.length && meOpen[0] === i) return;   // 同じカードの 2度めくりは無効
 
     meCells[i].className = "card open";
+    meCis[i].className = "ci";
     soundFlip();
     meFlips++;
     meScoreEl.innerHTML = String(meFlips);
@@ -2225,6 +2323,8 @@
       meDone[b] = true;
       meCells[a].className = "card done";
       meCells[b].className = "card done";
+      meCis[a].className = "ci pop";
+      meCis[b].className = "ci pop";
       meOpen = [];
       soundMatch();
 
@@ -2232,6 +2332,7 @@
       var pairsDone = 0;
       for (var d2 = 0; d2 < meDone.length; d2++) if (meDone[d2]) pairsDone++;
       mePaintBest((pairsDone / 2) * ME_PAIR_POINT);
+      mePaintProg(pairsDone / 2);
 
       for (var k = 0; k < meDone.length; k++) {
         if (!meDone[k]) { meMsgEl.className = "msg"; meMsgEl.innerHTML = "そろった！"; return; }
@@ -2240,13 +2341,30 @@
       meStopClock();
       var pts = meFinalScore();
       var isBest = pts > meBest;
+      var gap = meBest - pts;                       // ほぞんする まえの さいこうと くらべる
+      var hadBest = meBest > 0;
       if (isBest) { meBest = pts; save("memory-best", meBest); }
       meLive = false;
       mePaintBest(pts, true);
-      celebrate(meMsgEl, meSeconds + "びょうで " + pts + "てん！" + (isBest ? " さいこう きろく！" : ""));
+      meWave();
+      var cmp = isBest ? " さいこう きろく！" : (!hadBest ? "" : (gap > 0 ? " さいこうまで あと " + gap + "てん" : " さいこうと おなじ！"));
+      celebrate(meMsgEl, meSeconds + "びょうで " + pts + "てん！" + cmp);
     } else {
+      meCis[a].className = "ci bad";
+      meCis[b].className = "ci bad";
       meBusy = true;
       meBackTimer = setTimeout(meFlipBack, 2000);   // ゆっくり 読む 人の ために 2びょう
+    }
+  }
+
+  // さいごの 1くみで ばんの ぜんぶが ひだりうえから じゅんに はねる
+  function meWave() {
+    for (var i = 0; i < meCis.length; i++) {
+      var ci = meCis[i];
+      ci.className = "ci wave";
+      var delay = ((i % meCols + Math.floor(i / meCols)) * 90 + 150) + "ms";
+      ci.style.webkitAnimationDelay = delay;
+      ci.style.animationDelay = delay;
     }
   }
 
