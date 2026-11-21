@@ -732,20 +732,20 @@
 
   /* ---- ビーズ ---- */
   #beads-board { border-spacing: 6px; background: #efe6cf; border-radius: 12px; }
-  /* できあがった あと、ビーズの 絵が 本物の 絵に かわる */
+  /* できあがった あと、おなじ 絵が ビーズの つぶから なめらかな 絵に かわる */
   .bereal {
     position: absolute; z-index: 5; display: none; cursor: pointer;
-    background: #fffaf0; background: rgba(255, 250, 240, .94); border-radius: 16px;
-    -webkit-box-shadow: 0 0 0 4px #ffd36b, 0 6px 22px rgba(120, 90, 30, .35);
-    box-shadow: 0 0 0 4px #ffd36b, 0 6px 22px rgba(120, 90, 30, .35);
-    opacity: 0; -webkit-transform: scale(.88); transform: scale(.88);
-    -webkit-transition: opacity .7s ease, -webkit-transform .7s ease;
-    transition: opacity .7s ease, transform .7s ease;
+    background: #efe6cf; border-radius: 12px;
+    opacity: 0;
+    -webkit-transition: opacity 1.4s ease; transition: opacity 1.4s ease;
   }
-  .bereal.on { opacity: 1; -webkit-transform: scale(1); transform: scale(1); }
-  .bereal canvas { display: block; margin: 0 auto; }
-  .bereal p { margin: 0; font-size: 26px; font-weight: 700; color: #c2691f; }
-  .bereal i { display: block; font-style: normal; font-size: 15px; color: #6d6355; margin-top: 2px; }
+  .bereal.on { opacity: 1; }
+  .bereal canvas { display: block; }
+  .bereal p {
+    position: absolute; left: 0; right: 0; bottom: 10px; margin: 0;
+    font-size: 22px; font-weight: 700; color: #c2691f;
+  }
+  .bereal p span { background: #fffaf0; background: rgba(255, 250, 240, .9); border-radius: 14px; padding: 4px 14px; }
   /* マスは 「したじ」。ずあんの いろを うすく しいて、どこに なにを おくかを 見せる。
      ビーズは その 上に すこし 小さく のるので、まわりに したじの わが のこる */
   .bcell { border-radius: 7px; padding: 0; vertical-align: middle; text-align: center; }
@@ -764,8 +764,8 @@
   /* こまかい ずあん: マスが 小さいので ふちと かげを うすく する */
   #beads-board.fine .bcell { border-radius: 5px; }
   #beads-board.fine .bd {
-    border-width: 1px;
-    box-shadow: inset 0 -3px 4px rgba(0, 0, 0, .13), inset 0 3px 4px rgba(255, 255, 255, .45);
+    border: 1px solid rgba(0, 0, 0, .08);
+    box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .10), inset 0 2px 3px rgba(255, 255, 255, .30);
   }
   /* こまかい ずあんは 256こ あるので、ビーズ1つずつ ではなく ばん ぜんたいを ぽよんと させる (古い iPad でも かるい) */
   #beads-board.fine.done {
@@ -1468,7 +1468,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v73";
+  var APP_VER = "v74";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3894,8 +3894,16 @@
       bd.className = "bd off";
       return;
     }
-    td.className = "bcell";
-    td.style.background = beSoft[beGoal[i]];     // したじ = ずあんの 色
+    // したじ = ずあんの 色。ただしく おけた マスは けして ビーズだけに する。
+    // のこして おくと 1つずつ 色の ついた 四角に のって、できた 絵が
+    // 四角と 丸の 二重の もようになり、ふちが にごって 見えた
+    if (beNow[i] === beGoal[i]) {
+      td.className = "bcell ok";
+      td.style.background = "transparent";
+    } else {
+      td.className = "bcell";
+      td.style.background = beSoft[beGoal[i]];
+    }
     bd.className = "bd";
     bd.style.background = bePal[beNow[i]] || "#ffffff";
   }
@@ -4245,7 +4253,7 @@
       if (big > s) s = big;
     }
     beBoard.style.width = (N * s + (N + 1) * sp) + "px";
-    var bs = Math.max(8, Math.round(s * (beFine ? 0.84 : BE_BEAD)));   // こまかい 絵は ビーズを すこし 大きく
+    var bs = Math.max(8, Math.round(s * (beFine ? 0.94 : BE_BEAD)));   // こまかい 絵は ビーズを すこし 大きく
     for (var i = 0; i < beCells.length; i++) {
       beCells[i].style.height = s + "px";
       beBeads[i].style.width = bs + "px";
@@ -4298,14 +4306,6 @@
     }
   }
 
-  // できあがった 絵の 本物。古い iPad にも ある 絵文字だけを つかう
-  var BE_REAL = {
-    hana: "🌸", chou: "🦋", sakana: "🐟", heart: "❤️", ringo: "🍎", hoshi: "⭐",
-    ie: "🏠", kinoko: "🍄", kuruma: "🚗", neko: "🐱", tulip: "🌷", yukidaruma: "⛄",
-    "d-ringo": "🍎", "d-ichigo": "🍓", "d-sakurambo": "🍒", "d-suika": "🍉",
-    "d-mikan": "🍊", "d-tulip": "🌷", "d-himawari": "🌻", "d-kinoko": "🍄",
-    "d-neko": "🐱", "d-kingyo": "🐠", "d-pengin": "🐧", "d-fuji": "🗻"
-  };
   var beRealEl = null, beRealTimer = null;
 
   function beHideReal() {
@@ -4313,43 +4313,105 @@
     if (beRealEl) { beRealEl.className = "bereal"; beRealEl.style.display = "none"; }
   }
 
-  // ビーズを ぜんぶ なおすと、ばんの 上に 同じ ものの 大きくて なめらかな 絵が
-  // ふわっと あらわれる。さわると ビーズの 絵に もどる
+  // ドット絵を 2ばいに する (Scale2x)。ななめの ふちが なめらかに つながり、
+  // 絵の かたちは かわらない。g は 色の ばんごう (0 = なし) の ならび
+  function beScale2x(g, n) {
+    var o = [], x, y, P, A, B, C, D, m = n * 2;
+    function at(xx, yy) { return (xx < 0 || yy < 0 || xx >= n || yy >= n) ? 0 : g[yy * n + xx]; }
+    for (y = 0; y < n; y++) {
+      for (x = 0; x < n; x++) {
+        P = g[y * n + x]; A = at(x, y - 1); B = at(x + 1, y); C = at(x - 1, y); D = at(x, y + 1);
+        o[(2 * y) * m + 2 * x]         = (C === A && C !== D && A !== B) ? A : P;
+        o[(2 * y) * m + 2 * x + 1]     = (A === B && A !== C && B !== D) ? B : P;
+        o[(2 * y + 1) * m + 2 * x]     = (D === C && D !== B && C !== A) ? C : P;
+        o[(2 * y + 1) * m + 2 * x + 1] = (B === D && B !== A && D !== C) ? D : P;
+      }
+    }
+    return o;
+  }
+
+  // 色の さかいめを ぼかして かげを なだらかに する (3×3 の へいきん を くりかえす)。
+  // すきまの 色が まざらない ように、色は 不とうめいどで おもみを つける
+  function beSoften(d, w, h, times) {
+    var t, x, y, i, k, dx, dy, r, gg, bb, a, X, Y, src = d, dst;
+    for (t = 0; t < times; t++) {
+      dst = new Array(w * h * 4);
+      for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+          r = gg = bb = a = 0; k = 0;
+          for (dy = -1; dy <= 1; dy++) {
+            Y = y + dy; if (Y < 0 || Y >= h) continue;
+            for (dx = -1; dx <= 1; dx++) {
+              X = x + dx; if (X < 0 || X >= w) continue;
+              i = (Y * w + X) * 4;
+              r += src[i] * src[i + 3]; gg += src[i + 1] * src[i + 3]; bb += src[i + 2] * src[i + 3];
+              a += src[i + 3]; k++;
+            }
+          }
+          i = (y * w + x) * 4;
+          if (a > 0) { dst[i] = r / a; dst[i + 1] = gg / a; dst[i + 2] = bb / a; }
+          else { dst[i] = dst[i + 1] = dst[i + 2] = 0; }
+          dst[i + 3] = (t < times - 1) ? src[i + 3] : a / k;   // ふちは さいごの 1かいだけ ぼかす
+        }
+      }
+      src = dst;
+    }
+    return src;
+  }
+
+  function beHex(c) {
+    return [parseInt(c.substr(1, 2), 16), parseInt(c.substr(3, 2), 16), parseInt(c.substr(5, 2), 16)];
+  }
+
+  // ビーズを ぜんぶ なおすと、おなじ 絵が ビーズの つぶから なめらかな 絵に かわる。
+  // 別の 絵には しない (自分で ならべた 絵が そのまま きれいに なる)。さわると ビーズに もどる
   function beShowReal() {
-    var ch = BE_REAL[bePic.key], sp, cv, g, s, k, w, h;
-    if (!ch || safeFace(ch) !== ch) return;     // その 絵文字が ない 機械では 出さない
-    sp = faceSprite(ch);
-    if (!sp) return;
+    var n = beN, g = beGoal.slice(0), m = n, i, c, rgb, w, cv, cx, img, dpr, rc, sx, sy, sp, bw, bh;
+    // 16 × 16 なら 256 × 256 まで。ひきのばしで ぼやけない 大きさに して から かく
+    while (m < 200) { g = beScale2x(g, m); m *= 2; }
+    var d = new Array(m * m * 4);
+    for (i = 0; i < m * m; i++) {
+      c = g[i];
+      if (c > 0) { rgb = beHex(bePal[c]); d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2]; d[i * 4 + 3] = 255; }
+      else { d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = d[i * 4 + 3] = 0; }
+    }
+    d = beSoften(d, m, m, 2);
+    var src = document.createElement("canvas");
+    src.width = m; src.height = m;
+    cx = src.getContext("2d");
+    img = cx.createImageData(m, m);
+    for (i = 0; i < d.length; i++) img.data[i] = Math.round(d[i]);
+    cx.putImageData(img, 0, 0);
+
     if (!beRealEl) {
       beRealEl = document.createElement("div");
       beRealEl.className = "bereal";
-      beRealEl.innerHTML = '<canvas></canvas><p>ほんものに なった！</p><i>さわると ビーズに もどります</i>';
+      beRealEl.innerHTML = '<canvas></canvas><p><span>きれいな 絵に なった！</span></p>';
       beRealEl.onclick = beHideReal;
       // ばんの 親に 入れて position を かえると、ばんの 大きさを はかる
       // offsetTop が かわって しまう。ページに じかに おく
       document.body.appendChild(beRealEl);
     }
-    var rc = beBoard.getBoundingClientRect();
-    var sx = window.pageXOffset || document.documentElement.scrollLeft || 0;
-    var sy = window.pageYOffset || document.documentElement.scrollTop || 0;
-    s = beBoard.offsetWidth;
+    rc = beBoard.getBoundingClientRect();
+    sx = window.pageXOffset || document.documentElement.scrollLeft || 0;
+    sy = window.pageYOffset || document.documentElement.scrollTop || 0;
+    bw = beBoard.offsetWidth; bh = beBoard.offsetHeight;
     beRealEl.style.left = Math.round(rc.left + sx) + "px";
     beRealEl.style.top = Math.round(rc.top + sy) + "px";
-    beRealEl.style.width = s + "px";
-    beRealEl.style.height = beBoard.offsetHeight + "px";
+    beRealEl.style.width = bw + "px";
+    beRealEl.style.height = bh + "px";
     cv = beRealEl.getElementsByTagName("canvas")[0];
-    k = Math.round(Math.min(s, beBoard.offsetHeight) * 0.70);
-    var dpr = window.devicePixelRatio > 1 ? 2 : 1;
-    cv.width = k * dpr; cv.height = k * dpr;
-    cv.style.width = k + "px"; cv.style.height = k + "px";
-    cv.style.marginTop = Math.round((beBoard.offsetHeight - k) * 0.28) + "px";
-    g = cv.getContext("2d");
-    w = sp.width; h = sp.height;
-    var f = Math.min(cv.width / w, cv.height / h) * 0.94;
-    g.clearRect(0, 0, cv.width, cv.height);
-    g.drawImage(sp, (cv.width - w * f) / 2, (cv.height - h * f) / 2, w * f, h * f);
+    dpr = window.devicePixelRatio > 1 ? 2 : 1;
+    cv.width = bw * dpr; cv.height = bh * dpr;
+    cv.style.width = bw + "px"; cv.style.height = bh + "px";
+    var g2 = cv.getContext("2d");
+    g2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g2.clearRect(0, 0, bw, bh);
+    if ("imageSmoothingEnabled" in g2) g2.imageSmoothingEnabled = true;
+    sp = parseInt(beBoard.style.borderSpacing, 10) || 0;
+    // ビーズの ならびと ぴったり かさなる ところに かく (つぶが とけて 絵に なる ように 見える)
+    g2.drawImage(src, sp / 2, sp / 2, bw - sp, bh - sp);
     beRealEl.style.display = "block";
-    // 1こま おいてから クラスを つけないと ふわっと しない
     setTimeout(function () { if (beRealEl.style.display === "block") beRealEl.className = "bereal on"; }, 30);
     soundGold();
   }
