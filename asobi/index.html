@@ -1468,7 +1468,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v74";
+  var APP_VER = "v75";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -4330,33 +4330,127 @@
     return o;
   }
 
-  // 色の さかいめを ぼかして かげを なだらかに する (3×3 の へいきん を くりかえす)。
-  // すきまの 色が まざらない ように、色は 不とうめいどで おもみを つける
-  function beSoften(d, w, h, times) {
-    var t, x, y, i, k, dx, dy, r, gg, bb, a, X, Y, src = d, dst;
-    for (t = 0; t < times; t++) {
-      dst = new Array(w * h * 4);
-      for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-          r = gg = bb = a = 0; k = 0;
-          for (dy = -1; dy <= 1; dy++) {
-            Y = y + dy; if (Y < 0 || Y >= h) continue;
-            for (dx = -1; dx <= 1; dx++) {
-              X = x + dx; if (X < 0 || X >= w) continue;
-              i = (Y * w + X) * 4;
-              r += src[i] * src[i + 3]; gg += src[i + 1] * src[i + 3]; bb += src[i + 2] * src[i + 3];
-              a += src[i + 3]; k++;
-            }
-          }
-          i = (y * w + x) * 4;
-          if (a > 0) { dst[i] = r / a; dst[i + 1] = gg / a; dst[i + 2] = bb / a; }
-          else { dst[i] = dst[i + 1] = dst[i + 2] = 0; }
-          dst[i + 3] = (t < times - 1) ? src[i + 3] : a / k;   // ふちは さいごの 1かいだけ ぼかす
+  // できた ずあんから きれいな 絵を つくる (おなじ 絵の まま、なめらかに する)。
+  //   1) Scale2x を 2かい。ななめの 1つぶの 線 (さくらんぼの じく など) が つながる
+  //   2) 色ごとの マスクを ぼかして 256 まで のばし、いちばん 強い 色を とる。
+  //      かいだんの かどが まるい りんかくに なる
+  //   3) にた 色どうしだけ まぜる。かげの 段が グラデーションに なり、
+  //      ふちどりや 葉と 実の さかいめは くっきり のこる
+  //   4) 左上に つやを かさねる
+  function beSmoothArt(n, goal, pal) {
+    var m = 256, i, x, y, c, k, nc = pal.length, rgb = [null], g = goal.slice(0);
+    for (c = 1; c < nc; c++) rgb.push(beHex(pal[c]));
+    g = beScale2x(g, n); n *= 2;
+    g = beScale2x(g, n); n *= 2;
+    var masks = [], KW = [0.25, 0.5, 0.25], t, a, b, sum, X, Y;
+    for (c = 0; c < nc; c++) {
+      a = []; b = [];
+      for (i = 0; i < n * n; i++) a.push(g[i] === c ? 1 : 0);
+      for (t = 0; t < 2; t++) {
+        for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+          sum = 0;
+          for (k = -1; k <= 1; k++) { X = x + k; X = X < 0 ? 0 : (X >= n ? n - 1 : X); sum += a[y * n + X] * KW[k + 1]; }
+          b[y * n + x] = sum;
+        }
+        for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+          sum = 0;
+          for (k = -1; k <= 1; k++) { Y = y + k; Y = Y < 0 ? 0 : (Y >= n ? n - 1 : Y); sum += b[Y * n + x] * KW[k + 1]; }
+          a[y * n + x] = sum;
         }
       }
-      src = dst;
+      masks.push(a);
     }
-    return src;
+    // さかいめは となりの 色と まぜて ぎざぎざを けす (外がわは すきとおらせる)
+    var reg = new Array(m * m), AL = new Float32Array(m * m), R = new Float32Array(m * m),
+        G = new Float32Array(m * m), B = new Float32Array(m * m),
+        fy, fx, y0, y1, x0, x1, ty, tx, best, bv, sec, sv, M, v, f, EDGE = 0.08 * n / 64;   // あらい ずあんほど さかいめが ひろがるので せまく する
+    for (y = 0; y < m; y++) {
+      fy = (y + 0.5) * n / m - 0.5; y0 = Math.floor(fy); ty = fy - y0; y1 = y0 + 1;
+      if (y0 < 0) y0 = 0; if (y1 > n - 1) y1 = n - 1;
+      for (x = 0; x < m; x++) {
+        fx = (x + 0.5) * n / m - 0.5; x0 = Math.floor(fx); tx = fx - x0; x1 = x0 + 1;
+        if (x0 < 0) x0 = 0; if (x1 > n - 1) x1 = n - 1;
+        best = 0; bv = -1; sec = 0; sv = -1;
+        for (c = 0; c < nc; c++) {
+          M = masks[c];
+          v = (M[y0 * n + x0] * (1 - tx) + M[y0 * n + x1] * tx) * (1 - ty) +
+              (M[y1 * n + x0] * (1 - tx) + M[y1 * n + x1] * tx) * ty;
+          if (v > bv) { sec = best; sv = bv; bv = v; best = c; }
+          else if (v > sv) { sv = v; sec = c; }
+        }
+        i = y * m + x;
+        f = (bv - sv) / EDGE; f = f > 1 ? 1 : f;
+        f = 0.5 + 0.5 * f;                            // いちばん 強い 色の わりあい
+        if (best === 0) {
+          reg[i] = sec ? 1 : 0; AL[i] = sec ? 1 - f : 0;
+          if (sec) { R[i] = rgb[sec][0]; G[i] = rgb[sec][1]; B[i] = rgb[sec][2]; }
+        } else if (sec === 0) {
+          reg[i] = 1; AL[i] = f;
+          R[i] = rgb[best][0]; G[i] = rgb[best][1]; B[i] = rgb[best][2];
+        } else {
+          reg[i] = 1; AL[i] = 1;
+          R[i] = rgb[best][0] * f + rgb[sec][0] * (1 - f);
+          G[i] = rgb[best][1] * f + rgb[sec][1] * (1 - f);
+          B[i] = rgb[best][2] * f + rgb[sec][2] * (1 - f);
+        }
+      }
+    }
+    var T2 = 95 * 95, rad = 4, pass, dir, R2, G2, B2, sr, sg, sb, w, r0, g0, b0, xx, yy, j, dr, dg, db;
+    for (pass = 0; pass < 3; pass++) {
+      for (dir = 0; dir < 2; dir++) {
+        R2 = new Float32Array(R); G2 = new Float32Array(G); B2 = new Float32Array(B);
+        for (y = 0; y < m; y++) for (x = 0; x < m; x++) {
+          i = y * m + x;
+          if (!reg[i]) continue;
+          sr = sg = sb = w = 0; r0 = R[i]; g0 = G[i]; b0 = B[i];
+          for (k = -rad; k <= rad; k++) {
+            xx = dir ? x : x + k; yy = dir ? y + k : y;
+            if (xx < 0 || yy < 0 || xx >= m || yy >= m) continue;
+            j = yy * m + xx;
+            if (!reg[j]) continue;
+            dr = R[j] - r0; dg = G[j] - g0; db = B[j] - b0;
+            if (dr * dr + dg * dg + db * db > T2) continue;
+            sr += R[j]; sg += G[j]; sb += B[j]; w++;
+          }
+          R2[i] = sr / w; G2[i] = sg / w; B2[i] = sb / w;
+        }
+        R = R2; G = G2; B = B2;
+      }
+    }
+    // さいごに ぜんたいを 1つぶ ぶん だけ ぼかして、のこった ぎざぎざを ならす
+    var R3 = new Float32Array(m * m), G3 = new Float32Array(m * m), B3 = new Float32Array(m * m),
+        A3 = new Float32Array(m * m), aw, ws;
+    for (y = 0; y < m; y++) for (x = 0; x < m; x++) {
+      sr = sg = sb = ws = aw = 0;
+      for (yy = y - 1; yy <= y + 1; yy++) for (xx = x - 1; xx <= x + 1; xx++) {
+        if (xx < 0 || yy < 0 || xx >= m || yy >= m) continue;
+        j = yy * m + xx; w = AL[j];
+        sr += R[j] * w; sg += G[j] * w; sb += B[j] * w; aw += w; ws++;
+      }
+      i = y * m + x;
+      if (aw > 0) { R3[i] = sr / aw; G3[i] = sg / aw; B3[i] = sb / aw; }
+      A3[i] = aw / ws;
+    }
+    R = R3; G = G3; B = B3; AL = A3;
+    var cv = document.createElement("canvas"), cx, img, gr;
+    cv.width = m; cv.height = m;
+    cx = cv.getContext("2d");
+    img = cx.createImageData(m, m);
+    for (i = 0; i < m * m; i++) {
+      if (!(AL[i] > 0)) continue;
+      img.data[i * 4] = R[i]; img.data[i * 4 + 1] = G[i]; img.data[i * 4 + 2] = B[i];
+      img.data[i * 4 + 3] = Math.round(AL[i] * 255);
+    }
+    cx.putImageData(img, 0, 0);
+    cx.globalCompositeOperation = "source-atop";       // 絵の 上だけに つやを のせる
+    gr = cx.createRadialGradient(m * 0.33, m * 0.28, 0, m * 0.33, m * 0.28, m * 0.62);
+    gr.addColorStop(0, "rgba(255,255,255,0.32)");
+    gr.addColorStop(0.45, "rgba(255,255,255,0.08)");
+    gr.addColorStop(1, "rgba(0,0,0,0.10)");
+    cx.fillStyle = gr;
+    cx.fillRect(0, 0, m, m);
+    cx.globalCompositeOperation = "source-over";
+    return cv;
   }
 
   function beHex(c) {
@@ -4366,23 +4460,7 @@
   // ビーズを ぜんぶ なおすと、おなじ 絵が ビーズの つぶから なめらかな 絵に かわる。
   // 別の 絵には しない (自分で ならべた 絵が そのまま きれいに なる)。さわると ビーズに もどる
   function beShowReal() {
-    var n = beN, g = beGoal.slice(0), m = n, i, c, rgb, w, cv, cx, img, dpr, rc, sx, sy, sp, bw, bh;
-    // 16 × 16 なら 256 × 256 まで。ひきのばしで ぼやけない 大きさに して から かく
-    while (m < 200) { g = beScale2x(g, m); m *= 2; }
-    var d = new Array(m * m * 4);
-    for (i = 0; i < m * m; i++) {
-      c = g[i];
-      if (c > 0) { rgb = beHex(bePal[c]); d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2]; d[i * 4 + 3] = 255; }
-      else { d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = d[i * 4 + 3] = 0; }
-    }
-    d = beSoften(d, m, m, 2);
-    var src = document.createElement("canvas");
-    src.width = m; src.height = m;
-    cx = src.getContext("2d");
-    img = cx.createImageData(m, m);
-    for (i = 0; i < d.length; i++) img.data[i] = Math.round(d[i]);
-    cx.putImageData(img, 0, 0);
-
+    var src = beSmoothArt(beN, beGoal, bePal), cv, dpr, rc, sx, sy, sp, bw, bh;
     if (!beRealEl) {
       beRealEl = document.createElement("div");
       beRealEl.className = "bereal";
@@ -4410,7 +4488,12 @@
     if ("imageSmoothingEnabled" in g2) g2.imageSmoothingEnabled = true;
     sp = parseInt(beBoard.style.borderSpacing, 10) || 0;
     // ビーズの ならびと ぴったり かさなる ところに かく (つぶが とけて 絵に なる ように 見える)
+    g2.save();                                       // 下に やわらかい かげ
+    g2.shadowColor = "rgba(90,60,20,0.28)";
+    g2.shadowBlur = bw * 0.035;
+    g2.shadowOffsetY = bw * 0.02;
     g2.drawImage(src, sp / 2, sp / 2, bw - sp, bh - sp);
+    g2.restore();
     beRealEl.style.display = "block";
     setTimeout(function () { if (beRealEl.style.display === "block") beRealEl.className = "bereal on"; }, 30);
     soundGold();
