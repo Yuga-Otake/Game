@@ -734,18 +734,54 @@
   #beads-board { border-spacing: 6px; background: #efe6cf; border-radius: 12px; }
   /* できあがった あと、おなじ 絵が ビーズの つぶから なめらかな 絵に かわる */
   .bereal {
-    position: absolute; z-index: 5; display: none; cursor: pointer;
+    position: absolute; z-index: 5; display: none; cursor: pointer; overflow: hidden;
     background: #efe6cf; border-radius: 12px;
     opacity: 0;
-    -webkit-transition: opacity 1.4s ease; transition: opacity 1.4s ease;
+    -webkit-transition: opacity 1.6s cubic-bezier(.4, 0, .2, 1); transition: opacity 1.6s cubic-bezier(.4, 0, .2, 1);
   }
   .bereal.on { opacity: 1; }
+  .bereal.off { opacity: 0; -webkit-transition: opacity .5s ease; transition: opacity .5s ease; }
+  /* 絵は すこし 小さい ところから ふわっと ひろがる (ゆっくり はじまって ゆっくり とまる) */
+  .bereal canvas, .bereal img {
+    -webkit-transform: scale(.93); transform: scale(.93);
+    -webkit-transition: -webkit-transform 1.9s cubic-bezier(.2, .8, .2, 1);
+    transition: transform 1.9s cubic-bezier(.2, .8, .2, 1);
+  }
+  .bereal.on canvas, .bereal.on img { -webkit-transform: scale(1); transform: scale(1); }
   .bereal canvas { display: block; }
   .bereal img { display: none; position: absolute; }
+  /* 絵が 出きったら、光の すじが 1かい ながれる */
+  .bereal .shine {
+    position: absolute; top: 0; bottom: 0; left: -45%; width: 40%; opacity: 0;
+    background: transparent;
+    background: -webkit-linear-gradient(left, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%);
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%);
+  }
+  .bereal.on .shine {
+    -webkit-animation: beshine 1.2s ease-in-out 1.7s 1 both;
+    animation: beshine 1.2s ease-in-out 1.7s 1 both;
+  }
+  @-webkit-keyframes beshine {
+    0% { opacity: 0; -webkit-transform: translateX(0); }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; -webkit-transform: translateX(380%); }
+  }
+  @keyframes beshine {
+    0% { opacity: 0; transform: translateX(0); }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(380%); }
+  }
+  /* ことばは 絵が 出た あとに 下から すっと */
   .bereal p {
     position: absolute; left: 0; right: 0; bottom: 10px; margin: 0;
     font-size: 22px; font-weight: 700; color: #c2691f;
+    opacity: 0; -webkit-transform: translateY(14px); transform: translateY(14px);
+    -webkit-transition: opacity .6s ease 1.3s, -webkit-transform .6s ease 1.3s;
+    transition: opacity .6s ease 1.3s, transform .6s ease 1.3s;
   }
+  .bereal.on p { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
   .bereal p span { background: #fffaf0; background: rgba(255, 250, 240, .9); border-radius: 14px; padding: 4px 14px; }
   /* マスは 「したじ」。ずあんの いろを うすく しいて、どこに なにを おくかを 見せる。
      ビーズは その 上に すこし 小さく のるので、まわりに したじの わが のこる */
@@ -768,19 +804,23 @@
     border: 1px solid rgba(0, 0, 0, .08);
     box-shadow: inset 0 -2px 3px rgba(0, 0, 0, .10), inset 0 2px 3px rgba(255, 255, 255, .30);
   }
-  /* こまかい ずあんは 256こ あるので、ビーズ1つずつ ではなく ばん ぜんたいを ぽよんと させる (古い iPad でも かるい) */
-  #beads-board.fine.done {
-    -webkit-animation: bepopboard .7s ease-in-out 2;
-    animation: bepopboard .7s ease-in-out 2;
-  }
+  /* こまかい ずあんは できあがりで はねさせない。すぐ あとに 絵が あらわれるので、
+     ばんを ゆらすと 絵と ずれて ぎこちなく 見えた */
   #beads-board.fine.done .bd { -webkit-animation: none; animation: none; }
-  @-webkit-keyframes bepopboard {
-    0%, 100% { -webkit-transform: scale(1); }
-    50% { -webkit-transform: scale(1.035); }
+  /* ビーズを おいた とき、色が ぱっと かわる かわりに ぽこっと ふくらんで おさまる */
+  .bd.put {
+    -webkit-animation: beput .28s ease-out;
+    animation: beput .28s ease-out;
   }
-  @keyframes bepopboard {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.035); }
+  @-webkit-keyframes beput {
+    0% { -webkit-transform: scale(.45); }
+    65% { -webkit-transform: scale(1.12); }
+    100% { -webkit-transform: scale(1); }
+  }
+  @keyframes beput {
+    0% { transform: scale(.45); }
+    65% { transform: scale(1.12); }
+    100% { transform: scale(1); }
   }
   /* できあがり。ななめに さざなみのように ビーズが はねる (ずらしは JS で delay) */
   #beads-board.done .bd {
@@ -1469,7 +1509,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v76";
+  var APP_VER = "v77";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -4298,6 +4338,8 @@
     }
     beNow[i] = beColor;                          // ここまで 来たら かならず あたり
     bePaintCell(i);
+    void beBeads[i].offsetWidth;                 // つづけて おいても ぽこっと する ように
+    beBeads[i].className = "bd put";
     beMsgEl.innerHTML = "";
     beMsgEl.className = "msg";
     beLeft--;
@@ -4322,9 +4364,31 @@
 
   var beRealEl = null, beRealTimer = null;
 
-  function beHideReal() {
+  // fade = さわって もどす とき。ふわっと ビーズに もどす (それ いがいは すぐ けす)
+  var beRealHide = null;
+  function beHideReal(fade) {
     if (beRealTimer !== null) { clearTimeout(beRealTimer); beRealTimer = null; }
-    if (beRealEl) { beRealEl.className = "bereal"; beRealEl.style.display = "none"; }
+    if (beRealHide !== null) { clearTimeout(beRealHide); beRealHide = null; }
+    if (!beRealEl) return;
+    if (fade === true && beRealEl.style.display === "block") {
+      beRealEl.className = "bereal off";
+      beRealHide = setTimeout(function () {
+        beRealHide = null;
+        beRealEl.style.display = "none";
+        beRealEl.className = "bereal";
+      }, 520);
+      return;
+    }
+    beRealEl.className = "bereal";
+    beRealEl.style.display = "none";
+  }
+
+  // クラスを つける 前に いちど よみとって、さいしょの すがた (うすい・小さい) を
+  // きめさせて おく。こう しないと ふわっと せず いきなり 出る
+  function beRealOn() {
+    beRealEl.style.display = "block";
+    void beRealEl.offsetWidth;
+    beRealEl.className = "bereal on";
   }
 
   // ドット絵を 2ばいに する (Scale2x)。ななめの ふちが なめらかに つながり、
@@ -4480,8 +4544,8 @@
     if (!beRealEl) {
       beRealEl = document.createElement("div");
       beRealEl.className = "bereal";
-      beRealEl.innerHTML = '<canvas></canvas><img alt=""><p><span>きれいな 絵に なった！</span></p>';
-      beRealEl.onclick = beHideReal;
+      beRealEl.innerHTML = '<canvas></canvas><img alt=""><i class="shine"></i><p><span>きれいな 絵に なった！</span></p>';
+      beRealEl.onclick = function () { beHideReal(true); };
       // ばんの 親に 入れて position を かえると、ばんの 大きさを はかる
       // offsetTop が かわって しまう。ページに じかに おく
       document.body.appendChild(beRealEl);
@@ -4506,8 +4570,7 @@
       im.style.width = (bw - sp) + "px";
       im.style.height = (bh - sp) + "px";
       im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(art);
-      beRealEl.style.display = "block";
-      setTimeout(function () { if (beRealEl.style.display === "block") beRealEl.className = "bereal on"; }, 30);
+      beRealOn();
       soundGold();
       return;
     }
@@ -4527,8 +4590,7 @@
     g2.shadowOffsetY = bw * 0.02;
     g2.drawImage(src, sp / 2, sp / 2, bw - sp, bh - sp);
     g2.restore();
-    beRealEl.style.display = "block";
-    setTimeout(function () { if (beRealEl.style.display === "block") beRealEl.className = "bereal on"; }, 30);
+    beRealOn();
     soundGold();
   }
 
@@ -4555,8 +4617,8 @@
     if (isBest) text += (best > 0 ? " あたらしい さいこう きろく！" : " はじめての きろく！");
     else text += " さいこうは " + best + "びょう。 ぬかして みましょう。";
     celebrate(beMsgEl, text);
-    // ビーズの さざなみを 見て もらって から 本物に かえる
-    beRealTimer = setTimeout(function () { beRealTimer = null; beShowReal(); }, 1300);
+    // いつもの 絵は さざなみが おわる ころ、こまかい 絵は すぐに 絵へ うつる
+    beRealTimer = setTimeout(function () { beRealTimer = null; beShowReal(); }, beFine ? 450 : 1150);
   }
 
   function beStart() {
