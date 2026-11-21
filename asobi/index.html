@@ -741,6 +741,7 @@
   }
   .bereal.on { opacity: 1; }
   .bereal canvas { display: block; }
+  .bereal img { display: none; position: absolute; }
   .bereal p {
     position: absolute; left: 0; right: 0; bottom: 10px; margin: 0;
     font-size: 22px; font-weight: 700; color: #c2691f;
@@ -1468,7 +1469,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v75";
+  var APP_VER = "v76";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3548,250 +3549,263 @@
 
   // こまかい 16 × 16 の ずあん。1まいごとに 自分の 色 (8色まで) を もつ。
   // 文字は その ずあんの colors の 何ばんめか (0 から)。 . は ビーズの ない マス。
-  // 1まいずつ 手で かいた ドット絵。こい ふちどり と、左上から の 光で
-  // かげ → 地の 色 → 明るい 色 → つや の じゅんに ぬって ある
-  // (絵文字を ちぢめた だけの 絵は りんかくが にじんで ぼやけた)
+  // さきに イラスト (art: 256 × 256 の SVG) を かき、それを 16 × 16 に おとして から
+  // 手で なおした もの。できあがると この イラストが ビーズの 上に あらわれる。
+  // ドット絵から 大きい 絵を おしはかると どう しても ぼやけるので、ぎゃくに した。
+  // イラストは ふとい ふちどりと はっきりした 形に して、おとしても くずれない ように して ある
   var BE_PICS16 = [
     { key: "d-ringo", label: "りんご", size: 16,
-      colors: ["#6b4226", "#2e7a1f", "#62c236", "#7a1410", "#ff7a5e", "#ffd3c6", "#e63c2d", "#b8241b"],
+      colors: ["#7a1410", "#b8241b", "#e63c2d", "#ff7a5e", "#ffd3c6", "#6b4226", "#62c236", "#2e7a1f"],
       rows: [
-        "........0..11...",
-        "........0.1221..",
-        "...3333.033113..",
-        "..345553346333..",
-        ".34555544466673.",
-        ".35555444466673.",
-        ".35544444666673.",
-        ".34444446666773.",
-        ".34444466666773.",
-        ".34446666667773.",
-        ".36666666677773.",
-        "..366666777773..",
-        "..366667777773..",
-        "...3777777773...",
-        "....33777733....",
-        "......3333......"
-      ] },
-    { key: "d-ichigo", label: "いちご", size: 16,
-      colors: ["#2e7a1f", "#62c236", "#8a1020", "#ff8a8f", "#f03a4c", "#ffe27a", "#c81e33"],
-      rows: [
-        ".......00.......",
-        ".......00.......",
-        "..0.00000000.0..",
-        ".01000222200010.",
-        ".20022333422002.",
-        ".22253335444222.",
-        ".23333344444662.",
-        ".23533544456662.",
-        "..244444446662..",
-        "..245444566562..",
-        "...2444666662...",
-        "...2665665662...",
-        "....26666662....",
-        ".....265662.....",
-        "......2662......",
-        ".......22......."
-      ] },
+        "................",
+        "........5..77...",
+        "........57666...",
+        "....000557777...",
+        "...0033502220...",
+        "..034433322210..",
+        "..034433322220..",
+        ".03334333222210.",
+        ".03333333222210.",
+        "..033333222220..",
+        "..022222222210..",
+        "..022222222210..",
+        "...0222222210...",
+        "....02200110....",
+        ".....000000.....",
+        "................"
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"ab\">\u003cpath d=\"M128 74 C100 52 38 50 30 114 C24 164 60 224 98 228 C112 230 120 222 128 222 C136 222 144 230 158 228 C196 224 232 164 226 114 C218 50 156 52 128 74 Z\"/>\u003c/clipPath>\u003cradialGradient id=\"ag\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.35\"/>\u003cstop offset=\"0.5\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cg clip-path=\"url(#ab)\">\u003crect width=\"256\" height=\"256\" fill=\"#b8241b\"/>\u003cellipse cx=\"110\" cy=\"124\" rx=\"96\" ry=\"98\" fill=\"#e63c2d\"/>\u003cellipse cx=\"88\" cy=\"108\" rx=\"56\" ry=\"58\" fill=\"#ff7a5e\"/>\u003cellipse cx=\"78\" cy=\"100\" rx=\"17\" ry=\"28\" transform=\"rotate(-28 78 100)\" fill=\"#ffd3c6\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#ag)\"/>\u003c/g>\u003cpath d=\"M128 74 C100 52 38 50 30 114 C24 164 60 224 98 228 C112 230 120 222 128 222 C136 222 144 230 158 228 C196 224 232 164 226 114 C218 50 156 52 128 74 Z\" fill=\"none\" stroke=\"#7a1410\" stroke-width=\"13\" stroke-linejoin=\"round\"/>\u003cpath d=\"M127 80 C124 58 129 40 138 26\" fill=\"none\" stroke=\"#6b4226\" stroke-width=\"13\" stroke-linecap=\"round\"/>\u003cpath d=\"M142 54 C160 24 198 18 214 32 C200 60 164 70 142 54 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cpath class=\"gloss\" d=\"M150 50 C170 40 188 36 204 34\" fill=\"none\" stroke=\"#2e7a1f\" stroke-width=\"4\" stroke-linecap=\"round\"/>\u003c/svg>" },
     { key: "d-sakurambo", label: "さくらんぼ", size: 16,
-      colors: ["#2e7a1f", "#6b4226", "#62c236", "#6e0b14", "#ffd0d0", "#e3283a", "#ff6f6f", "#b0131f"],
+      colors: ["#6e0b14", "#b0131f", "#e3283a", "#ff6f6f", "#ffd0d0", "#6b4226", "#62c236", "#2e7a1f"],
       rows: [
-        ".........000....",
-        "........10220...",
-        ".......11.00....",
-        "......1..1......",
-        "......1..1......",
-        ".....1....1.....",
-        ".....1....1.....",
-        "...313.....1....",
-        "..34353....1....",
-        ".3466553.33333..",
-        ".36655733446553.",
-        ".36555733666553.",
-        ".35557733655573.",
-        "..37773.3555773.",
-        "...333...37773..",
-        "..........333..."
-      ] },
-    { key: "d-suika", label: "すいか", size: 16,
-      colors: ["#2d6e21", "#6fbf3a", "#f2f0c4", "#ff7c84", "#ef3a48", "#2b1d1a"],
-      rows: [
-        "................",
-        "................",
-        "................",
-        "................",
-        "0123333333333210",
-        "0124454444544210",
-        ".01544444444510.",
-        ".01244445444210.",
-        "..012454444210..",
-        "..001122221100..",
-        "....00111100....",
-        "......0000......",
-        "................",
-        "................",
-        "................",
+        "..........77....",
+        ".........7667...",
+        "........5777....",
+        ".......5.5......",
+        "......5..5......",
+        "......5...5.....",
+        ".....5....5.....",
+        ".....5....5.....",
+        "..00000...00....",
+        "..043220003200..",
+        ".0333220043220..",
+        ".02322200332210.",
+        ".02222102222210.",
+        "..001100022210..",
+        "...0000..0000...",
         "................"
-      ] },
-    { key: "d-mikan", label: "みかん", size: 16,
-      colors: ["#2e7a1f", "#6b4226", "#62c236", "#9c4704", "#ffc35c", "#fff0c6", "#ff9f20", "#e07a10"],
-      rows: [
-        "................",
-        ".........000....",
-        "........10220...",
-        ".......31.00....",
-        "....33343333....",
-        "...3555444663...",
-        "..355544466663..",
-        ".35544444666673.",
-        ".34444466666773.",
-        ".34444666667773.",
-        ".36666666677773.",
-        ".36666666777773.",
-        "..366667777773..",
-        "...3777777773...",
-        "....33777733....",
-        "......3333......"
-      ] },
-    { key: "d-tulip", label: "チューリップ", size: 16,
-      colors: ["#9c1846", "#ffa3c2", "#d8386c", "#ff5f90", "#62c236", "#2e7a1f"],
-      rows: [
-        "................",
-        "....0..00..0....",
-        "....00.00.00....",
-        "....01211230....",
-        "....01213220....",
-        "....01333220....",
-        "....03332220....",
-        ".....022220.....",
-        "......0000......",
-        ".......45.......",
-        "..5....45.......",
-        "..55...45...55..",
-        "...55..45..55...",
-        "....55.45.55....",
-        ".....554555.....",
-        "......5455......"
-      ] },
-    { key: "d-himawari", label: "ひまわり", size: 16,
-      colors: ["#e8940c", "#fff09a", "#ffd83a", "#4a2a12", "#a8743a", "#7a4a22", "#2e7a1f", "#62c236"],
-      rows: [
-        ".......00.......",
-        ".......00.......",
-        "...0000110000...",
-        "....01000020....",
-        "...0103333020...",
-        "...0034445300...",
-        ".00103445530200.",
-        "...0035553300...",
-        "...0203333020...",
-        "....02033020....",
-        "...0000000000...",
-        ".......00.......",
-        ".......00.......",
-        "...66..76.666...",
-        "....66676666....",
-        ".......76......."
-      ] },
-    { key: "d-kinoko", label: "きのこ", size: 16,
-      colors: ["#7a1410", "#ff7a5e", "#e63c2d", "#ffffff", "#b8241b", "#b39570", "#fbf1dc", "#e6d4b2"],
-      rows: [
-        "................",
-        ".....000000.....",
-        "...0011111200...",
-        "..011331112220..",
-        ".01113311233220.",
-        ".01111111233240.",
-        "0133111132222340",
-        "0111112223224440",
-        ".00000000000000.",
-        ".....555555.....",
-        ".....566675.....",
-        ".....566675.....",
-        ".....566675.....",
-        "....56666775....",
-        "....56666775....",
-        ".....555555....."
-      ] },
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"c1\">\u003ccircle cx=\"78\" cy=\"180\" r=\"52\"/>\u003c/clipPath>\u003cclipPath id=\"c2\">\u003ccircle cx=\"176\" cy=\"190\" r=\"50\"/>\u003c/clipPath>\u003cradialGradient id=\"cg\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.4\"/>\u003cstop offset=\"0.55\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cpath d=\"M84 130 C92 92 112 56 138 30\" fill=\"none\" stroke=\"#6b4226\" stroke-width=\"11\" stroke-linecap=\"round\"/>\u003cpath d=\"M172 142 C168 104 156 66 138 30\" fill=\"none\" stroke=\"#6b4226\" stroke-width=\"11\" stroke-linecap=\"round\"/>\u003cpath d=\"M140 32 C156 8 192 6 206 18 C194 44 160 50 140 32 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cg clip-path=\"url(#c1)\">\u003crect width=\"256\" height=\"256\" fill=\"#b0131f\"/>\u003ccircle cx=\"68\" cy=\"170\" r=\"46\" fill=\"#e3283a\"/>\u003ccircle cx=\"58\" cy=\"160\" r=\"26\" fill=\"#ff6f6f\"/>\u003cellipse cx=\"54\" cy=\"156\" rx=\"9\" ry=\"14\" transform=\"rotate(-30 54 156)\" fill=\"#ffd0d0\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#cg)\"/>\u003c/g>\u003ccircle cx=\"78\" cy=\"180\" r=\"52\" fill=\"none\" stroke=\"#6e0b14\" stroke-width=\"12\"/>\u003cg clip-path=\"url(#c2)\">\u003crect width=\"256\" height=\"256\" fill=\"#b0131f\"/>\u003ccircle cx=\"166\" cy=\"180\" r=\"44\" fill=\"#e3283a\"/>\u003ccircle cx=\"156\" cy=\"170\" r=\"25\" fill=\"#ff6f6f\"/>\u003cellipse cx=\"152\" cy=\"166\" rx=\"9\" ry=\"14\" transform=\"rotate(-30 152 166)\" fill=\"#ffd0d0\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#cg)\"/>\u003c/g>\u003ccircle cx=\"176\" cy=\"190\" r=\"50\" fill=\"none\" stroke=\"#6e0b14\" stroke-width=\"12\"/>\u003c/svg>" },
     { key: "d-neko", label: "ねこ", size: 16,
-      colors: ["#7a3f12", "#ff8fa6", "#ffcf8a", "#d9812e", "#f5a447", "#fff6ea", "#2b2320"],
+      colors: ["#7a3f12", "#d9812e", "#f5a447", "#ffd29a", "#ff8fa6", "#fff6ea", "#2b2320"],
       rows: [
         "................",
-        "..0..........0..",
-        "..00........00..",
-        "..010......010..",
-        "..011000000110..",
-        ".02222322344440.",
-        ".02222233244330.",
-        ".02256222256430.",
-        ".02266222466330.",
-        ".02222244443330.",
-        ".04245511553330.",
-        ".04455555555330.",
-        "..033555555330..",
-        "...0333333330...",
+        "...0........0...",
+        "...00......00...",
+        "..00400..00400..",
+        "..004400004400..",
+        "..034313312420..",
+        "..033333322220..",
+        "..033333322220..",
+        "..033563356220..",
+        "..023665566220..",
+        "..022554455220..",
+        "...0255555520...",
+        "...0055555500...",
+        "....00055000....",
+        "......0000......",
+        "................"
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"nh\">\u003cpath d=\"M40 112 L52 26 L112 70 L144 70 L204 26 L216 112 C232 160 196 228 128 228 C60 228 24 160 40 112 Z\"/>\u003c/clipPath>\u003cradialGradient id=\"ng\" cx=\"0.35\" cy=\"0.3\" r=\"0.8\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.3\"/>\u003cstop offset=\"0.55\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.1\"/>\u003c/radialGradient>\u003c/defs>\u003cg clip-path=\"url(#nh)\">\u003crect width=\"256\" height=\"256\" fill=\"#d9812e\"/>\u003cellipse cx=\"116\" cy=\"130\" rx=\"104\" ry=\"96\" fill=\"#f5a447\"/>\u003cellipse cx=\"92\" cy=\"112\" rx=\"56\" ry=\"50\" fill=\"#ffd29a\"/>\u003cpath d=\"M58 44 L70 96 L100 74 Z\" fill=\"#ff8fa6\"/>\u003cpath d=\"M198 44 L186 96 L156 74 Z\" fill=\"#ff8fa6\"/>\u003cpath d=\"M128 78 L128 104 M106 82 L112 102 M150 82 L144 102\" stroke=\"#d9812e\" stroke-width=\"10\" stroke-linecap=\"round\"/>\u003cellipse cx=\"128\" cy=\"184\" rx=\"54\" ry=\"34\" fill=\"#fff6ea\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#ng)\"/>\u003c/g>\u003cpath d=\"M40 112 L52 26 L112 70 L144 70 L204 26 L216 112 C232 160 196 228 128 228 C60 228 24 160 40 112 Z\" fill=\"none\" stroke=\"#7a3f12\" stroke-width=\"13\" stroke-linejoin=\"round\"/>\u003cellipse cx=\"90\" cy=\"142\" rx=\"14\" ry=\"19\" fill=\"#2b2320\"/>\u003cellipse cx=\"166\" cy=\"142\" rx=\"14\" ry=\"19\" fill=\"#2b2320\"/>\u003ccircle cx=\"85\" cy=\"135\" r=\"6\" fill=\"#fff6ea\"/>\u003ccircle cx=\"161\" cy=\"135\" r=\"6\" fill=\"#fff6ea\"/>\u003cpath d=\"M116 164 L140 164 L128 178 Z\" fill=\"#ff8fa6\" stroke=\"#ff8fa6\" stroke-width=\"4\" stroke-linejoin=\"round\"/>\u003cpath class=\"gloss\" d=\"M128 178 C126 190 112 194 104 188 M128 178 C130 190 144 194 152 188\" fill=\"none\" stroke=\"#7a3f12\" stroke-width=\"5\" stroke-linecap=\"round\"/>\u003cpath class=\"gloss\" d=\"M60 172 L20 164 M60 184 L22 190 M196 172 L236 164 M196 184 L234 190\" stroke=\"#7a3f12\" stroke-width=\"4\" stroke-linecap=\"round\"/>\u003c/svg>" },
+    { key: "d-mikan", label: "みかん", size: 16,
+      colors: ["#9c4704", "#e07a10", "#ff9f20", "#ffc35c", "#fff0c6", "#6b4226", "#62c236", "#2e7a1f"],
+      rows: [
+        "................",
+        "..........777...",
+        "........76667...",
+        "......057777....",
+        "....00322200....",
+        "...0333322220...",
+        "..034433322220..",
+        "..034433322220..",
+        ".03333333222210.",
+        ".02333332222210.",
+        ".02223322222210.",
+        "..022222222220..",
+        "..002222222200..",
+        "...0022222200...",
+        ".....000000.....",
+        "................"
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"mb\">\u003cpath d=\"M128 58 C68 58 28 96 28 148 C28 200 72 236 128 236 C184 236 228 200 228 148 C228 96 188 58 128 58 Z\"/>\u003c/clipPath>\u003cradialGradient id=\"gl\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.35\"/>\u003cstop offset=\"0.5\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cg clip-path=\"url(#mb)\">\u003crect width=\"256\" height=\"256\" fill=\"#e07a10\"/>\u003cellipse cx=\"114\" cy=\"140\" rx=\"100\" ry=\"90\" fill=\"#ff9f20\"/>\u003cellipse cx=\"92\" cy=\"120\" rx=\"56\" ry=\"50\" fill=\"#ffc35c\"/>\u003cellipse cx=\"80\" cy=\"112\" rx=\"18\" ry=\"26\" transform=\"rotate(-30 80 112)\" fill=\"#fff0c6\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#gl)\"/>\u003c/g>\u003cpath d=\"M128 58 C68 58 28 96 28 148 C28 200 72 236 128 236 C184 236 228 200 228 148 C228 96 188 58 128 58 Z\" fill=\"none\" stroke=\"#9c4704\" stroke-width=\"13\"/>\u003cpath d=\"M128 66 L128 44\" stroke=\"#6b4226\" stroke-width=\"13\" stroke-linecap=\"round\"/>\u003cpath d=\"M132 50 C150 20 192 16 210 30 C196 58 158 66 132 50 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003c/svg>" },
+    { key: "d-suika", label: "すいか", size: 16,
+      colors: ["#1f4f17", "#2d6e21", "#6fbf3a", "#f2f0c4", "#ef3a48", "#2b1d1a"],
+      rows: [
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        ".00000000000000.",
+        ".12454444445421.",
+        ".02345444454320.",
+        ".01244455444210.",
+        "..012354453210..",
+        "...0122332210...",
+        "....01111110....",
+        "......0000......",
+        "................",
+        "................",
+        "................"
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"sf\">\u003cpath d=\"M50 84 A78 78 0 0 0 206 84 Z\"/>\u003c/clipPath>\u003c/defs>\u003cpath d=\"M14 84 A114 114 0 0 0 242 84 Z\" fill=\"#2d6e21\"/>\u003cpath d=\"M28 84 A100 100 0 0 0 228 84 Z\" fill=\"#6fbf3a\"/>\u003cpath d=\"M40 84 A88 88 0 0 0 216 84 Z\" fill=\"#f2f0c4\"/>\u003cpath d=\"M50 84 A78 78 0 0 0 206 84 Z\" fill=\"#ef3a48\"/>\u003crect clip-path=\"url(#sf)\" x=\"0\" y=\"84\" width=\"256\" height=\"18\" fill=\"#ff7c84\"/>\u003cellipse cx=\"92\" cy=\"118\" rx=\"7\" ry=\"11\" fill=\"#2b1d1a\"/>\u003cellipse cx=\"128\" cy=\"134\" rx=\"7\" ry=\"11\" fill=\"#2b1d1a\"/>\u003cellipse cx=\"164\" cy=\"118\" rx=\"7\" ry=\"11\" fill=\"#2b1d1a\"/>\u003cellipse cx=\"110\" cy=\"152\" rx=\"6\" ry=\"10\" fill=\"#2b1d1a\"/>\u003cellipse cx=\"146\" cy=\"152\" rx=\"6\" ry=\"10\" fill=\"#2b1d1a\"/>\u003cellipse cx=\"70\" cy=\"98\" rx=\"6\" ry=\"10\" fill=\"#2b1d1a\"/>\u003cellipse cx=\"186\" cy=\"98\" rx=\"6\" ry=\"10\" fill=\"#2b1d1a\"/>\u003cpath d=\"M14 84 A114 114 0 0 0 242 84 Z\" fill=\"none\" stroke=\"#1f4f17\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cpath class=\"gloss\" d=\"M60 92 L196 92\" stroke=\"#fff\" stroke-opacity=\"0.35\" stroke-width=\"6\" stroke-linecap=\"round\"/>\u003c/svg>" },
+    { key: "d-ichigo", label: "いちご", size: 16,
+      colors: ["#8a1020", "#f03a4c", "#ff8a8f", "#ffe27a", "#62c236", "#2e7a1f"],
+      rows: [
+        "................",
+        "................",
+        ".......55.......",
+        ".......55.......",
+        "...0555445550...",
+        "..005555555500..",
+        "..022222311110..",
+        "..022322213110..",
+        "..022222111110..",
+        "..013231111110..",
+        "...0111111110...",
+        "...0131111310...",
+        "....01111110....",
+        ".....001100.....",
+        "......0000......",
+        "................"
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"ib\">\u003cpath d=\"M128 238 C70 212 30 152 36 108 C40 80 66 68 96 72 C112 74 120 80 128 80 C136 80 144 74 160 72 C190 68 216 80 220 108 C226 152 186 212 128 238 Z\"/>\u003c/clipPath>\u003cradialGradient id=\"gl\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.35\"/>\u003cstop offset=\"0.5\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cg clip-path=\"url(#ib)\">\u003crect width=\"256\" height=\"256\" fill=\"#c81e33\"/>\u003cellipse cx=\"114\" cy=\"134\" rx=\"94\" ry=\"94\" fill=\"#f03a4c\"/>\u003cellipse cx=\"92\" cy=\"114\" rx=\"48\" ry=\"40\" fill=\"#ff8a8f\"/>\u003cellipse cx=\"84\" cy=\"116\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"128\" cy=\"108\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"172\" cy=\"116\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"64\" cy=\"148\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"106\" cy=\"144\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"150\" cy=\"144\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"192\" cy=\"148\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"86\" cy=\"178\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"128\" cy=\"176\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"170\" cy=\"178\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"108\" cy=\"208\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003cellipse cx=\"148\" cy=\"208\" rx=\"6\" ry=\"8\" fill=\"#ffe27a\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#gl)\"/>\u003c/g>\u003cpath d=\"M128 238 C70 212 30 152 36 108 C40 80 66 68 96 72 C112 74 120 80 128 80 C136 80 144 74 160 72 C190 68 216 80 220 108 C226 152 186 212 128 238 Z\" fill=\"none\" stroke=\"#8a1020\" stroke-width=\"13\" stroke-linejoin=\"round\"/>\u003cpath d=\"M128 56 L152 78 L190 66 L172 96 L128 86 L84 96 L66 66 L104 78 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cpath d=\"M128 60 L128 26\" stroke=\"#2e7a1f\" stroke-width=\"12\" stroke-linecap=\"round\"/>\u003c/svg>" },
+    { key: "d-tulip", label: "チューリップ", size: 16,
+      colors: ["#9c1846", "#d8386c", "#ff5f90", "#ffa3c2", "#62c236", "#2e7a1f"],
+      rows: [
+        "................",
+        "................",
+        "................",
+        "....0.0000.0....",
         "....00000000....",
+        "....00032100....",
+        "....03332120....",
+        "....03122120....",
+        "....02122120....",
+        ".....002200.....",
+        "...5...00...5...",
+        "...545.45.545...",
+        "....44545544....",
+        "....54455445....",
+        "......5555......",
+        ".......55......."
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"tc\">\u003cpath d=\"M68 56 L94 90 L110 46 L128 84 L146 46 L162 90 L188 56 C200 118 182 162 128 164 C74 162 56 118 68 56 Z\"/>\u003c/clipPath>\u003cradialGradient id=\"gl\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.35\"/>\u003cstop offset=\"0.5\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cpath d=\"M128 160 L128 244\" stroke=\"#2e7a1f\" stroke-width=\"20\" stroke-linecap=\"round\"/>\u003cpath d=\"M124 162 L124 242\" stroke=\"#62c236\" stroke-width=\"8\"/>\u003cpath d=\"M126 240 C90 236 58 206 52 168 C82 176 112 200 126 240 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cpath d=\"M130 240 C166 236 198 206 204 168 C174 176 144 200 130 240 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cg clip-path=\"url(#tc)\">\u003crect width=\"256\" height=\"256\" fill=\"#d8386c\"/>\u003cellipse cx=\"112\" cy=\"104\" rx=\"72\" ry=\"74\" fill=\"#ff5f90\"/>\u003cellipse cx=\"96\" cy=\"92\" rx=\"30\" ry=\"40\" fill=\"#ffa3c2\"/>\u003cpath d=\"M110 46 L104 150 M146 46 L152 150\" stroke=\"#d8386c\" stroke-width=\"8\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#gl)\"/>\u003c/g>\u003cpath d=\"M68 56 L94 90 L110 46 L128 84 L146 46 L162 90 L188 56 C200 118 182 162 128 164 C74 162 56 118 68 56 Z\" fill=\"none\" stroke=\"#9c1846\" stroke-width=\"12\" stroke-linejoin=\"round\"/>\u003c/svg>" },
+    { key: "d-himawari", label: "ひまわり", size: 16,
+      colors: ["#e8940c", "#ffd228", "#7a4a22", "#4a2a12", "#a8743a", "#62c236", "#2e7a1f"],
+      rows: [
+        "................",
+        ".....0.11.0.....",
+        "....01111110....",
+        "...1011111101...",
+        "...1113223111...",
+        "...0132242310...",
+        "..111222222111..",
+        "..011342243110..",
+        "...1112222311...",
+        "..011113311110..",
+        "....011111100...",
+        "....01011010....",
+        "....6560066.....",
+        ".....6666.......",
+        ".......56.......",
+        ".......66......."
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cpath d=\"M128 150 L128 246\" stroke=\"#2e7a1f\" stroke-width=\"20\" stroke-linecap=\"round\"/>\u003cpath d=\"M124 154 L124 244\" stroke=\"#62c236\" stroke-width=\"8\"/>\u003cpath d=\"M126 220 C96 220 70 204 60 184 C88 182 112 194 126 220 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cpath d=\"M130 210 C160 210 186 194 196 174 C168 172 144 184 130 210 Z\" fill=\"#62c236\" stroke=\"#2e7a1f\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(0 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(30 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(60 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(90 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(120 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(150 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(180 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(210 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(240 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(270 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(300 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003cellipse cx=\"128\" cy=\"52\" rx=\"20\" ry=\"40\" transform=\"rotate(330 128 108)\" fill=\"#ffd228\" stroke=\"#e8940c\" stroke-width=\"7\"/>\u003ccircle cx=\"128\" cy=\"108\" r=\"46\" fill=\"#7a4a22\" stroke=\"#4a2a12\" stroke-width=\"10\"/>\u003ccircle cx=\"112\" cy=\"96\" r=\"6\" fill=\"#a8743a\"/>\u003ccircle cx=\"140\" cy=\"92\" r=\"6\" fill=\"#a8743a\"/>\u003ccircle cx=\"126\" cy=\"112\" r=\"6\" fill=\"#a8743a\"/>\u003ccircle cx=\"108\" cy=\"122\" r=\"6\" fill=\"#a8743a\"/>\u003ccircle cx=\"146\" cy=\"118\" r=\"6\" fill=\"#a8743a\"/>\u003ccircle cx=\"128\" cy=\"132\" r=\"6\" fill=\"#a8743a\"/>\u003ccircle class=\"gloss\" cx=\"114\" cy=\"92\" r=\"20\" fill=\"#fff\" fill-opacity=\"0.18\"/>\u003c/svg>" },
+    { key: "d-kinoko", label: "きのこ", size: 16,
+      colors: ["#7a1410", "#b8241b", "#e63c2d", "#ff7a5e", "#ffffff", "#fbf1dc", "#e6d4b2", "#b39570"],
+      rows: [
+        "................",
+        "......0000......",
+        "....00022200....",
+        "...0343332420...",
+        "..034443344220..",
+        "..034433322220..",
+        ".02333334222220.",
+        ".04422244222420.",
+        ".02422222222210.",
+        ".00000000000000.",
+        ".....755567.....",
+        ".....555567.....",
+        ".....555566.....",
+        ".....555566.....",
+        ".....755577.....",
         "................"
-      ] },
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"kc\">\u003cpath d=\"M22 140 C22 68 72 28 128 28 C184 28 234 68 234 140 C234 150 226 156 214 156 L42 156 C30 156 22 150 22 140 Z\"/>\u003c/clipPath>\u003cclipPath id=\"ks\">\u003cpath d=\"M88 156 L168 156 C170 190 180 214 178 228 C160 240 96 240 78 228 C76 214 86 190 88 156 Z\"/>\u003c/clipPath>\u003cradialGradient id=\"gl\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.35\"/>\u003cstop offset=\"0.5\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cg clip-path=\"url(#ks)\">\u003crect width=\"256\" height=\"256\" fill=\"#e6d4b2\"/>\u003crect x=\"60\" y=\"150\" width=\"78\" height=\"100\" fill=\"#fbf1dc\"/>\u003crect x=\"60\" y=\"150\" width=\"140\" height=\"16\" fill=\"#b39570\"/>\u003c/g>\u003cpath d=\"M88 156 L168 156 C170 190 180 214 178 228 C160 240 96 240 78 228 C76 214 86 190 88 156 Z\" fill=\"none\" stroke=\"#b39570\" stroke-width=\"10\" stroke-linejoin=\"round\"/>\u003cg clip-path=\"url(#kc)\">\u003crect width=\"256\" height=\"256\" fill=\"#b8241b\"/>\u003cellipse cx=\"114\" cy=\"100\" rx=\"112\" ry=\"80\" fill=\"#e63c2d\"/>\u003cellipse cx=\"92\" cy=\"80\" rx=\"56\" ry=\"40\" fill=\"#ff7a5e\"/>\u003ccircle cx=\"86\" cy=\"76\" r=\"18\" fill=\"#ffffff\"/>\u003ccircle cx=\"164\" cy=\"70\" r=\"14\" fill=\"#ffffff\"/>\u003ccircle cx=\"52\" cy=\"124\" r=\"12\" fill=\"#ffffff\"/>\u003ccircle cx=\"128\" cy=\"118\" r=\"14\" fill=\"#ffffff\"/>\u003ccircle cx=\"198\" cy=\"118\" r=\"12\" fill=\"#ffffff\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#gl)\"/>\u003c/g>\u003cpath d=\"M22 140 C22 68 72 28 128 28 C184 28 234 68 234 140 C234 150 226 156 214 156 L42 156 C30 156 22 150 22 140 Z\" fill=\"none\" stroke=\"#7a1410\" stroke-width=\"12\" stroke-linejoin=\"round\"/>\u003c/svg>" },
     { key: "d-kingyo", label: "きんぎょ", size: 16,
-      colors: ["#9a2a0b", "#ffa266", "#ff6f2e", "#ffe4c0", "#e04a1c", "#20201f"],
+      colors: ["#9a2a0b", "#e04a1c", "#ff6f2e", "#ffa266", "#ffe4c0", "#ffffff", "#20201f"],
       rows: [
         "................",
         "................",
-        "......00........",
+        "................",
         ".....0000.......",
-        "....000000....00",
-        "..0011112200.030",
-        ".011111122400330",
-        ".01511122240030.",
-        ".0111222244000..",
-        ".02222224440030.",
-        ".022224444400330",
-        "..0044444400.030",
-        "....000000....00",
-        ".....00.........",
+        "....000000......",
+        "...03332200.0440",
+        "..0333322220444.",
+        ".02653322220440.",
+        ".02222222220440.",
+        "..0222222210444.",
+        "..00222211000440",
+        "....000000...00.",
+        "......00........",
+        "................",
         "................",
         "................"
-      ] },
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"fb\">\u003cellipse cx=\"108\" cy=\"130\" rx=\"80\" ry=\"60\"/>\u003c/clipPath>\u003cradialGradient id=\"gl\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.35\"/>\u003cstop offset=\"0.5\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cpath d=\"M164 130 C196 76 240 64 248 92 C232 110 232 150 248 168 C240 196 196 184 164 130 Z\" fill=\"#ffe4c0\" stroke=\"#9a2a0b\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cpath d=\"M80 76 C96 40 136 40 150 76 Z\" fill=\"#ffe4c0\" stroke=\"#9a2a0b\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003cpath d=\"M96 184 C104 212 128 216 136 184 Z\" fill=\"#ffe4c0\" stroke=\"#9a2a0b\" stroke-width=\"8\" stroke-linejoin=\"round\"/>\u003cg clip-path=\"url(#fb)\">\u003crect width=\"256\" height=\"256\" fill=\"#e04a1c\"/>\u003cellipse cx=\"96\" cy=\"120\" rx=\"78\" ry=\"56\" fill=\"#ff6f2e\"/>\u003cellipse cx=\"78\" cy=\"106\" rx=\"40\" ry=\"28\" fill=\"#ffa266\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#gl)\"/>\u003c/g>\u003cellipse cx=\"108\" cy=\"130\" rx=\"80\" ry=\"60\" fill=\"none\" stroke=\"#9a2a0b\" stroke-width=\"12\"/>\u003ccircle cx=\"62\" cy=\"118\" r=\"16\" fill=\"#ffffff\"/>\u003ccircle cx=\"58\" cy=\"118\" r=\"9\" fill=\"#20201f\"/>\u003cpath class=\"gloss\" d=\"M120 110 C126 122 126 138 120 150 M144 112 C150 124 150 138 144 150\" fill=\"none\" stroke=\"#e04a1c\" stroke-width=\"5\" stroke-linecap=\"round\"/>\u003c/svg>" },
     { key: "d-pengin", label: "ペンギン", size: 16,
-      colors: ["#121722", "#6a7ba3", "#3a4766", "#ffffff", "#ff9b1f", "#cfd8e6"],
+      colors: ["#121722", "#3a4766", "#6a7ba3", "#ffffff", "#cfd8e6", "#ff9b1f"],
       rows: [
+        "................",
         "................",
         ".....000000.....",
-        "....01111120....",
-        "...0111111220...",
-        "...0133113320...",
-        "...0130120320...",
-        "...0111442220...",
-        "..011124422000..",
-        "..012333335000..",
-        ".02233333555000.",
-        ".02233355555000.",
-        ".02235555555000.",
-        "..005555555500..",
-        "..000555555000..",
-        "...0000000000...",
-        "....444..444...."
-      ] },
+        "....02211110....",
+        "...0222211110...",
+        "...0230220310...",
+        "...0233333310...",
+        "...0223553110...",
+        "...0133333410...",
+        "...0133333310...",
+        "..011333333400..",
+        "..011333334000..",
+        "..001333334000..",
+        "...0003334000...",
+        "....00000000....",
+        ".....55..55....."
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"pk\">\u003cpath d=\"M128 32 C76 32 52 76 52 120 C52 150 40 170 44 196 C48 222 84 236 128 236 C172 236 208 222 212 196 C216 170 204 150 204 120 C204 76 180 32 128 32 Z\"/>\u003c/clipPath>\u003cclipPath id=\"pw\">\u003cellipse cx=\"128\" cy=\"166\" rx=\"56\" ry=\"64\"/>\u003c/clipPath>\u003cradialGradient id=\"gl\" cx=\"0.35\" cy=\"0.3\" r=\"0.75\">\u003cstop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.35\"/>\u003cstop offset=\"0.5\" stop-color=\"#fff\" stop-opacity=\"0\"/>\u003cstop offset=\"1\" stop-color=\"#000\" stop-opacity=\"0.12\"/>\u003c/radialGradient>\u003c/defs>\u003cellipse cx=\"96\" cy=\"238\" rx=\"24\" ry=\"10\" fill=\"#ff9b1f\"/>\u003cellipse cx=\"160\" cy=\"238\" rx=\"24\" ry=\"10\" fill=\"#ff9b1f\"/>\u003cg clip-path=\"url(#pk)\">\u003crect width=\"256\" height=\"256\" fill=\"#121722\"/>\u003cellipse cx=\"112\" cy=\"120\" rx=\"86\" ry=\"104\" fill=\"#3a4766\"/>\u003cellipse cx=\"96\" cy=\"96\" rx=\"40\" ry=\"46\" fill=\"#6a7ba3\"/>\u003crect class=\"gloss\" width=\"256\" height=\"256\" fill=\"url(#gl)\"/>\u003c/g>\u003cg clip-path=\"url(#pw)\">\u003crect width=\"256\" height=\"256\" fill=\"#cfd8e6\"/>\u003cellipse cx=\"118\" cy=\"160\" rx=\"52\" ry=\"62\" fill=\"#ffffff\"/>\u003c/g>\u003cpath d=\"M128 32 C76 32 52 76 52 120 C52 150 40 170 44 196 C48 222 84 236 128 236 C172 236 208 222 212 196 C216 170 204 150 204 120 C204 76 180 32 128 32 Z\" fill=\"none\" stroke=\"#121722\" stroke-width=\"12\" stroke-linejoin=\"round\"/>\u003cellipse cx=\"100\" cy=\"92\" rx=\"18\" ry=\"20\" fill=\"#ffffff\"/>\u003cellipse cx=\"156\" cy=\"92\" rx=\"18\" ry=\"20\" fill=\"#ffffff\"/>\u003ccircle cx=\"104\" cy=\"94\" r=\"9\" fill=\"#121722\"/>\u003ccircle cx=\"152\" cy=\"94\" r=\"9\" fill=\"#121722\"/>\u003cpath d=\"M112 116 L144 116 L128 136 Z\" fill=\"#ff9b1f\" stroke=\"#ff9b1f\" stroke-width=\"5\" stroke-linejoin=\"round\"/>\u003c/svg>" },
     { key: "d-fuji", label: "ふじさん", size: 16,
-      colors: ["#ee4b3a", "#ffffff", "#c9d8ef", "#6a95d6", "#263e70", "#3c5f9e", "#62c236", "#3f9a2a"],
+      colors: ["#263e70", "#3c5f9e", "#6a95d6", "#ffffff", "#c9d8ef", "#ee4b3a", "#62c236", "#3f9a2a"],
       rows: [
         "................",
-        "...........00...",
-        "..........0000..",
-        "..........0000..",
-        "...........00...",
-        "......1122......",
-        ".....111222.....",
-        "....11132222....",
-        "...4113352524...",
-        "..433333555554..",
-        ".43333335555554.",
-        "4333333355555554",
-        "4333333355555554",
+        "............55..",
+        "...........5555.",
+        "...........5555.",
+        "...........555..",
+        "......0340......",
+        ".....033440.....",
+        "....02221410....",
+        "...0222211110...",
+        "...0222211110...",
+        "..022222111110..",
+        ".02222221111110.",
+        ".22222211111111.",
         "6666666677777777",
-        ".66666667777777.",
+        "6666666677777777",
         "................"
-      ] }
+      ],
+      art: "\u003csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"256\" height=\"256\" viewBox=\"0 0 256 256\">\u003cdefs>\u003cclipPath id=\"fm\">\u003cpath d=\"M6 214 L96 88 C106 76 150 76 160 88 L250 214 Z\"/>\u003c/clipPath>\u003c/defs>\u003ccircle cx=\"204\" cy=\"50\" r=\"30\" fill=\"#ee4b3a\"/>\u003cg clip-path=\"url(#fm)\">\u003crect width=\"256\" height=\"256\" fill=\"#3c5f9e\"/>\u003cpath d=\"M0 220 L100 80 L126 80 L118 220 Z\" fill=\"#6a95d6\"/>\u003cpath d=\"M84 104 L96 88 C106 76 150 76 160 88 L180 116 L166 110 L152 128 L140 108 L126 130 L112 108 L98 124 Z\" fill=\"#c9d8ef\"/>\u003cpath d=\"M84 104 L96 88 C104 78 122 76 128 76 L126 130 L112 108 L98 124 Z\" fill=\"#ffffff\"/>\u003c/g>\u003cpath d=\"M6 214 L96 88 C106 76 150 76 160 88 L250 214 Z\" fill=\"none\" stroke=\"#263e70\" stroke-width=\"9\" stroke-linejoin=\"round\"/>\u003crect x=\"0\" y=\"208\" width=\"256\" height=\"30\" rx=\"8\" fill=\"#62c236\"/>\u003crect x=\"128\" y=\"208\" width=\"128\" height=\"30\" rx=\"8\" fill=\"#3f9a2a\"/>\u003c/svg>" }
   ];
 
   // ビーズは 38〜51こ なので、まちがいの かずは その 1〜4わり くらい。
@@ -4460,11 +4474,13 @@
   // ビーズを ぜんぶ なおすと、おなじ 絵が ビーズの つぶから なめらかな 絵に かわる。
   // 別の 絵には しない (自分で ならべた 絵が そのまま きれいに なる)。さわると ビーズに もどる
   function beShowReal() {
-    var src = beSmoothArt(beN, beGoal, bePal), cv, dpr, rc, sx, sy, sp, bw, bh;
+    // こまかい 絵は もとの イラストを そのまま 出す。いつもの 絵は イラストが ないので
+    // ビーズの 図案から なめらかな 絵を つくる
+    var art = bePic.art || "", src = art ? null : beSmoothArt(beN, beGoal, bePal), cv, dpr, rc, sx, sy, sp, bw, bh, im;
     if (!beRealEl) {
       beRealEl = document.createElement("div");
       beRealEl.className = "bereal";
-      beRealEl.innerHTML = '<canvas></canvas><p><span>きれいな 絵に なった！</span></p>';
+      beRealEl.innerHTML = '<canvas></canvas><img alt=""><p><span>きれいな 絵に なった！</span></p>';
       beRealEl.onclick = beHideReal;
       // ばんの 親に 入れて position を かえると、ばんの 大きさを はかる
       // offsetTop が かわって しまう。ページに じかに おく
@@ -4479,6 +4495,24 @@
     beRealEl.style.width = bw + "px";
     beRealEl.style.height = bh + "px";
     cv = beRealEl.getElementsByTagName("canvas")[0];
+    im = beRealEl.getElementsByTagName("img")[0];
+    sp = parseInt(beBoard.style.borderSpacing, 10) || 0;
+    if (art) {
+      // ビーズの ならびと ぴったり かさなる ところに おく (つぶが とけて 絵に なる ように 見える)
+      cv.style.display = "none";
+      im.style.display = "block";
+      im.style.left = Math.round(sp / 2) + "px";
+      im.style.top = Math.round(sp / 2) + "px";
+      im.style.width = (bw - sp) + "px";
+      im.style.height = (bh - sp) + "px";
+      im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(art);
+      beRealEl.style.display = "block";
+      setTimeout(function () { if (beRealEl.style.display === "block") beRealEl.className = "bereal on"; }, 30);
+      soundGold();
+      return;
+    }
+    im.style.display = "none";
+    cv.style.display = "block";
     dpr = window.devicePixelRatio > 1 ? 2 : 1;
     cv.width = bw * dpr; cv.height = bh * dpr;
     cv.style.width = bw + "px"; cv.style.height = bh + "px";
@@ -4486,7 +4520,6 @@
     g2.setTransform(dpr, 0, 0, dpr, 0, 0);
     g2.clearRect(0, 0, bw, bh);
     if ("imageSmoothingEnabled" in g2) g2.imageSmoothingEnabled = true;
-    sp = parseInt(beBoard.style.borderSpacing, 10) || 0;
     // ビーズの ならびと ぴったり かさなる ところに かく (つぶが とけて 絵に なる ように 見える)
     g2.save();                                       // 下に やわらかい かげ
     g2.shadowColor = "rgba(90,60,20,0.28)";
