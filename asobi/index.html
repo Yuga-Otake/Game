@@ -747,6 +747,26 @@
     box-sizing: border-box;
   }
   .bd.off { display: none; }
+  /* こまかい ずあん: マスが 小さいので ふちと かげを うすく する */
+  #beads-board.fine .bcell { border-radius: 5px; }
+  #beads-board.fine .bd {
+    border-width: 1px;
+    box-shadow: inset 0 -3px 4px rgba(0, 0, 0, .13), inset 0 3px 4px rgba(255, 255, 255, .45);
+  }
+  /* こまかい ずあんは 256こ あるので、ビーズ1つずつ ではなく ばん ぜんたいを ぽよんと させる (古い iPad でも かるい) */
+  #beads-board.fine.done {
+    -webkit-animation: bepopboard .7s ease-in-out 2;
+    animation: bepopboard .7s ease-in-out 2;
+  }
+  #beads-board.fine.done .bd { -webkit-animation: none; animation: none; }
+  @-webkit-keyframes bepopboard {
+    0%, 100% { -webkit-transform: scale(1); }
+    50% { -webkit-transform: scale(1.035); }
+  }
+  @keyframes bepopboard {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.035); }
+  }
   /* できあがり。ななめに さざなみのように ビーズが はねる (ずらしは JS で delay) */
   #beads-board.done .bd {
     -webkit-animation: bepop .55s ease-in-out both;
@@ -855,7 +875,7 @@
   }
   .bpick.done .ok { display: block; }
   @media (max-width: 480px) {
-    .cup { width: 50px; height: 50px; margin: 0 3px 5px; }
+    .cup { width: 44px; height: 44px; margin: 0 2px 5px; }
     .cup b { font-size: 22px; }
     .cup.empty b { font-size: 25px; }
     .tray { min-height: 60px; }
@@ -1029,8 +1049,9 @@
   <p class="msg" id="beads-msg"></p>
   <button type="button" class="big" id="beads-reset">もういちど</button>
   <div class="ctrl"><span class="label">ずあん</span><div id="beads-pics"></div></div>
+  <div class="ctrl"><span class="label">こまかさ</span><span id="beads-fines"></span></div>
   <div class="ctrl"><span class="label">むずかしさ</span><span id="beads-levels"></span></div>
-  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。</p></div>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。<br><b>こまかさ</b>は 2つ。<b>いつもの</b> は 大きい ビーズ。<b>こまかい</b> は ビーズが 小さくて 数が おおく、かげの ついた きれいな 絵に なります。<br>こまかさを かえると、あたらしく はじまります。</p></div>
 </div>
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
@@ -1433,7 +1454,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v71";
+  var APP_VER = "v72";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3511,12 +3532,283 @@
     ] }
   ];
 
-  // ビーズは 38〜51こ なので、まちがいの かずは その 1〜4わり くらい
-  var BE_LEVELS = [
-    { key: "easy",   label: "やさしい",   n: 5 },
-    { key: "normal", label: "ふつう",     n: 11 },
-    { key: "hard",   label: "むずかしい", n: 20 }
+  // こまかい 16 × 16 の ずあん。1まいごとに 自分の 色 (8色まで) を もつ。
+  // 文字は その ずあんの colors の 何ばんめか (0 から)。 . は ビーズの ない マス。
+  // きかいで つくった データで、あそぶ 人の 機械では 何も つくらない
+  var BE_PICS16 = [
+    { key: "d-ringo", label: "りんご", size: 16,
+      colors: ["#5db52f", "#2f8a2a", "#6b4226", "#ffa088", "#f2502c", "#c42c1a", "#8c1a12"],
+      rows: [
+        "..........000...",
+        "......2..1100...",
+        ".......21000....",
+        "....444211445...",
+        "..444446444455..",
+        ".44333444444455.",
+        ".43333344444455.",
+        ".433333444444556",
+        ".433333444444556",
+        ".44333444444455.",
+        ".44444444444555.",
+        ".44444444444555.",
+        ".4444444444555..",
+        "..444444444555..",
+        "...4444445555...",
+        "....4445555....."
+      ] },
+    { key: "d-sakurambo", label: "さくらんぼ", size: 16,
+      colors: ["#64aa2b", "#f31021", "#2f6e0b", "#be0710"],
+      rows: [
+        "......2222222...",
+        "....22222200....",
+        "..022200000.....",
+        "...000000.......",
+        "....0.00........",
+        "....0...0.......",
+        ".....0...0......",
+        ".....0....0.....",
+        ".....0....01....",
+        "....101.11111...",
+        "...13111111111..",
+        "..313111131111..",
+        "..311111131113..",
+        "..331111333333..",
+        "...3333333333...",
+        "....3333........"
+      ] },
+    { key: "d-bara", label: "ばら", size: 16,
+      colors: ["#46bf11", "#f3001d", "#218829", "#a80005"],
+      rows: [
+        "....33111111....",
+        "...3331111111...",
+        "...3311331111...",
+        "..113333111111..",
+        "...1133333111...",
+        "...111333111....",
+        "....11113111....",
+        "....11111111....",
+        "....11111311....",
+        "....11111311....",
+        ".....111111.....",
+        ".....000200.....",
+        ".....0.0200.....",
+        ".....0.22.0.....",
+        ".......22.......",
+        ".......22......."
+      ] },
+    { key: "d-tulip", label: "チューリップ", size: 16,
+      colors: ["#7fd61e", "#8cc733", "#ff80ac", "#ff70bb", "#fe3a9d"],
+      rows: [
+        ".......4444.....",
+        "....44424422....",
+        "....22422222....",
+        "....22222222....",
+        "....22223222....",
+        "....222232222...",
+        "....222222222...",
+        "....22222222....",
+        ".....3322222....",
+        "...00333333.....",
+        "...000..0...0...",
+        "....111.0.111...",
+        "....11111111....",
+        ".....1111111....",
+        ".......1111.....",
+        ".......111......"
+      ] },
+    { key: "d-himawari", label: "ひまわり", size: 16,
+      colors: ["#fbbe01", "#ff9500", "#95b205", "#ff5100", "#739619", "#be2a12", "#5a3b45"],
+      rows: [
+        "......0.00......",
+        "......0000.0....",
+        "....00000000....",
+        "....000550000...",
+        "..000006660000..",
+        "...0156666630...",
+        "..001566666300..",
+        "..00156666630...",
+        "...0006666600...",
+        "...0000550000...",
+        ".....0000000....",
+        ".....0.00.......",
+        ".....222044.....",
+        "....24422422....",
+        ".....2222.......",
+        ".......2........"
+      ] },
+    { key: "d-tree", label: "クリスマスツリー", size: 16,
+      colors: ["#f5e31a", "#fbb3b2", "#2fb139", "#328619", "#b24350"],
+      rows: [
+        ".......00.......",
+        ".......00.......",
+        ".......22.......",
+        "......2222......",
+        "....2222222.....",
+        ".....233222.....",
+        "....22332002....",
+        "....33333223....",
+        "...231332223....",
+        "..322122222333..",
+        "...222322223....",
+        "..222133322222..",
+        "..222122222333..",
+        "....22222223....",
+        ".......44.......",
+        ".......44......."
+      ] },
+    { key: "d-mikan", label: "みかん", size: 16,
+      colors: ["#fffe79", "#ffbe1e", "#ff8e00", "#597221"],
+      rows: [
+        "..........3333..",
+        ".......33333333.",
+        ".......3333333..",
+        "....222333333...",
+        "...2222332222...",
+        "..110222222222..",
+        ".21002222222222.",
+        "2200222222222222",
+        "2102222222222222",
+        "2112222222222222",
+        "2222222222222222",
+        "2222222222222222",
+        ".22222222222222.",
+        "..2222222222222.",
+        "...22222222222..",
+        ".....2222222...."
+      ] },
+    { key: "d-momo", label: "もも", size: 16,
+      colors: ["#ffb781", "#4ece13", "#fd9247", "#60bc24", "#ff601c", "#fe161c"],
+      rows: [
+        "..3333.....3333.",
+        "..333331.113333.",
+        "...22222222222..",
+        ".22000222222222.",
+        ".20000222252222.",
+        "2202222222552222",
+        "4222222222454222",
+        "4222222222454422",
+        "4422222222454444",
+        "4442222244454444",
+        ".54444444455445.",
+        ".55544444455555.",
+        "..555555555555..",
+        "...5555555555...",
+        ".....555555.....",
+        ".......55......."
+      ] },
+    { key: "d-budo", label: "ぶどう", size: 16,
+      colors: ["#e2b5ed", "#b467c4", "#6c7a27", "#672989"],
+      rows: [
+        "...22...........",
+        "..2222..........",
+        "..2.............",
+        "..22....1111....",
+        "...222011111....",
+        "...222011331....",
+        "...033011311....",
+        "..11133333011...",
+        "..11133033011...",
+        ".1111330131133..",
+        ".11333311333311.",
+        ".1113333333331..",
+        "....0033333333..",
+        "....11133333311.",
+        "........0113311.",
+        ".........11.11.."
+      ] },
+    { key: "d-nasu", label: "なす", size: 16,
+      colors: ["#95d010", "#70ac0b", "#a74fa8", "#a219c6", "#94219f"],
+      rows: [
+        ".1..............",
+        ".1..............",
+        ".1111...........",
+        ".11100..........",
+        "001133..........",
+        "0044442.........",
+        ".33422222.......",
+        "..44222222......",
+        "..4422222222....",
+        "...442222222222.",
+        "...4442222222222",
+        "....444222222222",
+        ".....44422222222",
+        "......4444222222",
+        "........4444222.",
+        "...........44..."
+      ] },
+    { key: "d-ninjin", label: "にんじん", size: 16,
+      colors: ["#ff9103", "#ff6c14", "#71a311", "#1c812c"],
+      rows: [
+        "................",
+        "...........222..",
+        ".........222222.",
+        ".........222222.",
+        "..........222222",
+        "..........322233",
+        ".......00333333.",
+        "......00033..3..",
+        ".....00011......",
+        "....000011......",
+        "...000011.......",
+        "..001111........",
+        ".00011..........",
+        ".000............",
+        "11..............",
+        "................"
+      ] },
+    { key: "d-neko", label: "ねこ", size: 16,
+      colors: ["#f9cd0e", "#e9bd61", "#ef9514", "#825d01", "#010000"],
+      rows: [
+        "................",
+        "..00........00..",
+        "..000......0000.",
+        "..1000.20200000.",
+        "..1000220200000.",
+        "..0000020200000.",
+        "..000000000000..",
+        "..0000000033000.",
+        "..0044000034000.",
+        ".10044000004001.",
+        ".11000044200001.",
+        "..1000334200001.",
+        "..000022000000..",
+        "...0000000000...",
+        "....00000000....",
+        "................"
+      ] }
   ];
+
+  // ビーズは 38〜51こ なので、まちがいの かずは その 1〜4わり くらい。
+  // こまかい 絵は 74〜197こ。やさしい 12 / ふつう 24 / むずかしい 40
+  var BE_LEVELS = [
+    { key: "easy",   label: "やさしい",   n: 5,  n16: 12 },
+    { key: "normal", label: "ふつう",     n: 11, n16: 24 },
+    { key: "hard",   label: "むずかしい", n: 20, n16: 40 }
+  ];
+  var BE_FINES = [
+    { key: "0", label: "いつもの" },
+    { key: "1", label: "こまかい" }
+  ];
+
+  // ずあんごとの したじ。ばんの 色に まぜて うすく する (BE_SOFT と おなじ やりかた)。
+  // ばんに ちかい 明るい 色は したじが 見えなく なるので 白く する
+  function beMakeSoft(pal) {
+    var out = [""], i, k, v, ch, mixed, rgb, dist, sum;
+    for (i = 1; i < pal.length; i++) {
+      v = "#"; rgb = []; dist = 0; sum = 0;
+      for (k = 0; k < 3; k++) {
+        ch = parseInt(pal[i].substr(1 + k * 2, 2), 16);
+        mixed = Math.round(ch * BE_SOFT_MIX + BE_BOARD_RGB[k] * (1 - BE_SOFT_MIX));
+        v += (mixed < 16 ? "0" : "") + mixed.toString(16);
+        dist += Math.abs(mixed - BE_BOARD_RGB[k]);
+        sum += ch - BE_BOARD_RGB[k];
+        rgb.push(ch);
+      }
+      if ((rgb[0] > 235 && rgb[1] > 235 && rgb[2] > 235) || (dist < 18 && sum > 0)) v = "#ffffff";
+      out.push(v);
+    }
+    return out;
+  }
 
   var beBoard = $("beads-board"), beBody = $("beads-body"), beMsgEl = $("beads-msg");
   var beLeftEl = $("beads-left"), beTimeEl = $("beads-time"), beBestEl = $("beads-best");
@@ -3526,6 +3818,10 @@
   var beDown = false, beStrokeN = 0, beSeen = {};
   var beLive = false, beSpent = 0, beBeganAt = 0;   // とちゅうか / 前に あそんだ ミリびょう
   var bePic = BE_PICS[0], beLevel = BE_LEVELS[1];
+  var beFine = false, bePic16 = BE_PICS16[0];   // こまかい ずあんを えらんで いるか
+  var beN = 9, bePal = BE_COLORS, beSoft = BE_SOFT, beBuiltN = 0;   // いまの ずあんの 大きさ / 色
+  var beLastX = -1, beLastY = -1;
+  var beThumbFine = false;
   var beNudgeT = null, beNudgeI = -1;     // しばらく おしていない ときの ヒント
   var beThumbBtns = [];                  // ずあんの えらぶ ボタン (一度だけ つくる)
   var BE_NUDGE_MS = 10000;
@@ -3533,11 +3829,28 @@
   (function () {
     var k = load("be-pic", "hana");
     for (var i = 0; i < BE_PICS.length; i++) if (BE_PICS[i].key === k) bePic = BE_PICS[i];
+    var k16 = load("be-pic16", BE_PICS16[0].key);
+    for (var m = 0; m < BE_PICS16.length; m++) if (BE_PICS16[m].key === k16) bePic16 = BE_PICS16[m];
+    beFine = load("be-fine", "0") === "1";
+    if (beFine) bePic = bePic16;
     var l = load("be-level", "normal");
     for (var j = 0; j < BE_LEVELS.length; j++) if (BE_LEVELS[j].key === l) beLevel = BE_LEVELS[j];
   })();
 
   function beKey() { return "be-" + bePic.key + "-" + beLevel.key; }
+  function bePicList() { return beFine ? BE_PICS16 : BE_PICS; }
+  // ずあんの 大きさと 色を いまの ものに あわせる
+  function beSetPic() {
+    beN = beFine ? 16 : 9;
+    if (beFine) {
+      bePal = [""].concat(bePic.colors);
+      beSoft = beMakeSoft(bePal);
+    } else {
+      bePal = BE_COLORS;
+      beSoft = BE_SOFT;
+    }
+  }
+  function beBoardClass(done) { return "board" + (beFine ? " fine" : "") + (done ? " done" : ""); }
 
   // この ずあんで つかって いる 色
   function beUsedColors() {
@@ -3566,9 +3879,9 @@
       return;
     }
     td.className = "bcell";
-    td.style.background = BE_SOFT[beGoal[i]];    // したじ = ずあんの 色
+    td.style.background = beSoft[beGoal[i]];     // したじ = ずあんの 色
     bd.className = "bd";
-    bd.style.background = BE_COLORS[beNow[i]] || "#ffffff";
+    bd.style.background = bePal[beNow[i]] || "#ffffff";
   }
 
   function bePaintTray() {
@@ -3614,10 +3927,11 @@
   function beScramble() {
     var i;
     beGoal = [];
-    for (var r = 0; r < BE_N; r++) {
-      for (var c = 0; c < BE_N; c++) {
+    for (var r = 0; r < beN; r++) {
+      for (var c = 0; c < beN; c++) {
         var ch = bePic.rows[r].charAt(c);
-        beGoal.push(ch === "." ? 0 : parseInt(ch, 36));   // a = 10, b = 11
+        // いつもの: a = 10, b = 11 (BE_COLORS の ばんごう)。こまかい: 0 から なので 1 を たす
+        beGoal.push(ch === "." ? 0 : parseInt(ch, 36) + (beFine ? 1 : 0));
       }
     }
     beNow = beGoal.slice(0);
@@ -3630,7 +3944,7 @@
       var t = spots[i]; spots[i] = spots[j]; spots[j] = t;
     }
     var used = beUsedColors();
-    var want = Math.min(beLevel.n, spots.length);
+    var want = Math.min(beFine ? beLevel.n16 : beLevel.n, spots.length);
     for (i = 0; i < want; i++) {
       var at = spots[i];
       // その 絵で つかって いる ほかの 色を まず さがす。
@@ -3640,7 +3954,7 @@
       var pool = [], k;
       for (k = 0; k < used.length; k++) if (used[k] !== beGoal[at]) pool.push(used[k]);
       if (!pool.length) {
-        for (k = 1; k < BE_COLORS.length; k++) if (k !== beGoal[at]) pool.push(k);
+        for (k = 1; k < bePal.length; k++) if (k !== beGoal[at]) pool.push(k);
       }
       beNow[at] = pool[Math.floor(Math.random() * pool.length)];
     }
@@ -3687,19 +4001,21 @@
   // ---- ずあんの えらびかた (ちいさな 絵) ----
   function beThumb(pic) {
     var cv = document.createElement("canvas");
-    cv.width = 108; cv.height = 108;
+    var fine = !!pic.colors;
+    var n = fine ? 16 : 9, st = fine ? 9 : 12;     // こまかい ずあんは 絵を 144 に して ちいさく 見せる
+    cv.width = n * st; cv.height = n * st;
     var g = cv.getContext ? cv.getContext("2d") : null;
     if (!g) return null;
-    var r, c, ch, v;
-    for (r = 0; r < BE_N; r++) {
-      for (c = 0; c < BE_N; c++) {
+    var r, c, ch, v, h = st / 2;
+    for (r = 0; r < n; r++) {
+      for (c = 0; c < n; c++) {
         ch = pic.rows[r].charAt(c);
         if (ch === ".") continue;
         v = parseInt(ch, 36);
         g.fillStyle = "rgba(0,0,0,.28)";           // ふち。しろ ビーズも 見える ように
-        g.beginPath(); g.arc(c * 12 + 6, r * 12 + 6, 5.8, 0, 6.2832, false); g.fill();
-        g.fillStyle = BE_COLORS[v];
-        g.beginPath(); g.arc(c * 12 + 6, r * 12 + 6, 4.9, 0, 6.2832, false); g.fill();
+        g.beginPath(); g.arc(c * st + h, r * st + h, h - 0.2, 0, 6.2832, false); g.fill();
+        g.fillStyle = fine ? pic.colors[v] : BE_COLORS[v];
+        g.beginPath(); g.arc(c * st + h, r * st + h, h - (fine ? 0.9 : 1.1), 0, 6.2832, false); g.fill();
       }
     }
     return cv;
@@ -3712,8 +4028,11 @@
     }
   }
   function beBuildPicks() {
-    var host = $("beads-pics");
-    for (var i = 0; i < BE_PICS.length; i++) {
+    var host = $("beads-pics"), list = bePicList();
+    while (host.firstChild) host.removeChild(host.firstChild);   // こまかさを かえたら つくりなおす
+    beThumbBtns = [];
+    beThumbFine = beFine;
+    for (var i = 0; i < list.length; i++) {
       (function (pic) {
         var b = document.createElement("button");
         b.type = "button";
@@ -3733,12 +4052,12 @@
         b.appendChild(ok);
         onTap(b, function () {
           bePic = pic;
-          save("be-pic", pic.key);
+          if (beFine) { bePic16 = pic; save("be-pic16", pic.key); } else save("be-pic", pic.key);
           beStart();
         });
         host.appendChild(b);
         beThumbBtns.push(b);
-      })(BE_PICS[i]);
+      })(list[i]);
     }
   }
 
@@ -3751,7 +4070,7 @@
         var b = document.createElement("button");
         b.type = "button";
         b.className = "cup";
-        b.style.background = BE_COLORS[c];
+        b.style.background = bePal[c];
         b.setAttribute("data-color", c);
         b.innerHTML = "<b>0</b>";
         onTap(b, function () {
@@ -3768,21 +4087,39 @@
 
   function beBuild() {
     beBuildPicks();
+    buildPicker($("beads-fines"), BE_FINES, function (g) { return (g.key === "1") === beFine; }, "big", function (g) {
+      beFine = g.key === "1";
+      save("be-fine", g.key);
+      bePic = beFine ? bePic16 : beLastCoarse();
+      beStart();      // ずあんの ならびも beStart の 中で つくりなおす
+    });
     buildPicker($("beads-levels"), BE_LEVELS, function (g) { return g === beLevel; }, "big", function (g) {
       beLevel = g;
       save("be-level", g.key);
       beStart();      // bePaintPicks も beStart の 中で よぶ
     });
+    beDrag();                                    // なぞって まとめて ならべる
+    beBuilt = true;
+  }
 
+  // いつもの ずあんで 前に えらんで いたもの
+  function beLastCoarse() {
+    var k = load("be-pic", "hana");
+    for (var i = 0; i < BE_PICS.length; i++) if (BE_PICS[i].key === k) return BE_PICS[i];
+    return BE_PICS[0];
+  }
+
+  // ばんの マスを つくる。ずあんの 大きさが かわった ときだけ つくりなおす
+  function beBuildBoard() {
     while (beBody.firstChild) beBody.removeChild(beBody.firstChild);
     beCells = [];
     beBeads = [];
-    for (var r = 0; r < BE_N; r++) {
+    for (var r = 0; r < beN; r++) {
       var tr = document.createElement("tr");
-      for (var c = 0; c < BE_N; c++) {
+      for (var c = 0; c < beN; c++) {
         var td = document.createElement("td");
         td.className = "bcell";
-        td.setAttribute("data-i", String(r * BE_N + c));
+        td.setAttribute("data-i", String(r * beN + c));
         var bd = document.createElement("i");    // マス (したじ) の 上に のる ビーズ
         bd.className = "bd";
         td.appendChild(bd);
@@ -3792,8 +4129,7 @@
       }
       beBody.appendChild(tr);
     }
-    beDrag();                                    // なぞって まとめて ならべる
-    beBuilt = true;
+    beBuiltN = beN;
   }
 
   // 指を すべらせて いくつも まとめて ならべる。
@@ -3818,11 +4154,24 @@
     beStrokeN++;
   }
 
+  // こまかい マスは 指が はやいと とびこえて しまうので、前の 点との あいだも 小さく きざんで 見る
+  function beStrokeTo(x, y) {
+    if (beLastX >= 0) {
+      var dx = x - beLastX, dy = y - beLastY;
+      var n = Math.floor(Math.sqrt(dx * dx + dy * dy) / 8);
+      if (n > 40) n = 40;
+      for (var k = 1; k < n; k++) beStrokeAt(beLastX + dx * k / n, beLastY + dy * k / n);
+    }
+    beStrokeAt(x, y);
+    beLastX = x; beLastY = y;
+  }
+
   function beStrokeStart(x, y) {
     beDown = true;
     beStrokeN = 0;
     beSeen = {};
-    beStrokeAt(x, y);
+    beLastX = -1; beLastY = -1;
+    beStrokeTo(x, y);
   }
 
   function beDrag() {
@@ -3836,7 +4185,7 @@
     // 画面が スクロールして 狙いが ずれる ことも ない
     beBoard.ontouchmove = function (e) {
       var t = e.touches && e.touches[0];
-      if (t && beDown) beStrokeAt(t.clientX, t.clientY);
+      if (t && beDown) beStrokeTo(t.clientX, t.clientY);
       if (e.preventDefault) e.preventDefault();
       return false;
     };
@@ -3850,7 +4199,7 @@
     beBoard.onmousemove = function (e) {
       if (!beDown) return;
       e = e || window.event;
-      beStrokeAt(e.clientX, e.clientY);
+      beStrokeTo(e.clientX, e.clientY);
     };
     if (document.addEventListener) {
       document.addEventListener("mouseup", function () { beDown = false; beNextColor(); }, false);
@@ -3866,19 +4215,20 @@
 
   function beResize() {
     if (!beCells.length) return;
-    var sp = 6;
-    var s = fitSize(BE_N, 40, sp, 24);
+    var sp = beFine ? 3 : 6, N = beN;
+    var s = fitSize(N, 40, sp, beFine ? 12 : 24);
+    beBoard.style.borderSpacing = sp + "px";
     var top = beBoard.offsetTop;
     if (top > 0) {
       var vw = window.innerWidth || document.documentElement.clientWidth || 768;
       var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
-      var byW = Math.floor((Math.min(vw - 20, 1000) - (BE_N + 1) * sp) / BE_N);
-      var byH = Math.floor((vh - top - BE_BELOW - (BE_N + 1) * sp) / BE_N);
+      var byW = Math.floor((Math.min(vw - 20, 1000) - (N + 1) * sp) / N);
+      var byH = Math.floor((vh - top - BE_BELOW - (N + 1) * sp) / N);
       var big = Math.min(byW, byH, BE_CELL_MAX);
       if (big > s) s = big;
     }
-    beBoard.style.width = (BE_N * s + (BE_N + 1) * sp) + "px";
-    var bs = Math.max(8, Math.round(s * BE_BEAD));
+    beBoard.style.width = (N * s + (N + 1) * sp) + "px";
+    var bs = Math.max(8, Math.round(s * (beFine ? 0.84 : BE_BEAD)));   // こまかい 絵は ビーズを すこし 大きく
     for (var i = 0; i < beCells.length; i++) {
       beCells[i].style.height = s + "px";
       beBeads[i].style.width = bs + "px";
@@ -3941,12 +4291,15 @@
     bePaintBest();
     bePaintPicks();
     // ななめに ずらして さざなみに する。クラスを つけるだけで あとは CSS
-    for (var i = 0; i < beBeads.length; i++) {
-      var d = (Math.floor(i / BE_N) + i % BE_N) * 35 + "ms";
-      beBeads[i].style.webkitAnimationDelay = d;
-      beBeads[i].style.animationDelay = d;
+    // こまかい 絵は 256こ なので ビーズ1つずつは せず、ばん ぜんたいを ぽよんと させる
+    if (!beFine) {
+      for (var i = 0; i < beBeads.length; i++) {
+        var d = (Math.floor(i / beN) + i % beN) * 35 + "ms";
+        beBeads[i].style.webkitAnimationDelay = d;
+        beBeads[i].style.animationDelay = d;
+      }
     }
-    beBoard.className = "board done";
+    beBoard.className = beBoardClass(true);
     var text = "できました！ " + beSeconds + "びょう。";
     if (isBest) text += (best > 0 ? " あたらしい さいこう きろく！" : " はじめての きろく！");
     else text += " さいこうは " + best + "びょう。 ぬかして みましょう。";
@@ -3956,7 +4309,10 @@
   function beStart() {
     if (!beBuilt) beBuild();
     beClearNudge();
-    beBoard.className = "board";
+    beSetPic();
+    if (beBuiltN !== beN) beBuildBoard();
+    if (beThumbFine !== beFine) beBuildPicks();   // こまかさが かわった ときだけ
+    beBoard.className = beBoardClass(false);
     beScramble();
     beBuildTray();
     for (var i = 0; i < beCells.length; i++) {
@@ -3991,7 +4347,8 @@
   // テスト用に 中身を 読むだけ (ゲームには つかわない)
   window.beState = function () {
     return { goal: beGoal.slice(0), now: beNow.slice(0), color: beColor, left: beLeft,
-             live: beLive, key: beKey(), nudge: beNudgeI, seconds: beSeconds };
+             live: beLive, key: beKey(), nudge: beNudgeI, seconds: beSeconds,
+             n: beN, fine: beFine, pal: bePal.slice(0), soft: beSoft.slice(0) };
   };
 
   onTap($("beads-reset"), beStart);
@@ -7599,13 +7956,14 @@
     out += recGroup("🔍", "なかまはずれ", lines);
 
     lines = [];
-    for (i = 0; i < BE_PICS.length; i++) {
+    var beAll = BE_PICS.concat(BE_PICS16);
+    for (i = 0; i < beAll.length; i++) {
       parts = [];
       for (j = 0; j < BE_LEVELS.length; j++) {
-        v = recNum("be-" + BE_PICS[i].key + "-" + BE_LEVELS[j].key);
+        v = recNum("be-" + beAll[i].key + "-" + BE_LEVELS[j].key);
         if (v > 0) parts.push(BE_LEVELS[j].label + " <b>" + v + "</b> びょう");
       }
-      if (parts.length) lines.push(BE_PICS[i].label + "　" + parts.join("　"));
+      if (parts.length) lines.push((beAll[i].colors ? "こまかい " : "") + beAll[i].label + "　" + parts.join("　"));
     }
     out += recGroup("🔵", "ビーズ", lines);
 
