@@ -1138,7 +1138,7 @@
   <div class="ctrl"><span class="label">ずあん</span><div id="beads-pics"></div></div>
   <div class="ctrl"><span class="label">こまかさ</span><span id="beads-fines"></span></div>
   <div class="ctrl" id="beads-levelrow"><span class="label">むずかしさ</span><span id="beads-levels"></span></div>
-  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note"><b>あそびかた</b>は 2つ。<br><b>なおす</b>: ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。<br><b>まとめて なおす</b>: まちがえずに つづけて なおすと 上の ゲージが たまります。いっぱいに なったら、つぎに さわった いろの まちがいが <b>ぜんぶ いっぺんに</b> なおります。<br><b>ぬりえ</b>: ビーズが ぜんぶ 白から はじまります。いろを えらんで さわると、つながって いる おなじ いろの ところが <b>まとめて ぬれます</b>。<br><b>🔍 おおきく</b>: こまかい 絵では、ばんを <b>トントンと 2かい</b> さわると そこが 大きく なります。もう いちど トントンで もとに もどります。<br><b>こまかさ</b>は 2つ。<b>いつもの</b> は 大きい ビーズ。<b>こまかい</b> は ビーズが 小さくて 数が おおく、かげの ついた きれいな 絵に なります。<br>こまかさを かえると、あたらしく はじまります。</p></div>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note"><b>あそびかた</b>は 2つ。<br><b>なおす</b>: ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。<br><b>まとめて なおす</b>: まちがえずに つづけて なおすと 上の ゲージが たまります。いっぱいに なったら、つぎに さわった いろの まちがいが <b>ぜんぶ いっぺんに</b> なおります。<br><b>ぬりえ</b>: ビーズが ぜんぶ 白から はじまります。いろを えらんで さわると、つながって いる おなじ いろの ところが <b>まとめて ぬれます</b>。<br><b>🔍 おおきく</b>: こまかい 絵では、ばんを <b>トントンと 2かい</b> さわるか、<b>ゆびで しばらく おさえる</b> と そこが 大きく なります。もう いちど おなじ ことを すると もとに もどります。<br><b>こまかさ</b>は 2つ。<b>いつもの</b> は 大きい ビーズ。<b>こまかい</b> は ビーズが 小さくて 数が おおく、かげの ついた きれいな 絵に なります。<br>こまかさを かえると、あたらしく はじまります。</p></div>
 </div>
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
@@ -1541,7 +1541,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v80";
+  var APP_VER = "v81";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -4743,6 +4743,7 @@
     }
     beStrokeAt(x, y);
     if (beStrokeN > 1) beTapT = 0;               // なぞったら ダブルタップに しない
+    if (beHoldT !== null && ((x - beHoldX) * (x - beHoldX) + (y - beHoldY) * (y - beHoldY) > 12 * 12 || beStrokeN > 1)) beHoldCancel();
     beLastX = x; beLastY = y;
   }
 
@@ -4763,8 +4764,28 @@
     return true;
   }
 
+  // ながおしでも けんびきょう。指を うごかさずに 0.55びょう おさえて いると 大きく (もどす)
+  var beHoldT = null, beHoldX = 0, beHoldY = 0, beHoldCombo = 0;
+  function beHoldCancel() { if (beHoldT !== null) { clearTimeout(beHoldT); beHoldT = null; } }
+  function beHoldArm(x, y) {
+    beHoldCancel();
+    if (beN < 16 || !beLive) return;
+    beHoldX = x; beHoldY = y; beHoldCombo = beCombo;
+    beHoldT = setTimeout(function () {
+      beHoldT = null;
+      if (!beLive) return;
+      beDown = false; beTapT = 0;
+      if (beCombo < beHoldCombo) { beCombo = beHoldCombo; bePaintPow(); }
+      beMsgEl.className = "msg"; beMsgEl.innerHTML = "";
+      if (beZoom) beUnzoom();
+      else { var zi = beCellAt(beHoldX, beHoldY); if (zi >= 0) beZoomAt(zi); }
+      soundFlip();
+    }, 550);
+  }
+
   function beStrokeStart(x, y) {
-    if (!beZoomPick && beDoubleTap(x, y)) { beDown = false; return; }
+    if (!beZoomPick && beDoubleTap(x, y)) { beDown = false; beHoldCancel(); return; }
+    if (!beZoomPick) beHoldArm(x, y);
     if (beZoomPick) {                            // けんびきょう: さわった ところを おおきく する
       var zi = beCellAt(x, y);
       beDown = false;
@@ -4793,8 +4814,8 @@
       if (e.preventDefault) e.preventDefault();
       return false;
     };
-    beBoard.ontouchend = function () { beDown = false; beNextColor(); };
-    beBoard.ontouchcancel = function () { beDown = false; };
+    beBoard.ontouchend = function () { beDown = false; beHoldCancel(); beNextColor(); };
+    beBoard.ontouchcancel = function () { beDown = false; beHoldCancel(); };
     beBoard.onmousedown = function (e) {
       e = e || window.event;
       beStrokeStart(e.clientX, e.clientY);
@@ -4806,9 +4827,9 @@
       beStrokeTo(e.clientX, e.clientY);
     };
     if (document.addEventListener) {
-      document.addEventListener("mouseup", function () { beDown = false; beNextColor(); }, false);
+      document.addEventListener("mouseup", function () { beDown = false; beHoldCancel(); beNextColor(); }, false);
     } else {
-      beBoard.onmouseup = function () { beDown = false; beNextColor(); };
+      beBoard.onmouseup = function () { beDown = false; beHoldCancel(); beNextColor(); };
     }
   }
 
@@ -5303,7 +5324,7 @@
     beHideReal();
     beClearNudge();
     beSetPic();
-    beZoom = null; beZoomPick = false;
+    beZoom = null; beZoomPick = false; beHoldCancel();
     if (beBuiltN !== beN) beBuildBoard();
     else for (var zr = 0; zr < beRows.length; zr++) beRows[zr].style.display = "";
     if (beThumbFine !== beFineLv) beBuildPicks();   // こまかさが かわった ときだけ
@@ -5343,7 +5364,7 @@
     return true;
   }
 
-  function beStop() { beStopClock(); beClearNudge(); beFlushWaves(true); beHideReal(); }
+  function beStop() { beStopClock(); beClearNudge(); beHoldCancel(); beFlushWaves(true); beHideReal(); }
 
   // テスト用に 中身を 読むだけ (ゲームには つかわない)
   window.beState = function () {
