@@ -798,6 +798,26 @@
     box-sizing: border-box;
   }
   .bd.off { display: none; }
+  /* ぬりえの まだ ぬって いない ビーズ。小さく うすい 白で、したじの 色が よく 見える */
+  .bd.blank {
+    -webkit-transform: scale(.6);
+    transform: scale(.6);
+    border-color: rgba(0, 0, 0, .07);
+    box-shadow: none;
+  }
+  /* まとめて なおす ゲージ。高さを きめて おき、ばんが ずれない ように */
+  /* のこりの 行に いれる。せまい 画面では 2行目に まわるが、その 行は もともと 2行ぶんの 高さ */
+  .bepow { display: inline-block; vertical-align: middle; height: 26px; line-height: 26px; font-size: 16px; white-space: nowrap; color: #8a6d3b; }
+  .bepow .bpbar { display: inline-block; vertical-align: middle; width: 90px; height: 12px; margin-left: 8px; border-radius: 6px; background: #efe6d6; overflow: hidden; }
+  .bepow .bpbar i { display: block; height: 100%; background: #f2a541; -webkit-transform-origin: 0 50%; transform-origin: 0 50%; -webkit-transition: -webkit-transform .25s ease-out; transition: transform .25s ease-out; }
+  .bepow.ready { color: #d2691e; font-weight: bold; }
+  .bepow.ready .bpbar i {
+    background: #ff8c1a;
+    -webkit-animation: bepow .7s ease-in-out infinite alternate;
+    animation: bepow .7s ease-in-out infinite alternate;
+  }
+  @-webkit-keyframes bepow { from { opacity: 1; } to { opacity: .45; } }
+  @keyframes bepow { from { opacity: 1; } to { opacity: .45; } }
   /* こまかい ずあん: マスが 小さいので ふちと かげを うすく する */
   #beads-board.fine .bcell { border-radius: 5px; }
   #beads-board.fine .bd {
@@ -1095,7 +1115,7 @@
 
 <!-- ビーズ -->
 <div id="game-beads" style="display:none">
-  <p class="score">のこり　<b id="beads-left">0</b> こ　　⏱ <b id="beads-time">0</b> びょう</p>
+  <p class="score">のこり　<b id="beads-left">0</b> こ　　⏱ <b id="beads-time">0</b> びょう　<span class="bepow" id="beads-pow"><span id="beads-pow-t">まとめて</span><span class="bpbar"><i id="beads-pow-fill"></i></span></span></p>
   <p class="best" id="beads-best"></p>
   <!-- ずあんと むずかしさは あそぶ まえに えらぶ もの。
        ばんの 上に おくと ビーズを 大きく できないので、下に おく -->
@@ -1103,10 +1123,11 @@
   <table class="board" id="beads-board"><tbody id="beads-body"></tbody></table>
   <p class="msg" id="beads-msg"></p>
   <button type="button" class="big" id="beads-reset">もういちど</button>
+  <div class="ctrl"><span class="label">あそびかた</span><span id="beads-modes"></span></div>
   <div class="ctrl"><span class="label">ずあん</span><div id="beads-pics"></div></div>
   <div class="ctrl"><span class="label">こまかさ</span><span id="beads-fines"></span></div>
-  <div class="ctrl"><span class="label">むずかしさ</span><span id="beads-levels"></span></div>
-  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。<br><b>こまかさ</b>は 2つ。<b>いつもの</b> は 大きい ビーズ。<b>こまかい</b> は ビーズが 小さくて 数が おおく、かげの ついた きれいな 絵に なります。<br>こまかさを かえると、あたらしく はじまります。</p></div>
+  <div class="ctrl" id="beads-levelrow"><span class="label">むずかしさ</span><span id="beads-levels"></span></div>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note"><b>あそびかた</b>は 2つ。<br><b>なおす</b>: ビーズが いくつか <b>まちがった いろ</b> に なって います。<br>上の <b>ビーズ入れ</b> から いろを えらんで、まちがって いる ビーズを さわると 入れかわります。<br><b>指を すべらせると、その まま いくつも まとめて ならべます。</b><br>マスに うすく しいて ある いろが <b>したじ</b> です。その いろの ビーズを おけば あたりです。<br>したじと ちがう ところには <b>おけません</b>。だから つい 指が すべっても ひどく なりません。<br>ビーズ入れの かずは 「その いろが あと なんこ いるか」。おきおわると つぎの いろに かわります。<br><b>まとめて なおす</b>: まちがえずに つづけて なおすと 上の ゲージが たまります。いっぱいに なったら、つぎに さわった いろの まちがいが <b>ぜんぶ いっぺんに</b> なおります。<br><b>ぬりえ</b>: ビーズが ぜんぶ 白から はじまります。いろを えらんで さわると、つながって いる おなじ いろの ところが <b>まとめて ぬれます</b>。<br><b>こまかさ</b>は 2つ。<b>いつもの</b> は 大きい ビーズ。<b>こまかい</b> は ビーズが 小さくて 数が おおく、かげの ついた きれいな 絵に なります。<br>こまかさを かえると、あたらしく はじまります。</p></div>
 </div>
 
 <!-- どうぶつゲーム (おなじ どうぶつが くっつくと 大きくなる) -->
@@ -1509,7 +1530,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v77";
+  var APP_VER = "v78";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -3855,6 +3876,10 @@
     { key: "normal", label: "ふつう",     n: 11, n16: 24 },
     { key: "hard",   label: "むずかしい", n: 20, n16: 40 }
   ];
+  var BE_MODES = [
+    { key: "fix",  label: "なおす" },
+    { key: "nuri", label: "ぬりえ" }
+  ];
   var BE_FINES = [
     { key: "0", label: "いつもの" },
     { key: "1", label: "こまかい" }
@@ -3895,6 +3920,10 @@
   var beNudgeT = null, beNudgeI = -1;     // しばらく おしていない ときの ヒント
   var beThumbBtns = [];                  // ずあんの えらぶ ボタン (一度だけ つくる)
   var BE_NUDGE_MS = 10000;
+  var beMode = "fix";                    // "fix" = まちがい なおし / "nuri" = ぬりえ
+  var beWaves = [], beFinishT = null;    // まとめて ぬる なみの タイマー
+  var beCombo = 0, beComboMax = 3;       // まとめて なおす ゲージ
+  var bePowEl = $("beads-pow"), bePowFill = $("beads-pow-fill"), bePowT = $("beads-pow-t");
 
   (function () {
     var k = load("be-pic", "hana");
@@ -3903,11 +3932,14 @@
     for (var m = 0; m < BE_PICS16.length; m++) if (BE_PICS16[m].key === k16) bePic16 = BE_PICS16[m];
     beFine = load("be-fine", "0") === "1";
     if (beFine) bePic = bePic16;
+    if (load("be-mode", "fix") === "nuri") beMode = "nuri";
     var l = load("be-level", "normal");
     for (var j = 0; j < BE_LEVELS.length; j++) if (BE_LEVELS[j].key === l) beLevel = BE_LEVELS[j];
   })();
 
-  function beKey() { return "be-" + bePic.key + "-" + beLevel.key; }
+  function beKeyOf(picKey) { return "be-" + picKey + "-" + (beMode === "nuri" ? "nuri" : beLevel.key); }
+  function beKey() { return beKeyOf(bePic.key); }
+  function beBdClass(i) { return "bd" + (beNow[i] < 0 ? " blank" : ""); }
   function bePicList() { return beFine ? BE_PICS16 : BE_PICS; }
   // ずあんの 大きさと 色を いまの ものに あわせる
   function beSetPic() {
@@ -3958,7 +3990,7 @@
       td.className = "bcell";
       td.style.background = beSoft[beGoal[i]];
     }
-    bd.className = "bd";
+    bd.className = beBdClass(i);
     bd.style.background = bePal[beNow[i]] || "#ffffff";
   }
 
@@ -4013,6 +4045,11 @@
       }
     }
     beNow = beGoal.slice(0);
+    if (beMode === "nuri") {                     // ぬりえ: ぜんぶ 白 (-1) から
+      beLeft = 0;
+      for (i = 0; i < beGoal.length; i++) if (beGoal[i] > 0) { beNow[i] = -1; beLeft++; }
+      return;
+    }
 
     var spots = [];
     for (i = 0; i < beGoal.length; i++) if (beGoal[i] > 0) spots.push(i);
@@ -4047,7 +4084,7 @@
   function beClearNudge() {
     if (beNudgeT !== null) { clearTimeout(beNudgeT); beNudgeT = null; }
     if (beNudgeI >= 0) {
-      if (beBeads[beNudgeI]) beBeads[beNudgeI].className = "bd";
+      if (beBeads[beNudgeI]) beBeads[beNudgeI].className = beBdClass(beNudgeI);
       beNudgeI = -1;
     }
     for (var k = 0; k < beCups.length; k++) {
@@ -4065,9 +4102,9 @@
     var wrong = [], i, k;
     for (i = 0; i < beGoal.length; i++) if (beGoal[i] > 0 && beNow[i] !== beGoal[i]) wrong.push(i);
     if (!wrong.length) return;
-    if (beNudgeI >= 0) beBeads[beNudgeI].className = "bd";
+    if (beNudgeI >= 0) beBeads[beNudgeI].className = beBdClass(beNudgeI);
     beNudgeI = wrong[Math.floor(Math.random() * wrong.length)];
-    beBeads[beNudgeI].className = "bd nudge";
+    beBeads[beNudgeI].className = beBdClass(beNudgeI) + " nudge";
     for (k = 0; k < beCups.length; k++) {
       if (Number(beCups[k].getAttribute("data-color")) === beGoal[beNudgeI] && beCups[k].className.indexOf("nudge") < 0) {
         beCups[k].className += " nudge";
@@ -4101,7 +4138,7 @@
   function bePaintPicks() {
     for (var k = 0; k < beThumbBtns.length; k++) {
       var b = beThumbBtns[k], key = b.getAttribute("data-key");
-      var done = (Number(load("be-" + key + "-" + beLevel.key, "0")) || 0) > 0;
+      var done = (Number(load(beKeyOf(key), "0")) || 0) > 0;
       b.className = "bpick" + (key === bePic.key ? " on" : "") + (done ? " done" : "");
     }
   }
@@ -4165,6 +4202,11 @@
 
   function beBuild() {
     beBuildPicks();
+    buildPicker($("beads-modes"), BE_MODES, function (g) { return g.key === beMode; }, "big", function (g) {
+      beMode = g.key;
+      save("be-mode", g.key);
+      beStart();
+    });
     buildPicker($("beads-fines"), BE_FINES, function (g) { return (g.key === "1") === beFine; }, "big", function (g) {
       beFine = g.key === "1";
       save("be-fine", g.key);
@@ -4334,21 +4376,126 @@
       beMsgEl.className = "msg again";
       beMsgEl.innerHTML = "ここは ちがう いろ です";
       soundAgain();
+      if (beCombo > 0 && beCombo < beComboMax) { beCombo = 0; bePaintPow(); }
       return;
     }
-    beNow[i] = beColor;                          // ここまで 来たら かならず あたり
+    // ここまで 来たら かならず あたり
+    var rings = null, n = 1;
+    if (beMode === "nuri") rings = beFloodRings(i);                  // つながった おなじ 色
+    else if (beCombo >= beComboMax && beNeed(beColor) > 1) { rings = beAllRings(i); beCombo = 0; }   // ゲージ いっぱい
+    else beCombo++;
+    if (rings) {
+      n = 0;
+      for (var r = 0; r < rings.length; r++) {
+        for (var q = 0; q < rings[r].length; q++) { beNow[rings[r][q]] = beColor; n++; }
+      }
+    }
+    if (n > 1) {
+      beWave(rings);
+      beMsgEl.className = "msg";
+      if (beMode === "fix") beMsgEl.innerHTML = "まとめて <b>" + n + "</b> こ なおしました！";
+      else beMsgEl.innerHTML = n >= 8 ? "いっきに <b>" + n + "</b> こ！" : "";
+    } else {
+      beNow[i] = beColor;
+      bePutBead(i);
+      soundHit();
+      beMsgEl.innerHTML = "";
+      beMsgEl.className = "msg";
+    }
+    beLeft -= n;
+    bePaintLeft();
+    bePaintTray();
+    bePaintPow();
+    beNextColor();
+    beClearNudge();
+    if (beLeft <= 0) {
+      if (beWaves.length) {                      // なみが ぬりおわってから できあがり
+        beStopClock();
+        beLive = false;
+        beFinishT = setTimeout(function () { beFinishT = null; beFinish(); }, beWaveMs + 200);
+      } else beFinish();
+    } else beArmNudge();
+  }
+
+  function bePutBead(i) {
     bePaintCell(i);
     void beBeads[i].offsetWidth;                 // つづけて おいても ぽこっと する ように
     beBeads[i].className = "bd put";
-    beMsgEl.innerHTML = "";
-    beMsgEl.className = "msg";
-    beLeft--;
-    bePaintLeft();
-    soundHit();
-    bePaintTray();
-    beNextColor();
-    beClearNudge();
-    if (beLeft <= 0) beFinish(); else beArmNudge();
+  }
+
+  // ぬりえ: さわった ところから つながって いる おなじ 色を、近い じゅんに わに わける
+  function beFloodRings(i) {
+    var c = beGoal[i], seen = {}, rings = [], cur = [i], nx, k, j, a, rr, cc;
+    seen[i] = 1;
+    while (cur.length) {
+      rings.push(cur);
+      nx = [];
+      for (k = 0; k < cur.length; k++) {
+        a = cur[k]; rr = Math.floor(a / beN); cc = a % beN;
+        var nb = [rr > 0 ? a - beN : -1, rr < beN - 1 ? a + beN : -1, cc > 0 ? a - 1 : -1, cc < beN - 1 ? a + 1 : -1];
+        for (j = 0; j < 4; j++) {
+          var b = nb[j];
+          if (b >= 0 && !seen[b] && beGoal[b] === c && beNow[b] !== c) { seen[b] = 1; nx.push(b); }
+        }
+      }
+      cur = nx;
+    }
+    return rings;
+  }
+
+  // まとめて なおす: えらんだ 色の まちがいを ぜんぶ。さわった ところから の きょりで わに わける
+  function beAllRings(i) {
+    var rings = [], r0 = Math.floor(i / beN), c0 = i % beN, k, d;
+    for (k = 0; k < beGoal.length; k++) {
+      if (beGoal[k] !== beColor || beNow[k] === beColor) continue;
+      d = Math.max(Math.abs(Math.floor(k / beN) - r0), Math.abs(k % beN - c0));
+      if (!rings[d]) rings[d] = [];
+      rings[d].push(k);
+    }
+    var out = [];
+    for (k = 0; k < rings.length; k++) if (rings[k]) out.push(rings[k]);
+    return out;
+  }
+
+  // わごとに すこし ずつ おくらせて ぽこぽこ ぬる。音は だんだん 高く
+  var beWaveMs = 0;
+  function beWave(rings) {
+    var step = Math.max(22, Math.min(45, Math.floor(650 / rings.length)));
+    beWaveMs = step * rings.length;
+    for (var r = 0; r < rings.length; r++) {
+      (function (ring, r) {
+        var t = setTimeout(function () {
+          for (var k = 0; k < beWaves.length; k++) if (beWaves[k] === t) { beWaves.splice(k, 1); break; }
+          for (var q = 0; q < ring.length; q++) bePutBead(ring[q]);
+          if (r % 2 === 0 || r === rings.length - 1) {
+            var up = Math.min(r, 16);
+            play([523 * Math.pow(2, up / 8)], 0.07, "sine", 0.13);
+          }
+        }, r * step);
+        beWaves.push(t);
+      })(rings[r], r);
+    }
+  }
+
+  // なみを とめて、ばんを いまの ようすに ぬりなおす。fin = おわりかけ なら おわらせる
+  function beFlushWaves(fin) {
+    var had = beWaves.length > 0;
+    while (beWaves.length) clearTimeout(beWaves.pop());
+    if (had) for (var i = 0; i < beCells.length; i++) bePaintCell(i);
+    if (beFinishT !== null) {
+      clearTimeout(beFinishT); beFinishT = null;
+      if (fin) beFinish();
+    }
+  }
+
+  function bePaintPow() {
+    if (beMode !== "fix") { bePowEl.style.display = "none"; return; }
+    bePowEl.style.display = "";
+    var f = Math.min(1, beCombo / beComboMax), ready = beCombo >= beComboMax && beLeft > 1;
+    bePowFill.style.webkitTransform = "scaleX(" + f + ")";
+    bePowFill.style.transform = "scaleX(" + f + ")";
+    bePowEl.className = "bepow" + (ready ? " ready" : "");
+    bePowT.innerHTML = ready ? "✨まとめて OK" : "まとめて";
   }
 
   // その 色を おきおわったら、つぎに いる 色に 自分で かわる。
@@ -4623,6 +4770,7 @@
 
   function beStart() {
     if (!beBuilt) beBuild();
+    beFlushWaves(false);
     beHideReal();
     beClearNudge();
     beSetPic();
@@ -4630,6 +4778,10 @@
     if (beThumbFine !== beFine) beBuildPicks();   // こまかさが かわった ときだけ
     beBoard.className = beBoardClass(false);
     beScramble();
+    beCombo = 0;
+    beComboMax = Math.max(3, Math.min(8, Math.ceil(beLeft / 4)));
+    $("beads-levelrow").style.display = beMode === "nuri" ? "none" : "";
+    bePaintPow();
     beBuildTray();
     for (var i = 0; i < beCells.length; i++) {
       bePaintCell(i);
@@ -4658,7 +4810,7 @@
     return true;
   }
 
-  function beStop() { beStopClock(); beClearNudge(); beHideReal(); }
+  function beStop() { beStopClock(); beClearNudge(); beFlushWaves(true); beHideReal(); }
 
   // テスト用に 中身を 読むだけ (ゲームには つかわない)
   window.beState = function () {
@@ -8280,6 +8432,8 @@
         v = recNum("be-" + beAll[i].key + "-" + BE_LEVELS[j].key);
         if (v > 0) parts.push(BE_LEVELS[j].label + " <b>" + v + "</b> びょう");
       }
+      v = recNum("be-" + beAll[i].key + "-nuri");
+      if (v > 0) parts.push("ぬりえ <b>" + v + "</b> びょう");
       if (parts.length) lines.push((beAll[i].colors ? "こまかい " : "") + beAll[i].label + "　" + parts.join("　"));
     }
     out += recGroup("🔵", "ビーズ", lines);
