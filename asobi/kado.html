@@ -71,22 +71,34 @@
   .v.z { border-color: #d9cdb2; color: #b5a888; }
   .v.done { border-color: #cfc6b2; color: #a89f8c; background: #f4f0e6; box-shadow: none; }
   .v.lit { border-color: #ff9f1a; background: #fff3c4; color: #2f2a24; }
+  .v svg g { fill: #7a4a2a; }
+  .v.done svg g { fill: #c4b9a3; }
+  .v .pw { line-height: 0; }
+  .v .pw div { line-height: 0; white-space: nowrap; }
+  /* ルールの 絵。ねこ 1ぴき と、となりあう 2ひき */
+  .demo { margin: 4px 0 2px; }
+  .mini { display: inline-block; position: relative; margin: 0 14px; vertical-align: top; }
+  .mini .c { border-radius: 6px; }
+  .mini .c.cat { font-size: 28px; line-height: 40px; }
+  .mini .v { border-width: 2px; }
 </style>
 </head>
 <body>
 <h1>🐱 ねこさがし <small style="font-size:14px;color:#a89f8c">しさく</small></h1>
-<p class="rule">くさむらに ねこが かくれて います。<br><b>かどの すうじ</b> = その かどに <b>ふれて いる マス</b> に いる ねこの かず。<br>ねこの いない マスを ぜんぶ ひらいたら できあがり。</p>
+<p class="rule">くさむらに ねこが かくれて います。<br>ねこの いる マスの <b>4つの かど</b> には、<b>あしあと</b> が 1つずつ つきます。</p>
+<div class="demo"><div class="mini" id="demo1"></div><div class="mini" id="demo2"></div></div>
+<p class="rule" style="margin-top:0">あしあとを 見て ねこの いばしょを あてましょう。ねこの いない マスを ぜんぶ ひらいたら できあがり。</p>
 <p class="score">❤️ <b id="hearts">3</b>　🐱 のこり <b id="cats">0</b>　⏱ <b id="time">0</b> びょう</p>
 <div id="board"></div>
 <p class="msg" id="msg">どこか 1つ さわって はじめましょう</p>
 <div class="ctrl">
   <button type="button" class="big on" id="m-open">👆 ひらく</button>
-  <button type="button" class="big" id="m-mark">🐾 めじるし</button>
+  <button type="button" class="big" id="m-mark">🐈 めじるし</button>
   <button type="button" class="big" id="hint">💡 ヒント</button>
 </div>
 <div class="ctrl"><button type="button" class="big" id="reset">もういちど</button></div>
 <div class="ctrl"><span class="label">おおきさ</span><span id="levels"></span></div>
-<p class="rule" style="font-size:15px">すうじに さわると、その すうじが かぞえて いる マスが ひかります。<br>ながおし でも 🐾 めじるし が おけます。<br>すうじが 0 の かどの まわりは、かってに ひらきます。<br>かならず すいりで とける ばん だけが でます。</p>
+<p class="rule" style="font-size:15px">あしあとに さわると、その かどに ふれて いる マスが ひかります。<br>ながおし でも 🐈 めじるし が おけます。<br>あしあとの ない かどの まわりは、かってに ひらきます。<br>かならず すいりで とける ばん だけが でます。</p>
 
 <script>
 (function () {
@@ -265,7 +277,8 @@
       el.style.lineHeight = (cs - gap - 4) + "px";
       el.style.fontSize = Math.round(cs * 0.5) + "px";
     }
-    var d = Math.round(cs * 0.44);
+    var d = Math.round(cs * 0.46);
+    vd = d;
     boardEl.style.margin = Math.round(d / 2 + 4) + "px auto";   // へりの ふだが そとに はみでる ぶん
     for (v = 0; v < vels.length; v++) {
       el = vels[v];
@@ -309,15 +322,36 @@
     var el = cells[i], s = st[i], ic = el.firstChild;
     if (s === 1) { el.className = "c open"; ic.innerHTML = ""; }
     else if (s === 3) { el.className = "c cat"; ic.innerHTML = "🐱"; }
-    else if (s === 2) { el.className = "c"; ic.innerHTML = "🐾"; }
+    else if (s === 2) { el.className = "c"; ic.innerHTML = "🐈"; }
     else { el.className = "c"; ic.innerHTML = (!alive && cat[i]) ? "😺" : ""; }
   }
+  // あしあとの え。n こ を 2れつ までで ならべる
+  function paw(p) {
+    return '<svg width="' + p + '" height="' + p + '" viewBox="0 0 20 20" style="display:inline-block;vertical-align:top"><g fill="#7a4a2a">' +
+      '<ellipse cx="10" cy="13.6" rx="5.3" ry="4.5"/><circle cx="3.7" cy="8.3" r="2.4"/><circle cx="7.6" cy="4.2" r="2.5"/>' +
+      '<circle cx="12.4" cy="4.2" r="2.5"/><circle cx="16.3" cy="8.3" r="2.4"/></g></svg>';
+  }
+  // あしあとの ふだ。1つは まる、2つは よこながの まる、3つ 4つは 大きい まるに 2だん
+  function pawBox(n, d) {
+    var w, h, p, rows;
+    if (n === 1) { w = h = d; p = Math.floor(d * 0.62); rows = [1]; }
+    else if (n === 2) { h = d; w = Math.round(d * 1.7); p = Math.floor(d * 0.6); rows = [2]; }
+    else { w = h = Math.round(d * 1.4); p = Math.floor(d * 0.5); rows = [2, n - 2]; }
+    var top = Math.floor((h - 6 - rows.length * p) / 2), out = '<div class="pw" style="padding-top:' + top + 'px">', k, q;
+    for (k = 0; k < rows.length; k++) { out += "<div>"; for (q = 0; q < rows[k]; q++) out += paw(p); out += "</div>"; }
+    return { w: w, h: h, html: out + "</div>" };
+  }
+  var vd = 30;
   function paintV(v) {
     var el = vels[v];
     if (!el) return;
     if (!vis[v] || clue[v] === 0) { el.style.display = "none"; return; }   // 0 は まわりが ぜんぶ ひらくので だす いみが ない
     el.style.display = "";
-    el.innerHTML = String(clue[v]);
+    var b = vd >= 24 ? pawBox(clue[v], vd) : { w: vd, h: vd, html: String(clue[v]) };   // ちいさい 画面は すうじ
+    el.innerHTML = b.html;
+    el.style.width = b.w + "px"; el.style.height = b.h + "px";
+    el.style.left = ((v % (W + 1)) * cs - b.w / 2) + "px";
+    el.style.top = (Math.floor(v / (W + 1)) * cs - b.h / 2) + "px";
     var cc = vCells(v), open = true;
     for (var k = 0; k < cc.length; k++) if (st[cc[k]] === 0) { open = false; break; }
     el.className = "v" + (clue[v] === 0 ? " z" : open ? " done" : "");
@@ -342,7 +376,7 @@
   // ---- あそぶ ----
   function openCell(i) {
     if (!alive || st[i] === 1 || st[i] === 3) return;
-    if (st[i] === 2) { msgEl.className = "msg"; msgEl.innerHTML = "🐾 を とってから ひらいてね (もう いちど 🐾 で とれます)"; return; }
+    if (st[i] === 2) { msgEl.className = "msg"; msgEl.innerHTML = "🐈 を とってから ひらいてね (もう いちど 🐈 で とれます)"; return; }
     if (!started) {
       cat = makeBoard(i); clue = clues(cat); started = true; startClock();
     }
@@ -352,7 +386,8 @@
       play([330, 262], 0.14, 0.15);
       paintScore(); paintAround(i);
       if (hearts <= 0) { lose(); return; }
-      msgEl.className = "msg bad"; msgEl.innerHTML = "にゃっ！ ねこが いました";
+      msgEl.className = "msg bad"; msgEl.innerHTML = "にゃっ！ ねこが いました。かどに あしあとが ついて いたね";
+      flashCorners(i);
       return;
     }
     var know = [], k;
@@ -371,6 +406,11 @@
     checkWin();
   }
 
+  function flashCorners(i) {
+    var vs = cVerts(i), k;
+    for (k = 0; k < vs.length; k++) if (vels[vs[k]] && vis[vs[k]]) vels[vs[k]].className += " lit";
+    setTimeout(function () { paintAround(i); }, 1600);
+  }
   function paintAround(i) { var vs = cVerts(i); for (var k = 0; k < vs.length; k++) paintV(vs[k]); }
 
   function toggleMark(i) {
@@ -415,14 +455,14 @@
       else if (know[i] === 2 && st[i] !== 2) cats.push(i);
     }
     var pick = safe.length ? safe[Math.floor(Math.random() * safe.length)] : cats.length ? cats[0] : -1;
-    if (pick < 0) { msgEl.className = "msg"; msgEl.innerHTML = "🐾 の おきばしょを 見なおして みて"; return; }
+    if (pick < 0) { msgEl.className = "msg"; msgEl.innerHTML = "🐈 の おきばしょを 見なおして みて"; return; }
     var el = cells[pick];
     el.className = el.className.replace(/ hint/g, "");
     void el.offsetWidth;
     el.className += " hint";
     setTimeout(function () { el.className = el.className.replace(/ hint/g, ""); }, 3300);
     msgEl.className = "msg";
-    msgEl.innerHTML = safe.length ? "ひかって いる マスは ねこが いません" : "ひかって いる マスには ねこが います 🐾";
+    msgEl.innerHTML = safe.length ? "ひかって いる マスは ねこが いません" : "ひかって いる マスには ねこが います 🐈";
   }
 
   // すうじに さわると、かぞえて いる マスを ひからせる
@@ -434,7 +474,7 @@
     if (vels[v]) vels[v].className += " lit";
     litList.v = v;
     msgEl.className = "msg";
-    msgEl.innerHTML = "ひかった " + litList.length + "マスの なかに ねこが <b>" + clue[v] + "</b> ひき";
+    msgEl.innerHTML = "あしあと " + clue[v] + "つ → ひかった " + litList.length + "マスの どこかに ねこが <b>" + clue[v] + "</b> ひき";
     litT = setTimeout(unlight, 1800);
   }
   function unlight() {
@@ -511,7 +551,40 @@
       })(LEVELS[i]);
     }
   })();
-  window.onresize = function () { if (cells) layout(); };
+  window.onresize = function () { if (cells) { layout(); paintAll(); } };
+
+  // ルールの 絵を つくる。ほんとうの ばんと おなじ 見た目で
+  function demo(host, w, h, catsAt) {
+    var c = 48, d = 26, i, v, k, el, has = {};
+    host.style.width = (w * c) + "px"; host.style.height = (h * c) + "px";
+    host.style.margin = "10px 14px";
+    for (i = 0; i < catsAt.length; i++) has[catsAt[i]] = 1;
+    for (i = 0; i < w * h; i++) {
+      el = document.createElement("div");
+      el.className = "c" + (has[i] ? " cat" : " open");
+      el.style.left = ((i % w) * c + 2) + "px"; el.style.top = (Math.floor(i / w) * c + 2) + "px";
+      el.style.width = (c - 4) + "px"; el.style.height = (c - 4) + "px";
+      if (has[i]) el.innerHTML = "🐱";
+      host.appendChild(el);
+    }
+    for (v = 0; v < (w + 1) * (h + 1); v++) {
+      var vr = Math.floor(v / (w + 1)), vc = v % (w + 1), n = 0;
+      for (k = 0; k < catsAt.length; k++) {
+        var r = Math.floor(catsAt[k] / w), cc = catsAt[k] % w;
+        if ((vr === r || vr === r + 1) && (vc === cc || vc === cc + 1)) n++;
+      }
+      if (!n) continue;
+      el = document.createElement("div");
+      el.className = "v";
+      var bx = pawBox(n, d);
+      el.style.width = bx.w + "px"; el.style.height = bx.h + "px";
+      el.style.left = (vc * c - bx.w / 2) + "px"; el.style.top = (vr * c - bx.h / 2) + "px";
+      el.innerHTML = bx.html;
+      host.appendChild(el);
+    }
+  }
+  demo($("demo1"), 3, 3, [4]);
+  demo($("demo2"), 4, 3, [5, 6]);
   window.kdState = function () { return { W: W, H: H, cat: cat.slice(0), st: st.slice(0), vis: vis.slice(0), clue: clue.slice(0), alive: alive, hearts: hearts, msg: msgEl.textContent }; };
   build();
 })();
