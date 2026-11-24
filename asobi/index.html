@@ -101,7 +101,7 @@
     #sound { width: 54px; font-size: 21px; }
   }
 
-  /* ---- タブ (1行・7つ) ---- */
+  /* ---- タブ (1行・8つ) ---- */
   .tabs { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0; margin: 0 0 4px; }
   .tabs td { padding: 0 2px; vertical-align: top; }
   .tab {
@@ -1044,6 +1044,55 @@
     cursor: pointer;
   }
 
+  /* ---- ねこの あしあと ---- */
+  #kd-board { position: relative; margin: 0 auto; touch-action: none; }
+  #game-kd .c {
+    position: absolute; border-radius: 10px;
+    background: #7cc36a; border: 2px solid #5fa64f;
+    box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .12);
+    text-align: center;
+  }
+  #game-kd .c i { font-style: normal; display: block; }
+  #game-kd .c.open { background: #f3e3c3; border-color: #e2cfa6; box-shadow: none; }
+  #game-kd .c.cat { background: #ffd9d0; border-color: #f0a898; box-shadow: none; }
+  /* あしあとに さわった とき。くさむらは みどりの まま ふちを ひからせ、ひらいた マスは きいろく */
+  #game-kd .c.lit { border-color: #ff8c1a; box-shadow: 0 0 0 4px #ffb347; }
+  #game-kd .c.lit.open { background: #fff0b8; }
+  #game-kd .c.lit.cat { background: #ffd9d0; }
+  #game-kd .c.hint { -webkit-animation: kdhint .8s ease-in-out 4 alternate; animation: kdhint .8s ease-in-out 4 alternate; }
+  @-webkit-keyframes kdhint { from { -webkit-transform: scale(1); } to { -webkit-transform: scale(.86); } }
+  @keyframes kdhint { from { transform: scale(1); } to { transform: scale(.86); } }
+  #game-kd .c.pop { -webkit-animation: kdpop .35s ease-out; animation: kdpop .35s ease-out; }
+  @-webkit-keyframes kdpop { 0% { -webkit-transform: scale(.6); } 70% { -webkit-transform: scale(1.08); } 100% { -webkit-transform: scale(1); } }
+  @keyframes kdpop { 0% { transform: scale(.6); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  #game-kd .v {
+    position: absolute; border-radius: 50%; background: #fff; border: 3px solid #e07a2f;
+    text-align: center; z-index: 2; box-shadow: 0 2px 3px rgba(0, 0, 0, .18);
+  }
+  #game-kd .v.done { border-color: #cfc6b2; background: #f4f0e6; box-shadow: none; }
+  #game-kd .v.lit { border-color: #ff9f1a; background: #fff3c4; }
+  #game-kd .v svg g { fill: #7a4a2a; }
+  #game-kd .v.done svg g { fill: #c4b9a3; }
+  #game-kd .v .pw { line-height: 0; }
+  #game-kd .v .pw div { line-height: 0; white-space: nowrap; }
+  #game-kd .msg.bad { color: #c0392b; }
+  #game-kd .msg { font-size: 22px; margin-top: 8px; }
+  /* みほんの 絵。ねこ 1ぴき と、となりあう 2ひき */
+  .kddemo { margin: 0 0 4px; }
+  .kdrule { font-size: 17px; line-height: 24px; margin: 0 auto 2px; color: #6d6355; color: var(--sub); }
+  .kdrule b { color: #e07a2f; color: var(--accent); }
+  .kdmini { display: inline-block; position: relative; vertical-align: top; }
+  #game-kd .kdmini .c { border-radius: 6px; }
+  #game-kd .kdmini .c.cat { font-size: 22px; }
+  #game-kd .kdmini .v { border-width: 2px; }
+  /* よこむきの ひろい 画面は みほんと ボタンを ひだりに。Flexbox を つかわず table で ならべる */
+  .kdstage { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  .kdstage td { padding: 0; vertical-align: top; }
+  #kd-lcol { display: none; width: 330px; padding-top: 8px; }
+  #game-kd.wide #kd-lcol { display: table-cell; }
+  #game-kd.wide .kdrule { font-size: 16px; }
+  #game-kd.wide #kd-btns .big { padding: 12px 12px; }
+
   /* ---- おいわいの紙ふぶき ---- */
   /* 紙ふぶきは 見せる だけ。下の ボタンの タップを じゃま しない */
   #confetti { position: fixed; left: 0; top: 0; width: 100%; height: 0; z-index: 50; pointer-events: none; }
@@ -1059,7 +1108,7 @@
   <td class="tb-r"><button type="button" class="topbtn" id="sound" title="おと">🔊</button></td>
 </tr></tbody></table>
 
-<!-- タブは 1行。字は 下に 小さく 添えて、7つ ならべても 指で おせる 幅を のこす -->
+<!-- タブは 1行。字は 下に 小さく 添えて、8つ ならべても 指で おせる 幅を のこす -->
 <table class="tabs" id="tabs"><tbody><tr>
   <td><button type="button" class="tab active" id="tab-mogura"><span class="ti">🐹</span><span class="tl">もぐら</span></button></td>
   <td><button type="button" class="tab" id="tab-memory"><span class="ti">🎴</span><span class="tl">しんけい</span></button></td>
@@ -1068,6 +1117,7 @@
   <td><button type="button" class="tab" id="tab-animal"><span class="ti">🐻</span><span class="tl">くっつけ</span></button></td>
   <td><button type="button" class="tab" id="tab-jenga"><span class="ti">🧱</span><span class="tl">ジェンガ</span></button></td>
   <td><button type="button" class="tab" id="tab-zombie"><span class="ti">👻</span><span class="tl">おばけ</span></button></td>
+  <td><button type="button" class="tab" id="tab-kd"><span class="ti">🐾</span><span class="tl">あしあと</span></button></td>
 </tr></tbody></table>
 
 <!-- もぐらたたき -->
@@ -1177,6 +1227,21 @@
   <div class="ctrl"><span class="label">はやさ</span><span id="zombie-speeds"></span></div>
   <div class="review" id="zombie-review"></div>
   <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">画面の <b>さわった ほうへ</b> なかまが うごきます。指を すべらせても ついて きます。<br>なかまは <b>ずっと てっぽうを うって います</b>。たまは <b>まっすぐ 前にしか</b> とびません。<br>だから <b>いる ところの まうえが いちばん よく けずれます</b>。左右に うごいて 掃くように たおすと はやいです。<br>もんが ならんで います。とおった ほうの ことが おきます。<br><b>みどり</b> は なかまが ふえる、<b>あか</b> は へる、<b>だいだい</b> は ぶきが つよく なります。<br>ときどき <b>3つ</b> の ことも、<b>つづけざまに</b> 来る ことも あります。いま どこを とおるかは くろい わくで 分かります。<br><b>ちから</b> が おばけの かず いじょう なら たおしきれます。とどいた ぶんだけ なかまが へります。<br>おばけには しゅるいが あります。<b>かたい</b>（はがねいろ）は <b>ぶき</b> が ないと ほとんど 通りません。<b>はやい</b>（きいろ）は はやく とどきます。4かいに 1ど <b>大おばけ</b>。<br>つぎに 来る しゅるいは ばんの 上の おびに 出ます。<b>かたい なら ぶき、ふつう なら 人数</b> が こたえです。<br><b>たからばこ</b> は おばけの すぐ 手前。はこの れつに 入ると たまは はこへ いきます。その あいだ おばけは けずれません。<br><b>あおい もん</b> は もんだいです。<b>こたえの ほうを とおります</b>。けいさんと「◯か ✕か」「どっち？」が 出ます。といは <b>ばんの 下の しろい おび</b>に かならず 出ます。とおった あと、<b>こたえと わけ</b>が おなじ おびに 出ます。<br>ばんの 上に ならんだ 丸は 15かいぶんの おばけです。<b>はいいろは かたい、きいろは はやい、赤は 大おばけ</b>。のりこえると みどりに なります。<br><b>おばけ 15かいで クリア</b>。<b>まいかい いちばん よい もんを とおれば かならず さいごまで いけます</b>。<br><b>シビア</b> は はやくて、<b>ほとんど まいかい もんだい</b>が 出ます。とどかれた ときに へる 人数も <b>2ばい</b>なので、まちがえると すぐ へります。左右に 掃くと とどかれる かずが はんぶんに なります。</p></div>
+</div>
+
+<!-- ねこの あしあと (かどに でる あしあとから ねこを さがす。うらの しくみは マインスイーパー) -->
+<div id="game-kd" style="display:none">
+  <p class="score">❤️ <b id="kd-hearts">3</b>　🐱 のこり <b id="kd-cats">0</b>　⏱ <b id="kd-time">0</b> びょう</p>
+  <div id="kd-demo" class="kddemo"><p class="kdrule">ねこの いる マスの <b>4つの かど</b> に <b>あしあと</b> が 1つずつ つきます</p><div class="kdmini" id="kd-demo1"></div><div class="kdmini" id="kd-demo2"></div></div>
+  <table class="kdstage" id="kd-stage"><tbody><tr><td id="kd-lcol"></td><td id="kd-rcol"><div id="kd-board"></div></td></tr></tbody></table>
+  <p class="msg" id="kd-msg"></p>
+  <div id="kd-btns">
+    <div class="ctrl"><button type="button" class="big on" id="kd-open">👆 ひらく</button><button type="button" class="big" id="kd-mark">🐈 めじるし</button><button type="button" class="big" id="kd-hint">💡 ヒント</button></div>
+    <button type="button" class="big" id="kd-reset">もういちど</button>
+  </div>
+  <div class="ctrl"><span class="label">おおきさ</span><span id="kd-levels"></span></div>
+  <div class="ctrl"><button type="button" class="big theme" id="kd-demo-btn">みほんを しまう</button></div>
+  <div class="how"><button type="button" class="howbtn">❓ あそびかた</button><p class="note">くさむらに ねこが かくれて います。<br><b>ねこの いる マスの 4つの かど</b> には、<b>あしあと</b> が 1つずつ つきます。となりあう ねこの あいだの かどには 2つ つきます。<br>マスを さわると ひらきます。ひらいた マスの かどに あしあとが 出ます。<br><b>あしあとに さわる</b> と、その かどに ふれて いる マスが ひかります。「この どこかに ねこが いる」と いう ことです。<br>ねこが いると おもう マスは <b>🐈 めじるし</b> に して さわるか、<b>ゆびで しばらく おさえる</b> と 🐈 が おけます。<br>あしあとの ない かどの まわりは、かってに ひらきます。<br>ねこの いない マスを ぜんぶ ひらいたら できあがり。ねこを ひらくと ❤️ が へります（3つ）。<br>かならず すいりで とける ばん だけが でます。こまったら <b>💡 ヒント</b>。</p></div>
 </div>
 
 <!-- きろくの いちらん。ゲームの 上に かぶせる。くらい ところを さわっても とじる -->
@@ -1541,7 +1606,7 @@
   // 画面の はしに 版の ばんごうを 出す。
   // 「直したのに 直って いない」ときに、ふるい 版が のこって いるのか、
   // 中身の 問題なのかを、写真 1まいで 見わけられる ように するため。
-  var APP_VER = "v81";
+  var APP_VER = "v82";
 
   // ホーム画面に ついかした アプリは、ふるい ページを ずっと 持ちつづける ことが ある。
   // ふるい iOS には Service Worker が ないので、こちらが 直しても とどかない。
@@ -8862,6 +8927,501 @@
 
 
   // ============================================================
+  // ねこの あしあと
+  // ============================================================
+  // うらの しくみは マインスイーパー。ただし かずは マスの 「かど」 に でて、
+  // その かどに ふれて いる マス (4つ、へりは 2つ) だけを かぞえる。
+  // それを 「ねこの いる マスの 4つの かどに あしあとが 1つずつ つく」 と いう お話に して、
+  // かずの かわりに あしあとの 絵を ならべる。原因 (ねこ) → 結果 (あしあと) の むきなので 逆算しやすい。
+  // さいしょに さわった マスの まわりには ねこを おかず、すいりだけで とける ばん だけを だす。
+  var KD_LEVELS = [
+    // ねこが すくないと あしあとの ない かどばかりに なり、さいしょの 1かいで ほとんど ひらく。3わりくらい いれる
+    { key: "s", label: "5 × 5", w: 5, h: 5, n: 7 },
+    { key: "m", label: "6 × 6", w: 6, h: 6, n: 11 },
+    { key: "l", label: "8 × 8", w: 8, h: 8, n: 20 }
+  ];
+  var kdLv = KD_LEVELS[0];
+  (function () { var k = load("kd-level", "s"); for (var i = 0; i < KD_LEVELS.length; i++) if (KD_LEVELS[i].key === k) kdLv = KD_LEVELS[i]; })();
+  var kdW = 5, kdH = 5, kdN = 7, kdCat = [], kdSt = [], kdVis = [], kdClue = [], kdCells = null, kdVels = [];
+  var kdStarted = false, kdAlive = false, kdHearts = 3, kdMode = "open";
+  var kdTimer = null, kdT0 = 0, kdSec = 0;
+  var kdBoard = $("kd-board"), kdMsgEl = $("kd-msg");
+  var kdCs = 60, kdVd = 28, kdWide = false;
+  var kdDemoOn = load("kd-demo", "1") === "1";
+
+  // ---- かどと マスの つながり ----
+  function kdVCells(v) {            // かど v に ふれる マス
+    var vr = Math.floor(v / (kdW + 1)), vc = v % (kdW + 1), out = [], dr, dc, r, c;
+    for (dr = -1; dr <= 0; dr++) for (dc = -1; dc <= 0; dc++) {
+      r = vr + dr; c = vc + dc;
+      if (r >= 0 && r < kdH && c >= 0 && c < kdW) out.push(r * kdW + c);
+    }
+    return out;
+  }
+  function kdCVerts(i) {            // マス i の 4つの かど (そとの すみは 1マス しか ふれず いみが ないので のぞく)
+    var r = Math.floor(i / kdW), c = i % kdW, out = [], k, vr, vc;
+    var cand = [[r, c], [r, c + 1], [r + 1, c], [r + 1, c + 1]];
+    for (k = 0; k < 4; k++) {
+      vr = cand[k][0]; vc = cand[k][1];
+      if ((vr === 0 || vr === kdH) && (vc === 0 || vc === kdW)) continue;
+      out.push(vr * (kdW + 1) + vc);
+    }
+    return out;
+  }
+  function kdClues(c) {
+    var out = [], v, k, cc, n;
+    for (v = 0; v < (kdW + 1) * (kdH + 1); v++) {
+      cc = kdVCells(v); n = 0;
+      for (k = 0; k < cc.length; k++) if (c[cc[k]]) n++;
+      out.push(n);
+    }
+    return out;
+  }
+
+  // ---- すいり (ばんが すいりで とけるか / ヒント) ----
+  // know[i]: 0 わからない / 1 ねこ なし / 2 ねこ。 shown[v] の かどだけ つかう
+  function kdDeduce(know, shown, cl) {
+    var cons = [], v, k, j, i, a, b, changed = true, found = false;
+    function build() {
+      cons = [];
+      for (v = 0; v < shown.length; v++) {
+        if (!shown[v]) continue;
+        var cc = kdVCells(v), u = [], need = cl[v];
+        for (k = 0; k < cc.length; k++) { if (know[cc[k]] === 0) u.push(cc[k]); else if (know[cc[k]] === 2) need--; }
+        if (u.length) cons.push({ u: u, n: need });
+      }
+    }
+    function set(list, val) { for (var q = 0; q < list.length; q++) if (know[list[q]] === 0) { know[list[q]] = val; changed = true; found = true; } }
+    while (changed) {
+      changed = false;
+      build();
+      for (i = 0; i < cons.length; i++) {
+        if (cons[i].n === 0) set(cons[i].u, 1);
+        else if (cons[i].n === cons[i].u.length) set(cons[i].u, 2);
+      }
+      if (changed) continue;
+      // ふくまれる くみあわせ: A が B に ふくまれるなら、B の のこりに B.n - A.n
+      for (i = 0; i < cons.length && !changed; i++) for (j = 0; j < cons.length && !changed; j++) {
+        if (i === j) continue;
+        a = cons[i]; b = cons[j];
+        if (a.u.length >= b.u.length) continue;
+        var rest = [], inside = true;
+        for (k = 0; k < a.u.length; k++) if (b.u.indexOf(a.u[k]) < 0) { inside = false; break; }
+        if (!inside) continue;
+        for (k = 0; k < b.u.length; k++) if (a.u.indexOf(b.u[k]) < 0) rest.push(b.u[k]);
+        var d = b.n - a.n;
+        if (d === 0) set(rest, 1); else if (d === rest.length) set(rest, 2);
+      }
+    }
+    return found;
+  }
+
+  // ひらいて あしあとが 0 なら まわりも ひらく (ためし と ほんばん で つかう)
+  function kdSpread(i, know, shown, cl, onOpen) {
+    var stack = [i], x, vs, k, v, cc, q;
+    while (stack.length) {
+      x = stack.pop();
+      if (know[x] === 1 && onOpen.done[x]) continue;
+      know[x] = 1;
+      if (onOpen.done[x]) continue;
+      onOpen.done[x] = 1; onOpen.f(x);
+      vs = kdCVerts(x);
+      for (k = 0; k < vs.length; k++) {
+        v = vs[k];
+        if (shown[v]) continue;
+        shown[v] = 1;
+        if (cl[v] === 0) { cc = kdVCells(v); for (q = 0; q < cc.length; q++) if (!onOpen.done[cc[q]]) stack.push(cc[q]); }
+      }
+    }
+  }
+
+  function kdSolvable(c, first) {
+    var cl = kdClues(c), know = [], shown = [], i, done = {}, guard, opened;
+    for (i = 0; i < kdW * kdH; i++) know.push(0);
+    for (i = 0; i < (kdW + 1) * (kdH + 1); i++) shown.push(0);
+    var opener = { done: done, f: function () {} };
+    kdSpread(first, know, shown, cl, opener);
+    for (guard = 0; guard < 200; guard++) {
+      kdDeduce(know, shown, cl);
+      opened = false;
+      for (i = 0; i < kdW * kdH; i++) if (know[i] === 1 && !done[i]) { kdSpread(i, know, shown, cl, opener); opened = true; }
+      if (!opened) break;
+    }
+    for (i = 0; i < kdW * kdH; i++) if (!c[i] && !done[i]) return false;
+    return true;
+  }
+
+  // さいしょに さわった マスと その まわりには ねこを おかない。すいりで とける ばんが でるまで つくりなおす
+  function kdMakeBoard(first) {
+    var fr = Math.floor(first / kdW), fc = first % kdW, tries, i, c, pool, k, t;
+    for (tries = 0; tries < 400; tries++) {
+      c = []; pool = [];
+      for (i = 0; i < kdW * kdH; i++) {
+        c.push(false);
+        if (Math.abs(Math.floor(i / kdW) - fr) <= 1 && Math.abs(i % kdW - fc) <= 1) continue;
+        pool.push(i);
+      }
+      for (k = 0; k < kdN && pool.length; k++) {
+        t = Math.floor(Math.random() * pool.length);
+        c[pool[t]] = true; pool.splice(t, 1);
+      }
+      if (kdSolvable(c, first)) return c;
+    }
+    return c;   // まず こない。きても あそべる (ヒントで すすめる)
+  }
+
+  // ---- あしあとの 絵 ----
+  function kdPaw(p) {
+    return '<svg width="' + p + '" height="' + p + '" viewBox="0 0 20 20" style="display:inline-block;vertical-align:top"><g fill="#7a4a2a">' +
+      '<ellipse cx="10" cy="13.6" rx="5.3" ry="4.5"/><circle cx="3.7" cy="8.3" r="2.4"/><circle cx="7.6" cy="4.2" r="2.5"/>' +
+      '<circle cx="12.4" cy="4.2" r="2.5"/><circle cx="16.3" cy="8.3" r="2.4"/></g></svg>';
+  }
+  // ふだの かたちで かずが わかる。1つは まる、2つは よこながの まる、3つ 4つは 大きい まるに 2だん
+  function kdPawBox(n, d) {
+    var w, h, p, rows, k, q;
+    if (n === 1) { w = h = d; p = Math.floor(d * 0.62); rows = [1]; }
+    else if (n === 2) { h = d; w = Math.round(d * 1.7); p = Math.floor(d * 0.6); rows = [2]; }
+    else { w = h = Math.round(d * 1.4); p = Math.floor(d * 0.5); rows = [2, n - 2]; }
+    var top = Math.floor((h - 6 - rows.length * p) / 2), out = '<div class="pw" style="padding-top:' + top + 'px">';
+    for (k = 0; k < rows.length; k++) { out += "<div>"; for (q = 0; q < rows[k]; q++) out += kdPaw(p); out += "</div>"; }
+    return { w: w, h: h, html: out + "</div>" };
+  }
+
+  // ---- がめん ----
+  // よこむきの ひろい 画面では、みほんと ボタンを ばんの ひだりに うつす。なかみは おなじ
+  function kdArrange() {
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+    var w = vw > vh && vw >= 760;
+    var pane = $("game-kd"), demo = $("kd-demo"), btns = $("kd-btns"), lcol = $("kd-lcol");
+    demo.style.display = kdDemoOn ? "" : "none";
+    if (w === kdWide && (w ? demo.parentNode === lcol : demo.parentNode === pane)) return;
+    kdWide = w;
+    // ことばは ばんの すぐ 下。ひだりの れつの ほうが 高いので、表の 下に おくと 画面から はみでる
+    if (w) { lcol.appendChild(demo); lcol.appendChild(btns); $("kd-rcol").appendChild(kdMsgEl); pane.className = "wide"; }
+    else { pane.insertBefore(demo, $("kd-stage")); pane.insertBefore(kdMsgEl, $("kd-stage").nextSibling); pane.insertBefore(btns, kdMsgEl.nextSibling); pane.className = ""; }
+  }
+
+  function kdResize() {
+    if (!kdCells) return;
+    kdArrange();
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+    // ばんの 上下には あしあとの ふだが はみでる ぶん (0.23マス + 4px) を あける
+    var top = $("kd-stage").getBoundingClientRect().top + (window.pageYOffset || 0);
+    var room = kdWide ? $("kd-rcol").offsetWidth - 16 : Math.min(vw - 24, 680);
+    var byW = Math.floor(room / (kdW + 0.5));
+    var byH = Math.floor((vh - top - 8 - (kdWide ? 100 : 200)) / (kdH + 0.46));
+    kdCs = Math.max(34, Math.min(byW, byH, 96));
+    var cs = kdCs, gap = Math.max(3, Math.round(cs * 0.06)), i, el;
+    kdBoard.style.width = (kdW * cs) + "px";
+    kdBoard.style.height = (kdH * cs) + "px";
+    for (i = 0; i < kdCells.length; i++) {
+      el = kdCells[i];
+      el.style.left = ((i % kdW) * cs + gap / 2) + "px";
+      el.style.top = (Math.floor(i / kdW) * cs + gap / 2) + "px";
+      el.style.width = (cs - gap) + "px";
+      el.style.height = (cs - gap) + "px";
+      el.style.lineHeight = (cs - gap - 4) + "px";
+      el.style.fontSize = Math.round(cs * 0.5) + "px";
+    }
+    kdVd = Math.round(cs * 0.46);
+    kdBoard.style.margin = Math.round(kdVd / 2 + 4) + "px auto";   // へりの ふだが そとに はみでる ぶん
+    kdPaintAll();
+  }
+
+  function kdBuild() {
+    kdW = kdLv.w; kdH = kdLv.h; kdN = kdLv.n;
+    while (kdBoard.firstChild) kdBoard.removeChild(kdBoard.firstChild);
+    kdCells = []; kdVels = []; kdCat = []; kdSt = []; kdVis = []; kdClue = [];
+    var i, el, vr, vc;
+    for (i = 0; i < kdW * kdH; i++) {
+      el = document.createElement("div");
+      el.className = "c"; el.setAttribute("data-c", String(i));
+      el.appendChild(document.createElement("i"));
+      kdBoard.appendChild(el); kdCells.push(el);
+      kdCat.push(false); kdSt.push(0);
+    }
+    for (i = 0; i < (kdW + 1) * (kdH + 1); i++) {
+      kdVis.push(0); kdClue.push(0);
+      vr = Math.floor(i / (kdW + 1)); vc = i % (kdW + 1);
+      if ((vr === 0 || vr === kdH) && (vc === 0 || vc === kdW)) { kdVels.push(null); continue; }
+      el = document.createElement("div");
+      el.className = "v"; el.setAttribute("data-v", String(i)); el.style.display = "none";
+      kdBoard.appendChild(el); kdVels.push(el);
+    }
+    kdStarted = false; kdAlive = true; kdHearts = 3;
+    kdStopClock(); kdSec = 0; $("kd-time").innerHTML = "0";
+    kdMsgEl.className = "msg"; kdMsgEl.innerHTML = "どこか 1つ さわって はじめましょう";
+    kdResize(); kdPaintScore();
+  }
+
+  function kdPaintCell(i) {
+    var el = kdCells[i], s = kdSt[i], ic = el.firstChild;
+    if (s === 1) { el.className = "c open"; ic.innerHTML = ""; }
+    else if (s === 3) { el.className = "c cat"; ic.innerHTML = "🐱"; }
+    else if (s === 2) { el.className = "c"; ic.innerHTML = "🐈"; }
+    else { el.className = "c"; ic.innerHTML = (!kdAlive && kdCat[i]) ? "😺" : ""; }
+  }
+  function kdPaintV(v) {
+    var el = kdVels[v];
+    if (!el) return;
+    if (!kdVis[v] || kdClue[v] === 0) { el.style.display = "none"; return; }   // 0 は まわりが ぜんぶ ひらくので だす いみが ない
+    el.style.display = "";
+    var b = kdPawBox(kdClue[v], kdVd);   // ちいさい 画面でも すうじには しない (あしあとの お話が くずれる)
+    el.innerHTML = b.html;
+    el.style.width = b.w + "px"; el.style.height = b.h + "px";
+    el.style.left = ((v % (kdW + 1)) * kdCs - b.w / 2) + "px";
+    el.style.top = (Math.floor(v / (kdW + 1)) * kdCs - b.h / 2) + "px";
+    var cc = kdVCells(v), open = true, k;
+    for (k = 0; k < cc.length; k++) if (kdSt[cc[k]] === 0) { open = false; break; }
+    el.className = "v" + (open ? " done" : "");
+  }
+  function kdPaintAll() {
+    var i;
+    for (i = 0; i < kdCells.length; i++) kdPaintCell(i);
+    for (i = 0; i < kdVels.length; i++) kdPaintV(i);
+  }
+  function kdPaintAround(i) { var vs = kdCVerts(i); for (var k = 0; k < vs.length; k++) kdPaintV(vs[k]); }
+  function kdPaintScore() {
+    var marked = 0, i;
+    for (i = 0; i < kdSt.length; i++) if (kdSt[i] === 2 || kdSt[i] === 3) marked++;
+    $("kd-hearts").innerHTML = String(kdHearts);
+    $("kd-cats").innerHTML = String(Math.max(0, kdN - marked));
+  }
+
+  // とけい。タブを はなれて いる あいだは とめて、もどったら つづきから
+  function kdStartClock() {
+    kdStopClock();
+    kdT0 = new Date().getTime() - kdSec * 1000;
+    kdTimer = setInterval(function () {
+      var s = Math.min(999, Math.floor((new Date().getTime() - kdT0) / 1000));
+      if (s !== kdSec) { kdSec = s; $("kd-time").innerHTML = String(s); }
+    }, 250);
+  }
+  function kdStopClock() { if (kdTimer !== null) { clearInterval(kdTimer); kdTimer = null; } }
+
+  // ---- あそぶ ----
+  function kdOpenCell(i) {
+    if (!kdAlive || kdSt[i] === 1 || kdSt[i] === 3) return;
+    if (kdSt[i] === 2) { kdMsgEl.className = "msg again"; kdMsgEl.innerHTML = "🐈 を とってから ひらいてね"; return; }
+    if (!kdStarted) {
+      kdCat = kdMakeBoard(i); kdClue = kdClues(kdCat); kdStarted = true; kdStartClock();
+    }
+    if (kdCat[i]) {
+      kdSt[i] = 3; kdHearts--;
+      kdPaintCell(i); kdCells[i].className += " pop";
+      play([330, 262], 0.14, "sine", 0.15);
+      kdPaintScore(); kdPaintAround(i);
+      if (kdHearts <= 0) { kdLose(); return; }
+      kdMsgEl.className = "msg bad"; kdMsgEl.innerHTML = "にゃっ！ ねこが いました。<br>かどに あしあとが ついて いたね";
+      kdFlashCorners(i);
+      return;
+    }
+    var know = [], k, count = 0, v;
+    for (k = 0; k < kdSt.length; k++) know.push(kdSt[k] === 1 ? 1 : 0);
+    kdSpread(i, know, kdVis, kdClue, { done: {}, f: function (x) {
+      if (kdSt[x] === 1) return;
+      kdSt[x] = 1; count++;
+      kdPaintCell(x);
+      kdCells[x].className += " pop";
+    } });
+    for (v = 0; v < kdVels.length; v++) kdPaintV(v);
+    play(count > 3 ? [523, 659, 784] : [660], 0.07, "sine", 0.12);
+    kdMsgEl.className = "msg"; kdMsgEl.innerHTML = count > 3 ? "ぱっと " + count + "マス ひらきました" : "";
+    kdCheckWin();
+  }
+
+  function kdFlashCorners(i) {
+    var vs = kdCVerts(i), k;
+    for (k = 0; k < vs.length; k++) if (kdVels[vs[k]] && kdVis[vs[k]]) kdVels[vs[k]].className += " lit";
+    var cells = kdCells;
+    setTimeout(function () { if (cells === kdCells) kdPaintAround(i); }, 1600);
+  }
+
+  function kdToggleMark(i) {
+    if (!kdAlive || kdSt[i] === 1 || kdSt[i] === 3) return;
+    kdSt[i] = kdSt[i] === 2 ? 0 : 2;
+    kdPaintCell(i); kdCells[i].className += " pop";
+    play([880], 0.05, "sine", 0.08);
+    kdPaintScore(); kdPaintAround(i);
+  }
+
+  function kdCheckWin() {
+    var i;
+    for (i = 0; i < kdSt.length; i++) if (!kdCat[i] && kdSt[i] !== 1) return;
+    kdAlive = false; kdStopClock();
+    var key = "kd-best-" + kdLv.key, best = Number(load(key, "0")) || 0, nb = best === 0 || kdSec < best;
+    if (nb) save(key, kdSec);
+    for (i = 0; i < kdCells.length; i++) {
+      if (!kdCat[i]) continue;
+      if (kdSt[i] !== 3) kdSt[i] = 2;
+      kdCells[i].firstChild.innerHTML = "😺";
+      (function (el, d) { setTimeout(function () { el.className = "c cat pop"; }, d); })(kdCells[i], 60 * i % 900);
+    }
+    celebrate(kdMsgEl, "みつけた！ " + kdSec + "びょう" +
+      (nb ? (best ? "　あたらしい きろく！" : "") : "　さいこうは " + best + "びょう") + "<br>");
+  }
+  function kdLose() {
+    kdAlive = false; kdStopClock();
+    kdPaintAll();
+    kdMsgEl.className = "msg bad"; kdMsgEl.innerHTML = "ハートが なくなりました。<br>もういちど どうぞ";
+  }
+
+  function kdHint() {
+    if (!kdAlive) return;
+    if (!kdStarted) { kdMsgEl.className = "msg"; kdMsgEl.innerHTML = "さいしょは どこを さわっても だいじょうぶ"; return; }
+    var know = [], i, safe = [], cats = [];
+    for (i = 0; i < kdSt.length; i++) know.push(kdSt[i] === 1 ? 1 : kdSt[i] === 3 ? 2 : 0);
+    kdDeduce(know, kdVis, kdClue);
+    for (i = 0; i < kdSt.length; i++) {
+      if (kdSt[i] === 1 || kdSt[i] === 3) continue;
+      if (know[i] === 1) safe.push(i);
+      else if (know[i] === 2 && kdSt[i] !== 2) cats.push(i);
+    }
+    var pick = safe.length ? safe[Math.floor(Math.random() * safe.length)] : cats.length ? cats[0] : -1;
+    if (pick < 0) { kdMsgEl.className = "msg again"; kdMsgEl.innerHTML = "🐈 の おきばしょを 見なおして みて"; return; }
+    var el = kdCells[pick];
+    el.className = el.className.replace(/ hint/g, "");
+    void el.offsetWidth;
+    el.className += " hint";
+    setTimeout(function () { el.className = el.className.replace(/ hint/g, ""); }, 3300);
+    kdMsgEl.className = "msg";
+    kdMsgEl.innerHTML = safe.length ? "ひかって いる マスは ねこが いません" : "ひかって いる マスには ねこが います 🐈";
+  }
+
+  // あしあとに さわると、その かどに ふれて いる マスを ひからせる
+  var kdLitT = null, kdLitList = [], kdLitV = -1;
+  function kdLight(v) {
+    kdUnlight();
+    kdLitList = kdVCells(v); kdLitV = v;
+    for (var k = 0; k < kdLitList.length; k++) kdCells[kdLitList[k]].className += " lit";
+    if (kdVels[v]) kdVels[v].className += " lit";
+    kdMsgEl.className = "msg";
+    kdMsgEl.innerHTML = "あしあと " + kdClue[v] + "つ → ひかった " + kdLitList.length + "マスの<br>どこかに ねこが <b>" + kdClue[v] + "</b> ひき";
+    kdLitT = setTimeout(kdUnlight, 1800);
+  }
+  function kdUnlight() {
+    if (kdLitT !== null) { clearTimeout(kdLitT); kdLitT = null; }
+    for (var k = 0; k < kdLitList.length; k++) kdPaintCell(kdLitList[k]);
+    if (kdLitV >= 0) kdPaintV(kdLitV);
+    kdLitList = []; kdLitV = -1;
+  }
+
+  // ---- ゆび ----
+  // さわって はなすと ひらく。おさえた まま 0.52びょうで 🐈。ゆびが ずれたら なにも しない
+  var kdHoldT = null, kdDownAt = null, kdHeld = false;
+  function kdTarget(x, y) {
+    var el = document.elementFromPoint ? document.elementFromPoint(x, y) : null, k, c, v;
+    for (k = 0; el && k < 4; k++) {
+      c = el.getAttribute ? el.getAttribute("data-c") : null;
+      v = el.getAttribute ? el.getAttribute("data-v") : null;
+      if (v !== null && v !== "") return { v: Number(v) };
+      if (c !== null && c !== "") return { c: Number(c) };
+      el = el.parentNode;
+    }
+    return null;
+  }
+  function kdCancelHold() { if (kdHoldT !== null) { clearTimeout(kdHoldT); kdHoldT = null; } }
+  function kdDown(x, y) {
+    kdDownAt = kdTarget(x, y); kdHeld = false;
+    kdCancelHold();
+    if (kdDownAt && kdDownAt.c !== undefined) {
+      var c = kdDownAt.c;
+      kdHoldT = setTimeout(function () { kdHoldT = null; kdHeld = true; kdToggleMark(c); }, 520);
+    }
+  }
+  function kdUp() {
+    kdCancelHold();
+    var t = kdDownAt; kdDownAt = null;
+    if (!t || kdHeld) return;
+    if (t.v !== undefined) { if (kdVis[t.v]) kdLight(t.v); return; }
+    if (kdMode === "mark") kdToggleMark(t.c); else kdOpenCell(t.c);
+  }
+  function kdMove(x, y) {
+    if (!kdDownAt) return;
+    var t = kdTarget(x, y);
+    if (!t || t.c !== kdDownAt.c || t.v !== kdDownAt.v) { kdCancelHold(); kdDownAt = null; }
+  }
+  kdBoard.ontouchstart = function (e) { var t = e.touches[0]; kdDown(t.clientX, t.clientY); if (e.preventDefault) e.preventDefault(); return false; };
+  kdBoard.ontouchmove = function (e) { var t = e.touches[0]; kdMove(t.clientX, t.clientY); if (e.preventDefault) e.preventDefault(); return false; };
+  kdBoard.ontouchend = function (e) { kdUp(); if (e.preventDefault) e.preventDefault(); return false; };
+  kdBoard.ontouchcancel = function () { kdDownAt = null; kdCancelHold(); };
+  kdBoard.onmousedown = function (e) { kdDown(e.clientX, e.clientY); return false; };
+  kdBoard.onmousemove = function (e) { if (kdDownAt) kdMove(e.clientX, e.clientY); };
+  kdBoard.onmouseup = function () { kdUp(); };
+  kdBoard.oncontextmenu = function () { return false; };
+
+  function kdSetMode(m) {
+    kdMode = m;
+    $("kd-open").className = "big" + (m === "open" ? " on" : "");
+    $("kd-mark").className = "big" + (m === "mark" ? " on" : "");
+  }
+  onTap($("kd-open"), function () { kdSetMode("open"); });
+  onTap($("kd-mark"), function () { kdSetMode("mark"); });
+  onTap($("kd-hint"), kdHint);
+  onTap($("kd-reset"), function () { kdBuild(); });
+  function kdPaintDemoBtn() { $("kd-demo-btn").innerHTML = kdDemoOn ? "みほんを しまう" : "みほんを 見る"; }
+  onTap($("kd-demo-btn"), function () {
+    kdDemoOn = !kdDemoOn; save("kd-demo", kdDemoOn ? "1" : "0");
+    kdPaintDemoBtn(); kdResize();
+  });
+  buildPicker($("kd-levels"), KD_LEVELS, function (L) { return L === kdLv; }, "big", function (L) {
+    kdLv = L; save("kd-level", L.key); kdBuild();
+  });
+
+  // みほんの 絵。ほんとうの ばんと おなじ 見た目で
+  // せまい 画面でも 2つ よこに ならぶ 大きさに する
+  function kdDemo(host, w, h, catsAt) {
+    var vw = window.innerWidth || document.documentElement.clientWidth || 768;
+    var narrow = vw < 420, c = narrow ? 34 : 44, d = narrow ? 20 : 24, i, v, k, el, has = {}, vr, vc, n, r, cc, bx;
+    host.style.width = (w * c) + "px"; host.style.height = (h * c) + "px";
+    host.style.margin = narrow ? "12px 6px" : "12px 14px";
+    for (i = 0; i < catsAt.length; i++) has[catsAt[i]] = 1;
+    for (i = 0; i < w * h; i++) {
+      el = document.createElement("div");
+      el.className = "c" + (has[i] ? " cat" : " open");
+      el.style.left = ((i % w) * c + 2) + "px"; el.style.top = (Math.floor(i / w) * c + 2) + "px";
+      el.style.width = (c - 4) + "px"; el.style.height = (c - 4) + "px";
+      el.style.lineHeight = (c - 8) + "px";
+      if (has[i]) el.innerHTML = "🐱";
+      host.appendChild(el);
+    }
+    for (v = 0; v < (w + 1) * (h + 1); v++) {
+      vr = Math.floor(v / (w + 1)); vc = v % (w + 1); n = 0;
+      for (k = 0; k < catsAt.length; k++) {
+        r = Math.floor(catsAt[k] / w); cc = catsAt[k] % w;
+        if ((vr === r || vr === r + 1) && (vc === cc || vc === cc + 1)) n++;
+      }
+      if (!n) continue;
+      el = document.createElement("div");
+      el.className = "v";
+      bx = kdPawBox(n, d);
+      el.style.width = bx.w + "px"; el.style.height = bx.h + "px";
+      el.style.left = (vc * c - bx.w / 2) + "px"; el.style.top = (vr * c - bx.h / 2) + "px";
+      el.innerHTML = bx.html;
+      host.appendChild(el);
+    }
+  }
+  kdDemo($("kd-demo1"), 3, 3, [4]);
+  kdDemo($("kd-demo2"), 4, 3, [5, 6]);
+  kdPaintDemoBtn();
+
+  function kdStart() { kdBuild(); }
+  function kdStop() { kdStopClock(); kdCancelHold(); kdDownAt = null; }
+  // とちゅうの ばんが あれば そのまま つづける
+  function kdResume() {
+    if (!kdCells || !kdAlive) return false;
+    kdResize();
+    if (kdStarted) kdStartClock();
+    return true;
+  }
+  window.kdState = function () {
+    return { W: kdW, H: kdH, cat: kdCat.slice(0), st: kdSt.slice(0), vis: kdVis.slice(0), clue: kdClue.slice(0),
+      alive: kdAlive, hearts: kdHearts, msg: kdMsgEl.textContent, cs: kdCs };
+  };
+
+  // ============================================================
   // タブの切り替え
   // ============================================================
   // show = タブを ひらく ときの はじまり。
@@ -8875,7 +9435,8 @@
     { key: "beads",  tab: "tab-beads",  pane: "game-beads",  show: beStart, hide: beStop, resume: beResume, resize: beResize },
     { key: "animal", tab: "tab-animal", pane: "game-animal", show: anStart, hide: anStop, resume: anResume, resize: anResize },
     { key: "jenga",  tab: "tab-jenga",  pane: "game-jenga",  show: jgStart, hide: jgStop, resize: jgResize },
-    { key: "zombie", tab: "tab-zombie", pane: "game-zombie", show: zbStart, hide: zbStop, resume: zbResume, resize: zbResize }
+    { key: "zombie", tab: "tab-zombie", pane: "game-zombie", show: zbStart, hide: zbStop, resume: zbResume, resize: zbResize },
+    { key: "kd",     tab: "tab-kd",     pane: "game-kd",     show: kdStart, hide: kdStop, resume: kdResume, resize: kdResize }
   ];
 
   var curTab = "";
@@ -9017,6 +9578,13 @@
       if (v > 0) lines.push(ZB_SPEEDS[i].label + "　<b>" + v + "</b> / " + ZB_GOAL + " かい" + recRank(v, ZB_RANKS));
     }
     out += recGroup("👻", "おばけたいじ", lines);
+
+    lines = [];
+    for (i = 0; i < KD_LEVELS.length; i++) {
+      v = recNum("kd-best-" + KD_LEVELS[i].key);
+      if (v > 0) lines.push(KD_LEVELS[i].label + "　<b>" + v + "</b> びょう");
+    }
+    out += recGroup("🐾", "ねこの あしあと", lines);
 
     recListEl.innerHTML = out;
   }
