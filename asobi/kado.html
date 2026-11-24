@@ -81,16 +81,29 @@
   .mini .c { border-radius: 6px; }
   .mini .c.cat { font-size: 28px; line-height: 40px; }
   .mini .v { border-width: 2px; }
+  /* よこむき: せつめいは ひだり、ばんは みぎ。Flexbox を つかわず table-cell で ならべる */
+  #wide { display: none; width: 100%; }
+  body.wide #wide { display: table; table-layout: fixed; }
+  #lcol, #rcol { display: table-cell; vertical-align: top; }
+  #lcol { width: 400px; padding-right: 8px; }
+  body.wide .rule { font-size: 16px; line-height: 23px; }
+  body.wide #main { padding-top: 4px; }
+  body.wide button.big { padding: 10px 12px; min-width: 0; margin: 4px 3px; }
 </style>
 </head>
 <body>
+<div id="top">
 <h1>🐱 ねこさがし <small style="font-size:14px;color:#a89f8c">しさく</small></h1>
 <p class="rule">くさむらに ねこが かくれて います。<br>ねこの いる マスの <b>4つの かど</b> には、<b>あしあと</b> が 1つずつ つきます。</p>
 <div class="demo"><div class="mini" id="demo1"></div><div class="mini" id="demo2"></div></div>
 <p class="rule" style="margin-top:0">あしあとを 見て ねこの いばしょを あてましょう。ねこの いない マスを ぜんぶ ひらいたら できあがり。</p>
+</div>
+<div id="main">
 <p class="score">❤️ <b id="hearts">3</b>　🐱 のこり <b id="cats">0</b>　⏱ <b id="time">0</b> びょう</p>
 <div id="board"></div>
 <p class="msg" id="msg">どこか 1つ さわって はじめましょう</p>
+</div>
+<div id="bot">
 <div class="ctrl">
   <button type="button" class="big on" id="m-open">👆 ひらく</button>
   <button type="button" class="big" id="m-mark">🐈 めじるし</button>
@@ -99,6 +112,8 @@
 <div class="ctrl"><button type="button" class="big" id="reset">もういちど</button></div>
 <div class="ctrl"><span class="label">おおきさ</span><span id="levels"></span></div>
 <p class="rule" style="font-size:15px">あしあとに さわると、その かどに ふれて いる マスが ひかります。<br>ながおし でも 🐈 めじるし が おけます。<br>あしあとの ない かどの まわりは、かってに ひらきます。<br>かならず すいりで とける ばん だけが でます。</p>
+</div>
+<div id="wide"><div id="lcol"></div><div id="rcol"></div></div>
 
 <script>
 (function () {
@@ -257,12 +272,29 @@
   }
 
   // ---- がめん ----
+  // よこむきで ひろい 画面は 2れつに する。ばしょを うごかす だけで なかみは おなじ
+  var isWide = false;
+  function arrange(vw, vh) {
+    var w = vw > vh && vw >= 760;
+    if (w === isWide) return;
+    isWide = w;
+    var body = document.body, wide = $("wide");
+    if (w) {
+      $("lcol").appendChild($("top")); $("lcol").appendChild($("bot")); $("rcol").appendChild($("main"));
+      body.className = "wide";
+    } else {
+      body.insertBefore($("top"), wide); body.insertBefore($("main"), wide); body.insertBefore($("bot"), wide);
+      body.className = "";
+    }
+  }
   function layout() {
     var vw = window.innerWidth || document.documentElement.clientWidth || 768;
     var vh = window.innerHeight || document.documentElement.clientHeight || 1024;
+    arrange(vw, vh);
     var top = boardEl.getBoundingClientRect().top + (window.pageYOffset || 0);
-    var byW = Math.floor((Math.min(vw - 24, 680)) / W);
-    var byH = Math.floor((vh - top - 190) / H);
+    var room = isWide ? $("rcol").offsetWidth - 16 : Math.min(vw - 24, 680);
+    var byW = Math.floor(room / W);
+    var byH = Math.floor((vh - top - (isWide ? 60 : 190)) / H);
     cs = Math.max(34, Math.min(byW, byH, 96));
     var gap = Math.max(3, Math.round(cs * 0.06));
     boardEl.style.width = (W * cs) + "px";
@@ -347,7 +379,7 @@
     if (!el) return;
     if (!vis[v] || clue[v] === 0) { el.style.display = "none"; return; }   // 0 は まわりが ぜんぶ ひらくので だす いみが ない
     el.style.display = "";
-    var b = vd >= 24 ? pawBox(clue[v], vd) : { w: vd, h: vd, html: String(clue[v]) };   // ちいさい 画面は すうじ
+    var b = pawBox(clue[v], vd);   // ちいさい 画面でも すうじには しない (あしあとの お話が くずれる)
     el.innerHTML = b.html;
     el.style.width = b.w + "px"; el.style.height = b.h + "px";
     el.style.left = ((v % (W + 1)) * cs - b.w / 2) + "px";
